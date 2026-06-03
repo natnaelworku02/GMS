@@ -7,6 +7,16 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from app.config import get_settings
 from app.db import Base
 
+# Import all models so they register with Base.metadata
+import app.auth.models  # noqa: F401
+import app.hr.models  # noqa: F401
+import app.job_cards.models  # noqa: F401
+import app.performa.models  # noqa: F401
+import app.inventory.models  # noqa: F401
+import app.tools.models  # noqa: F401
+import app.notifications.models  # noqa: F401
+import app.audit.models  # noqa: F401
+
 config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
