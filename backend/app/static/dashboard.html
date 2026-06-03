@@ -1,0 +1,899 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GMS API Dashboard</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f7f8fa;
+      --panel: #ffffff;
+      --panel-2: #eef3f8;
+      --text: #17202a;
+      --muted: #5f6b7a;
+      --line: #d7dde5;
+      --focus: #2167ae;
+      --ok: #16805f;
+      --warn: #a85f00;
+      --err: #b42318;
+      --post: #155f45;
+      --get: #1f5d99;
+      --patch: #8a5400;
+      --put: #6f4eb2;
+      --delete: #9f2d20;
+      --radius: 8px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      letter-spacing: 0;
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #ffffff;
+      color: var(--text);
+      min-height: 36px;
+      padding: 0 12px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      border-color: #a8b4c3;
+      background: #f9fafb;
+    }
+
+    button.primary {
+      border-color: var(--focus);
+      background: var(--focus);
+      color: #ffffff;
+    }
+
+    button.ghost {
+      background: transparent;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #ffffff;
+      color: var(--text);
+      padding: 9px 10px;
+      min-width: 0;
+    }
+
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    label {
+      display: grid;
+      gap: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      border-right: 1px solid var(--line);
+      background: #ffffff;
+      padding: 18px;
+      display: grid;
+      align-content: start;
+      gap: 18px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.2;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--warn);
+      box-shadow: 0 0 0 3px rgba(168, 95, 0, 0.12);
+    }
+
+    .status-dot.ok {
+      background: var(--ok);
+      box-shadow: 0 0 0 3px rgba(22, 128, 95, 0.12);
+    }
+
+    .auth-box,
+    .filters,
+    .token-box {
+      display: grid;
+      gap: 10px;
+    }
+
+    .auth-actions,
+    .toolbar,
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .token-box textarea {
+      min-height: 76px;
+    }
+
+    .main {
+      min-width: 0;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      border-bottom: 1px solid var(--line);
+      background: rgba(247, 248, 250, 0.96);
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .topbar h2 {
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.25;
+    }
+
+    .endpoint-count {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .content {
+      padding: 18px;
+      display: grid;
+      gap: 16px;
+      align-content: start;
+    }
+
+    .endpoint {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      overflow: hidden;
+    }
+
+    .endpoint[hidden] {
+      display: none;
+    }
+
+    .endpoint summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 12px 14px;
+      display: grid;
+      grid-template-columns: 74px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .endpoint summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .method {
+      color: #ffffff;
+      border-radius: 5px;
+      text-align: center;
+      padding: 5px 7px;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    .method.get { background: var(--get); }
+    .method.post { background: var(--post); }
+    .method.patch { background: var(--patch); }
+    .method.put { background: var(--put); }
+    .method.delete { background: var(--delete); }
+
+    .path {
+      min-width: 0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+
+    .tag {
+      color: var(--muted);
+      font-size: 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 4px 8px;
+      white-space: nowrap;
+    }
+
+    .endpoint-body {
+      border-top: 1px solid var(--line);
+      background: #fbfcfd;
+      padding: 14px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .request-area {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 12px;
+    }
+
+    .response {
+      min-height: 160px;
+      max-height: 460px;
+      overflow: auto;
+      margin: 0;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #0f1720;
+      color: #e7edf4;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      flex-wrap: wrap;
+    }
+
+    .empty {
+      border: 1px dashed var(--line);
+      border-radius: var(--radius);
+      padding: 24px;
+      color: var(--muted);
+      background: #ffffff;
+    }
+
+    @media (max-width: 900px) {
+      .shell {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .request-area,
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .endpoint summary {
+        grid-template-columns: 72px minmax(0, 1fr);
+      }
+
+      .tag {
+        grid-column: 2;
+        width: max-content;
+      }
+    }
+  </style>
+</head>
+<body>
+  <script>
+    window.DASHBOARD_CONFIG = __DASHBOARD_CONFIG__;
+  </script>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <h1>GMS API Dashboard</h1>
+        <span id="authStatus" class="status-dot" title="Authentication status"></span>
+      </div>
+
+      <section class="auth-box" aria-label="Super admin login">
+        <label>
+          Phone
+          <input id="phone" autocomplete="username">
+        </label>
+        <label>
+          Password
+          <input id="password" type="password" autocomplete="current-password">
+        </label>
+        <div class="auth-actions">
+          <button id="loginButton" class="primary" type="button">Login</button>
+          <button id="meButton" type="button">Me</button>
+          <button id="clearButton" class="ghost" type="button">Clear</button>
+        </div>
+      </section>
+
+      <section class="token-box" aria-label="Bearer token">
+        <label>
+          Access token
+          <textarea id="token" spellcheck="false"></textarea>
+        </label>
+      </section>
+
+      <section class="filters" aria-label="Endpoint filters">
+        <label>
+          Search
+          <input id="search" placeholder="path, method, tag">
+        </label>
+        <label>
+          Method
+          <select id="methodFilter">
+            <option value="">All methods</option>
+            <option value="GET">GET</option>
+            <option value="POST">POST</option>
+            <option value="PATCH">PATCH</option>
+            <option value="PUT">PUT</option>
+            <option value="DELETE">DELETE</option>
+          </select>
+        </label>
+        <label>
+          Tag
+          <select id="tagFilter">
+            <option value="">All tags</option>
+          </select>
+        </label>
+      </section>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <h2>Endpoint Tester</h2>
+          <div id="endpointCount" class="endpoint-count">Loading endpoints</div>
+        </div>
+        <div class="toolbar">
+          <button id="healthButton" type="button">Health</button>
+          <button id="expandButton" type="button">Expand</button>
+          <button id="collapseButton" type="button">Collapse</button>
+        </div>
+      </header>
+
+      <section id="content" class="content" aria-live="polite">
+        <div class="empty">Loading OpenAPI schema...</div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const config = window.DASHBOARD_CONFIG || { adminPhone: "", adminPassword: "", apiBase: "/api/v1" };
+    const state = {
+      schema: null,
+      endpoints: [],
+      tags: new Set(),
+    };
+
+    const els = {
+      phone: document.getElementById("phone"),
+      password: document.getElementById("password"),
+      token: document.getElementById("token"),
+      authStatus: document.getElementById("authStatus"),
+      loginButton: document.getElementById("loginButton"),
+      meButton: document.getElementById("meButton"),
+      clearButton: document.getElementById("clearButton"),
+      search: document.getElementById("search"),
+      methodFilter: document.getElementById("methodFilter"),
+      tagFilter: document.getElementById("tagFilter"),
+      content: document.getElementById("content"),
+      endpointCount: document.getElementById("endpointCount"),
+      healthButton: document.getElementById("healthButton"),
+      expandButton: document.getElementById("expandButton"),
+      collapseButton: document.getElementById("collapseButton"),
+    };
+
+    els.phone.value = localStorage.getItem("gms.dashboard.phone") || config.adminPhone || "";
+    els.password.value = localStorage.getItem("gms.dashboard.password") || config.adminPassword || "";
+    els.token.value = localStorage.getItem("gms.dashboard.accessToken") || "";
+    syncAuthStatus();
+
+    els.loginButton.addEventListener("click", login);
+    els.meButton.addEventListener("click", () => quickRequest("/api/v1/auth/me", "GET"));
+    els.clearButton.addEventListener("click", clearAuth);
+    els.healthButton.addEventListener("click", runHealth);
+    els.expandButton.addEventListener("click", () => setAllOpen(true));
+    els.collapseButton.addEventListener("click", () => setAllOpen(false));
+    els.search.addEventListener("input", filterEndpoints);
+    els.methodFilter.addEventListener("change", filterEndpoints);
+    els.tagFilter.addEventListener("change", filterEndpoints);
+    els.token.addEventListener("input", () => {
+      localStorage.setItem("gms.dashboard.accessToken", els.token.value.trim());
+      syncAuthStatus();
+    });
+
+    loadOpenApi();
+
+    async function loadOpenApi() {
+      try {
+        const response = await fetch("/openapi.json");
+        if (!response.ok) {
+          throw new Error(`OpenAPI request failed with ${response.status}`);
+        }
+        state.schema = await response.json();
+        state.endpoints = collectEndpoints(state.schema);
+        renderTagFilter();
+        renderEndpoints();
+      } catch (error) {
+        els.content.innerHTML = `<div class="empty">${escapeHtml(error.message)}</div>`;
+      }
+    }
+
+    function collectEndpoints(openapi) {
+      const endpoints = [];
+      const methods = new Set(["get", "post", "put", "patch", "delete"]);
+      Object.entries(openapi.paths || {}).forEach(([path, pathItem]) => {
+        Object.entries(pathItem || {}).forEach(([method, operation]) => {
+          if (!methods.has(method)) {
+            return;
+          }
+          const tag = (operation.tags && operation.tags[0]) || "default";
+          state.tags.add(tag);
+          endpoints.push({
+            id: `${method}-${path}`.replace(/[^a-zA-Z0-9]+/g, "-"),
+            method: method.toUpperCase(),
+            path,
+            tag,
+            summary: operation.summary || "",
+            operation,
+          });
+        });
+      });
+      return endpoints.sort((a, b) => a.path.localeCompare(b.path) || a.method.localeCompare(b.method));
+    }
+
+    function renderTagFilter() {
+      [...state.tags].sort().forEach((tag) => {
+        const option = document.createElement("option");
+        option.value = tag;
+        option.textContent = tag;
+        els.tagFilter.appendChild(option);
+      });
+    }
+
+    function renderEndpoints() {
+      if (!state.endpoints.length) {
+        els.content.innerHTML = '<div class="empty">No endpoints found.</div>';
+        return;
+      }
+      els.content.innerHTML = "";
+      state.endpoints.forEach((endpoint) => {
+        els.content.appendChild(renderEndpoint(endpoint));
+      });
+      filterEndpoints();
+    }
+
+    function renderEndpoint(endpoint) {
+      const details = document.createElement("details");
+      details.className = "endpoint";
+      details.dataset.method = endpoint.method;
+      details.dataset.path = endpoint.path;
+      details.dataset.tag = endpoint.tag;
+
+      const summary = document.createElement("summary");
+      summary.innerHTML = `
+        <span class="method ${endpoint.method.toLowerCase()}">${endpoint.method}</span>
+        <span class="path">${escapeHtml(endpoint.path)}</span>
+        <span class="tag">${escapeHtml(endpoint.tag)}</span>
+      `;
+      details.appendChild(summary);
+
+      const body = document.createElement("div");
+      body.className = "endpoint-body";
+
+      const params = collectParameters(endpoint);
+      const pathParams = params.filter((param) => param.in === "path");
+      const queryParams = params.filter((param) => param.in === "query");
+      const requestSchema = getRequestSchema(endpoint.operation);
+      const requestSample = requestSchema ? JSON.stringify(sampleForSchema(requestSchema), null, 2) : "";
+
+      if (endpoint.summary) {
+        const meta = document.createElement("div");
+        meta.className = "meta";
+        meta.innerHTML = `<span>${escapeHtml(endpoint.summary)}</span><span>${escapeHtml(endpoint.operation.operationId || "")}</span>`;
+        body.appendChild(meta);
+      }
+
+      const paramGrid = document.createElement("div");
+      paramGrid.className = "grid";
+      [...pathParams, ...queryParams].forEach((param) => {
+        const label = document.createElement("label");
+        label.textContent = `${param.name} (${param.in})`;
+        const input = document.createElement("input");
+        input.dataset.paramName = param.name;
+        input.dataset.paramIn = param.in;
+        input.placeholder = param.required ? "required" : "optional";
+        label.appendChild(input);
+        paramGrid.appendChild(label);
+      });
+      if (paramGrid.children.length) {
+        body.appendChild(paramGrid);
+      }
+
+      const requestArea = document.createElement("div");
+      requestArea.className = "request-area";
+      const bodyEditor = document.createElement("label");
+      bodyEditor.textContent = "JSON body";
+      const textarea = document.createElement("textarea");
+      textarea.dataset.body = "true";
+      textarea.spellcheck = false;
+      textarea.value = requestSample;
+      textarea.placeholder = requestSchema ? "{}" : "No request body";
+      if (!requestSchema) {
+        textarea.disabled = true;
+      }
+      bodyEditor.appendChild(textarea);
+
+      const responseLabel = document.createElement("label");
+      responseLabel.textContent = "Response";
+      const pre = document.createElement("pre");
+      pre.className = "response";
+      pre.textContent = "Not run yet.";
+      responseLabel.appendChild(pre);
+      requestArea.appendChild(bodyEditor);
+      requestArea.appendChild(responseLabel);
+      body.appendChild(requestArea);
+
+      const actions = document.createElement("div");
+      actions.className = "toolbar";
+      const runButton = document.createElement("button");
+      runButton.type = "button";
+      runButton.className = "primary";
+      runButton.textContent = "Run";
+      runButton.addEventListener("click", () => runEndpoint(endpoint, details, pre));
+      const copyButton = document.createElement("button");
+      copyButton.type = "button";
+      copyButton.textContent = "Copy curl";
+      copyButton.addEventListener("click", () => copyCurl(endpoint, details, pre));
+      const resetButton = document.createElement("button");
+      resetButton.type = "button";
+      resetButton.textContent = "Reset body";
+      resetButton.addEventListener("click", () => {
+        textarea.value = requestSample;
+      });
+      actions.append(runButton, copyButton, resetButton);
+      body.appendChild(actions);
+
+      details.appendChild(body);
+      return details;
+    }
+
+    function collectParameters(endpoint) {
+      const params = endpoint.operation.parameters || [];
+      return params.map((param) => param.$ref ? resolveRef(param.$ref) : param);
+    }
+
+    function getRequestSchema(operation) {
+      const jsonBody = operation.requestBody && operation.requestBody.content && operation.requestBody.content["application/json"];
+      if (!jsonBody || !jsonBody.schema) {
+        return null;
+      }
+      return jsonBody.schema;
+    }
+
+    function resolveRef(ref) {
+      const parts = ref.replace(/^#\//, "").split("/");
+      return parts.reduce((current, part) => current && current[part], state.schema);
+    }
+
+    function normalizeSchema(schema) {
+      if (!schema) {
+        return {};
+      }
+      if (schema.$ref) {
+        return normalizeSchema(resolveRef(schema.$ref));
+      }
+      if (schema.anyOf) {
+        return normalizeSchema(schema.anyOf.find((item) => item.type !== "null") || schema.anyOf[0]);
+      }
+      if (schema.allOf) {
+        return Object.assign({}, ...schema.allOf.map((item) => normalizeSchema(item)));
+      }
+      return schema;
+    }
+
+    function sampleForSchema(schema) {
+      const normalized = normalizeSchema(schema);
+      if (normalized.example !== undefined) {
+        return normalized.example;
+      }
+      if (normalized.default !== undefined) {
+        return normalized.default;
+      }
+      if (normalized.enum && normalized.enum.length) {
+        return normalized.enum[0];
+      }
+      if (normalized.type === "object" || normalized.properties) {
+        const sample = {};
+        Object.entries(normalized.properties || {}).forEach(([key, value]) => {
+          sample[key] = sampleForSchema(value);
+        });
+        return sample;
+      }
+      if (normalized.type === "array") {
+        return [sampleForSchema(normalized.items || {})];
+      }
+      if (normalized.format === "uuid") {
+        return "00000000-0000-0000-0000-000000000000";
+      }
+      if (normalized.format === "date-time") {
+        return new Date().toISOString();
+      }
+      if (normalized.type === "integer") {
+        return 0;
+      }
+      if (normalized.type === "number") {
+        return 0;
+      }
+      if (normalized.type === "boolean") {
+        return false;
+      }
+      return "string";
+    }
+
+    async function login() {
+      const phone = els.phone.value.trim();
+      const password = els.password.value;
+      localStorage.setItem("gms.dashboard.phone", phone);
+      localStorage.setItem("gms.dashboard.password", password);
+      const result = await sendRequest("/api/v1/auth/login", "POST", {}, { phone, password });
+      if (result.ok && result.data.access_token) {
+        els.token.value = result.data.access_token;
+        localStorage.setItem("gms.dashboard.accessToken", result.data.access_token);
+        syncAuthStatus();
+      }
+      showFloatingResult("Login", result);
+    }
+
+    function clearAuth() {
+      els.token.value = "";
+      els.password.value = "";
+      localStorage.removeItem("gms.dashboard.accessToken");
+      localStorage.removeItem("gms.dashboard.password");
+      syncAuthStatus();
+    }
+
+    async function runHealth() {
+      const live = await sendRequest("/health/live", "GET");
+      const ready = await sendRequest("/health/ready", "GET");
+      showFloatingResult("Health", { ok: live.ok && ready.ok, status: ready.status, data: { live: live.data, ready: ready.data } });
+    }
+
+    async function quickRequest(path, method) {
+      const result = await sendRequest(path, method);
+      showFloatingResult(path, result);
+    }
+
+    async function runEndpoint(endpoint, details, responseEl) {
+      try {
+        const request = buildRequest(endpoint, details);
+        responseEl.textContent = "Running...";
+        const result = await sendRequest(request.url, endpoint.method, request.query, request.body);
+        responseEl.textContent = formatResult(result);
+      } catch (error) {
+        responseEl.textContent = error.message;
+      }
+    }
+
+    function buildRequest(endpoint, details) {
+      let url = endpoint.path;
+      const query = {};
+      details.querySelectorAll("input[data-param-name]").forEach((input) => {
+        const name = input.dataset.paramName;
+        const location = input.dataset.paramIn;
+        const value = input.value.trim();
+        if (!value) {
+          return;
+        }
+        if (location === "path") {
+          if (!value) {
+            throw new Error(`Missing path parameter: ${name}`);
+          }
+          url = url.replace(`{${name}}`, encodeURIComponent(value));
+        } else if (location === "query") {
+          query[name] = value;
+        }
+      });
+
+      let body;
+      const bodyText = details.querySelector("textarea[data-body]").value.trim();
+      if (bodyText) {
+        body = JSON.parse(bodyText);
+      }
+      return { url, query, body };
+    }
+
+    async function sendRequest(path, method, query = {}, body) {
+      const params = new URLSearchParams(query);
+      const url = params.toString() ? `${path}?${params}` : path;
+      const headers = {};
+      if (body !== undefined) {
+        headers["Content-Type"] = "application/json";
+      }
+      const token = els.token.value.trim();
+      if (token && !path.endsWith("/auth/login")) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
+      const started = performance.now();
+      try {
+        const response = await fetch(url, {
+          method,
+          headers,
+          body: body === undefined ? undefined : JSON.stringify(body),
+        });
+        const text = await response.text();
+        let data = text;
+        try {
+          data = text ? JSON.parse(text) : null;
+        } catch (error) {
+          data = text;
+        }
+        return {
+          ok: response.ok,
+          status: response.status,
+          statusText: response.statusText,
+          ms: Math.round(performance.now() - started),
+          data,
+        };
+      } catch (error) {
+        return {
+          ok: false,
+          status: 0,
+          statusText: "Request failed",
+          ms: Math.round(performance.now() - started),
+          data: { error: error.message },
+        };
+      }
+    }
+
+    async function copyCurl(endpoint, details, responseEl) {
+      try {
+        const request = buildRequest(endpoint, details);
+        const params = new URLSearchParams(request.query);
+        const url = `${location.origin}${params.toString() ? `${request.url}?${params}` : request.url}`;
+        const parts = [`curl -X ${endpoint.method}`, quoteShell(url)];
+        const token = els.token.value.trim();
+        if (token && !request.url.endsWith("/auth/login")) {
+          parts.push("-H", quoteShell(`Authorization: Bearer ${token}`));
+        }
+        if (request.body !== undefined) {
+          parts.push("-H", quoteShell("Content-Type: application/json"), "-d", quoteShell(JSON.stringify(request.body)));
+        }
+        await navigator.clipboard.writeText(parts.join(" "));
+        responseEl.textContent = "curl copied to clipboard.";
+      } catch (error) {
+        responseEl.textContent = error.message;
+      }
+    }
+
+    function quoteShell(value) {
+      return `'${String(value).replace(/'/g, "'\\''")}'`;
+    }
+
+    function formatResult(result) {
+      return JSON.stringify({
+        status: result.status,
+        statusText: result.statusText,
+        ms: result.ms,
+        ok: result.ok,
+        body: result.data,
+      }, null, 2);
+    }
+
+    function showFloatingResult(title, result) {
+      const existing = document.getElementById("floatingResult");
+      if (existing) {
+        existing.remove();
+      }
+      const box = document.createElement("details");
+      box.id = "floatingResult";
+      box.className = "endpoint";
+      box.open = true;
+      box.innerHTML = `
+        <summary>
+          <span class="method ${result.ok ? "post" : "delete"}">${result.status || "ERR"}</span>
+          <span class="path">${escapeHtml(title)}</span>
+          <span class="tag">${escapeHtml(String(result.ms || 0))} ms</span>
+        </summary>
+        <div class="endpoint-body">
+          <pre class="response">${escapeHtml(formatResult(result))}</pre>
+        </div>
+      `;
+      els.content.prepend(box);
+    }
+
+    function filterEndpoints() {
+      const query = els.search.value.trim().toLowerCase();
+      const method = els.methodFilter.value;
+      const tag = els.tagFilter.value;
+      let visible = 0;
+      document.querySelectorAll(".endpoint[data-path]").forEach((node) => {
+        const haystack = `${node.dataset.method} ${node.dataset.path} ${node.dataset.tag}`.toLowerCase();
+        const match = (!query || haystack.includes(query))
+          && (!method || node.dataset.method === method)
+          && (!tag || node.dataset.tag === tag);
+        node.hidden = !match;
+        if (match) {
+          visible += 1;
+        }
+      });
+      els.endpointCount.textContent = `${visible} of ${state.endpoints.length} endpoints`;
+    }
+
+    function setAllOpen(open) {
+      document.querySelectorAll(".endpoint[data-path]").forEach((node) => {
+        if (!node.hidden) {
+          node.open = open;
+        }
+      });
+    }
+
+    function syncAuthStatus() {
+      els.authStatus.classList.toggle("ok", Boolean(els.token.value.trim()));
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+  </script>
+</body>
+</html>

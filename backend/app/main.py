@@ -28,6 +28,7 @@ from app.inventory.routes import locations_router, items_router, stock_router  #
 from app.performa.routes import router as performa_router  # noqa: E402
 from app.tools.routes import router as tools_router  # noqa: E402
 from app.notifications.routes import router as notifications_router  # noqa: E402
+from app.dashboard import router as dashboard_router  # noqa: E402
 
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(roles_router, prefix="/api/v1")
@@ -43,6 +44,7 @@ app.include_router(stock_router, prefix="/api/v1")
 app.include_router(performa_router, prefix="/api/v1")
 app.include_router(tools_router, prefix="/api/v1")
 app.include_router(notifications_router, prefix="/api/v1")
+app.include_router(dashboard_router)
 
 
 @app.get("/")
