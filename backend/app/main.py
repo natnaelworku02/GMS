@@ -19,6 +19,31 @@ async def lifespan(app: FastAPI):
 settings = get_settings()
 app = FastAPI(title=settings.app_name, lifespan=lifespan)
 
+# --- Mount all routers ---
+from app.auth.routes import router as auth_router, roles_router, settings_router  # noqa: E402
+from app.audit.routes import router as audit_router  # noqa: E402
+from app.hr.routes import router as hr_router  # noqa: E402
+from app.job_cards.routes import owners_router, vehicles_router, job_cards_router  # noqa: E402
+from app.inventory.routes import locations_router, items_router, stock_router  # noqa: E402
+from app.performa.routes import router as performa_router  # noqa: E402
+from app.tools.routes import router as tools_router  # noqa: E402
+from app.notifications.routes import router as notifications_router  # noqa: E402
+
+app.include_router(auth_router, prefix="/api/v1")
+app.include_router(roles_router, prefix="/api/v1")
+app.include_router(settings_router, prefix="/api/v1")
+app.include_router(audit_router, prefix="/api/v1")
+app.include_router(hr_router, prefix="/api/v1")
+app.include_router(owners_router, prefix="/api/v1")
+app.include_router(vehicles_router, prefix="/api/v1")
+app.include_router(job_cards_router, prefix="/api/v1")
+app.include_router(locations_router, prefix="/api/v1")
+app.include_router(items_router, prefix="/api/v1")
+app.include_router(stock_router, prefix="/api/v1")
+app.include_router(performa_router, prefix="/api/v1")
+app.include_router(tools_router, prefix="/api/v1")
+app.include_router(notifications_router, prefix="/api/v1")
+
 
 @app.get("/")
 async def root() -> dict[str, str]:
