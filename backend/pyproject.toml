@@ -1,0 +1,18 @@
+[project]
+name = "backend"
+version = "0.1.0"
+description = "FastAPI backend for GMS"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "asyncpg>=0.30.0",
+    "fastapi[standard]>=0.115.0",
+    "pydantic-settings>=2.7.0",
+    "redis>=5.2.0",
+    "sqlalchemy[asyncio]>=2.0.36",
+    "uvicorn[standard]>=0.34.0",
+]
+
+[build-system]
+requires = ["setuptools>=75.0"]
+build-backend = "setuptools.build_meta"
