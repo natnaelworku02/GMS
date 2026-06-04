@@ -17,7 +17,7 @@ import {
   mockVehicles,
 } from "./data";
 
-const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+const base = "http://localhost:8000/api/v1";
 
 // --- Auth ---
 

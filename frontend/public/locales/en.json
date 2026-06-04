@@ -16,7 +16,11 @@
     "actions": "Actions",
     "online": "Online",
     "offline": "Offline",
-    "pendingSync": "Pending sync"
+    "pendingSync": "Pending sync",
+    "comingSoon": "Soon",
+    "greetingMorning": "Good morning",
+    "greetingAfternoon": "Good afternoon",
+    "greetingEvening": "Good evening"
   },
   "auth": {
     "login": "Login",

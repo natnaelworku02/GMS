@@ -16,7 +16,11 @@
     "actions": "ተግባራት",
     "online": "በመስመር ላይ",
     "offline": "ከመስመር ውጭ",
-    "pendingSync": "በማመሳሰል ላይ"
+    "pendingSync": "በማመሳሰል ላይ",
+    "comingSoon": "በቅርቡ",
+    "greetingMorning": "እንደምን አደሩ",
+    "greetingAfternoon": "እንደምን ዋሉ",
+    "greetingEvening": "እንደምን አመሹ"
   },
   "auth": {
     "login": "ግባ",
