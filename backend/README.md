@@ -11,6 +11,11 @@ docker compose up --build
 
 The API runs at `http://localhost:8000`.
 
+During local development, Docker Compose runs Uvicorn with reload enabled and
+bind-mounts `app`, `main.py`, and Alembic files. Python and HTML edits refresh
+without rebuilding the image. Rebuild after changing dependencies or the
+Dockerfile.
+
 ### Health checks
 
 ```bash
