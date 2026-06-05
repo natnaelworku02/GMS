@@ -12,8 +12,8 @@ const navItems = [
   { href: "/performas", labelKey: "performas", icon: "performas", permission: "performa.read", disabled: true },
   { href: "/inventory", labelKey: "inventory", icon: "inventory", permission: "inventory.read", disabled: true },
   { href: "/tools", labelKey: "tools", icon: "tools", permission: "tools.read", disabled: true },
-  { href: "/users", labelKey: "users", icon: "users", permission: "users.read", disabled: true },
-  { href: "/roles", labelKey: "roles", icon: "roles", permission: "users.read", disabled: true },
+  { href: "/users", labelKey: "users", icon: "users", permission: "users.read", disabled: false },
+  { href: "/roles", labelKey: "roles", icon: "roles", permission: "users.read", disabled: false },
   { href: "/settings", labelKey: "settings", icon: "settings", permission: "settings.read", disabled: true },
 ];
 

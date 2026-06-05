@@ -17,6 +17,42 @@ export const mockUsers = [
     is_active: true,
     created_at: "2025-01-15T00:00:00Z",
   },
+  {
+    id: "c3d4e5f6-a7b8-9012-cdef-123456789012",
+    phone: "+251922222222",
+    full_name: "Mekdes Worku",
+    role_id: "r004",
+    role_name: "Senior Mechanic",
+    is_active: true,
+    created_at: "2025-02-01T00:00:00Z",
+  },
+  {
+    id: "d4e5f6a7-b8c9-0123-defa-234567890123",
+    phone: "+251933333333",
+    full_name: "Yonas Tadesse",
+    role_id: "r003",
+    role_name: "Store Manager",
+    is_active: true,
+    created_at: "2025-02-10T00:00:00Z",
+  },
+  {
+    id: "e5f6a7b8-c9d0-1234-efab-345678901234",
+    phone: "+251944444444",
+    full_name: "Hanna Gebre",
+    role_id: "r005",
+    role_name: "Junior Mechanic",
+    is_active: true,
+    created_at: "2025-03-01T00:00:00Z",
+  },
+  {
+    id: "f6a7b8c9-d0e1-2345-fabc-456789012345",
+    phone: "+251955555555",
+    full_name: "Dawit Eshetu",
+    role_id: "r002",
+    role_name: "Receptionist",
+    is_active: false,
+    created_at: "2025-01-20T00:00:00Z",
+  },
 ];
 
 export const mockRoles = [
@@ -35,6 +71,8 @@ export const mockRoles = [
       { module: "job_cards", can_create: true, can_read: true, can_update: true, can_delete: false },
       { module: "performa", can_create: true, can_read: true, can_update: false, can_delete: false },
       { module: "owners", can_create: true, can_read: true, can_update: true, can_delete: false },
+      { module: "vehicles", can_read: true, can_update: false, can_delete: false, can_create: false },
+      { module: "users", can_read: true, can_update: false, can_delete: false, can_create: false },
     ],
     created_at: "2025-01-10T00:00:00Z",
   },
@@ -44,8 +82,31 @@ export const mockRoles = [
     is_superadmin: false,
     permissions: [
       { module: "inventory", can_create: true, can_read: true, can_update: true, can_delete: false },
+      { module: "tools", can_read: true, can_update: false, can_delete: false, can_create: false },
+      { module: "job_cards", can_read: true, can_update: false, can_delete: false, can_create: false },
     ],
     created_at: "2025-01-10T00:00:00Z",
+  },
+  {
+    id: "r004",
+    name: "Senior Mechanic",
+    is_superadmin: false,
+    permissions: [
+      { module: "job_cards", can_create: false, can_read: true, can_update: true, can_delete: false },
+      { module: "tools", can_create: false, can_read: true, can_update: true, can_delete: false },
+      { module: "inventory", can_read: true, can_update: false, can_delete: false, can_create: false },
+    ],
+    created_at: "2025-01-20T00:00:00Z",
+  },
+  {
+    id: "r005",
+    name: "Junior Mechanic",
+    is_superadmin: false,
+    permissions: [
+      { module: "job_cards", can_read: true, can_update: true, can_delete: false, can_create: false },
+      { module: "tools", can_read: true, can_update: false, can_delete: false, can_create: false },
+    ],
+    created_at: "2025-02-01T00:00:00Z",
   },
 ];
 

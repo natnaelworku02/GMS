@@ -34,3 +34,16 @@ export interface TokenResponse {
   refresh_token: string;
   token_type: string;
 }
+
+export interface CreateUserDTO {
+  full_name: string;
+  phone: string;
+  password: string;
+  role_id: string;
+}
+
+export interface UpdateUserDTO {
+  full_name?: string;
+  role_id?: string;
+  is_active?: boolean;
+}

@@ -32,6 +32,18 @@ export const PART_NAMES = [
   { value: "peripheral", label: "Peripheral" },
 ];
 
+export const MODULES = [
+  { key: "job_cards", labelKey: "nav.jobCards" },
+  { key: "performa", labelKey: "nav.performas" },
+  { key: "inventory", labelKey: "nav.inventory" },
+  { key: "tools", labelKey: "nav.tools" },
+  { key: "employees", labelKey: "nav.employees" },
+  { key: "users", labelKey: "nav.users" },
+  { key: "settings", labelKey: "nav.settings" },
+] as const;
+
+export const ACTIONS = ["create", "read", "update", "delete"] as const;
+
 export const CONDITION_STATES = [
   { value: "available", label: "Available" },
   { value: "damaged", label: "Damaged" },

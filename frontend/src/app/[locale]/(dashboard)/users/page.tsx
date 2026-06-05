@@ -1,0 +1,127 @@
+"use client";
+
+import { useState } from "react";
+import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
+import { useGetUsersQuery } from "@/features/auth/api";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { DataTable, type Column } from "@/components/shared/DataTable";
+import { Can } from "@/features/auth/components/Can";
+import type { User } from "@/features/auth/types";
+
+export default function UsersPage() {
+  const t = useTranslations("users");
+  const tnav = useTranslations("nav");
+  const router = useRouter();
+  const [search, setSearch] = useState("");
+  const { data: users = [], isLoading } = useGetUsersQuery();
+
+  const filtered = search
+    ? users.filter(
+        (u) =>
+          u.full_name.toLowerCase().includes(search.toLowerCase()) ||
+          u.phone.includes(search),
+      )
+    : users;
+
+  const columns: Column<User>[] = [
+    {
+      key: "full_name",
+      header: t("fullName"),
+      render: (u) => (
+        <span className="font-medium">{u.full_name}</span>
+      ),
+      sortable: true,
+    },
+    {
+      key: "phone",
+      header: t("phone"),
+      render: (u) => <span className="text-muted-foreground">{u.phone}</span>,
+      sortable: true,
+    },
+    {
+      key: "role_name",
+      header: t("role"),
+      render: (u) => (
+        <span className="rounded-md bg-muted px-2 py-0.5 text-xs font-medium">
+          {u.role_name || "—"}
+        </span>
+      ),
+    },
+    {
+      key: "is_active",
+      header: t("isActive"),
+      render: (u) =>
+        u.is_active ? (
+          <span className="inline-flex items-center gap-1.5 text-xs text-[oklch(0.62_0.17_145)]">
+            <span className="h-1.5 w-1.5 rounded-full bg-current" />
+            Active
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span className="h-1.5 w-1.5 rounded-full bg-current" />
+            Inactive
+          </span>
+        ),
+    },
+    {
+      key: "created_at",
+      header: "Created",
+      render: (u) => (
+        <span className="text-muted-foreground">
+          {new Date(u.created_at).toLocaleDateString()}
+        </span>
+      ),
+      sortable: true,
+    },
+    {
+      key: "actions",
+      header: "",
+      render: (u) => (
+        <Can permission="users.update">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              router.push(`/users/${u.id}`);
+            }}
+            className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+          >
+            Edit
+          </button>
+        </Can>
+      ),
+      className: "w-16 text-right",
+    },
+  ];
+
+  return (
+    <div className="mx-auto max-w-4xl">
+      <PageHeader
+        title={t("title")}
+        description={`${users.length} user${users.length !== 1 ? "s" : ""}`}
+        action={
+          <Can permission="users.create">
+            <button
+              onClick={() => router.push("/users/new")}
+              className="inline-flex h-9 items-center justify-center rounded-lg bg-foreground px-4 text-sm font-medium text-background transition-all hover:opacity-90"
+            >
+              {t("create")}
+            </button>
+          </Can>
+        }
+      />
+
+      <div className="mt-6">
+        <DataTable<User>
+          columns={columns}
+          data={filtered}
+          isLoading={isLoading}
+          emptyMessage="No users found"
+          searchPlaceholder={t("fullName") + "..."}
+          searchValue={search}
+          onSearch={setSearch}
+        />
+      </div>
+    </div>
+  );
+}
