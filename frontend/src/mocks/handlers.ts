@@ -136,10 +136,14 @@ export const handlers = [
   }),
 
   http.post(`${base}/owners`, async ({ request }) => {
-    const body = (await request.json()) as { name: string; phone: string };
+    const body = (await request.json()) as { name: string; phone: string; phone_secondary?: string; email?: string; owner_type?: string };
     const newOwner = {
       id: crypto.randomUUID(),
-      ...body,
+      name: body.name,
+      phone: body.phone,
+      phone_secondary: body.phone_secondary || "",
+      email: body.email || "",
+      owner_type: body.owner_type || "individual",
       created_at: new Date().toISOString(),
     };
     return HttpResponse.json(newOwner, { status: 201 });
@@ -197,16 +201,27 @@ export const handlers = [
   http.post(`${base}/job-cards`, async ({ request }) => {
     const body = (await request.json()) as Record<string, unknown>;
     const now = new Date().toISOString();
+    const enrichedAssignments = ((body.staff_assignments || []) as { employee_id: string; role: string }[]).map(
+      (a) => {
+        const emp = mockEmployees.find((e) => e.id === a.employee_id);
+        return {
+          employee_id: a.employee_id,
+          employee_name: emp?.name || "",
+          employee_job_title: emp?.job_title || "",
+          role: a.role,
+        };
+      },
+    );
     const newCard = {
       id: crypto.randomUUID(),
       ...body,
+      staff_assignments: enrichedAssignments,
       status: "pending_inspection",
       created_at: now,
       updated_at: now,
       vehicle: mockVehicles.find((v) => v.id === body.vehicle_id) || null,
       owner: mockOwners.find((o) => o.id === body.owner_id) || null,
-      mechanics: [],
-      conditions: [],
+      conditions: (body.conditions || []),
     };
     return HttpResponse.json(newCard, { status: 201 });
   }),

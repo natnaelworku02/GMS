@@ -17,6 +17,42 @@ export const mockUsers = [
     is_active: true,
     created_at: "2025-01-15T00:00:00Z",
   },
+  {
+    id: "c3d4e5f6-a7b8-9012-cdef-123456789012",
+    phone: "+251922222222",
+    full_name: "Mekdes Worku",
+    role_id: "r004",
+    role_name: "Senior Mechanic",
+    is_active: true,
+    created_at: "2025-02-01T00:00:00Z",
+  },
+  {
+    id: "d4e5f6a7-b8c9-0123-defa-234567890123",
+    phone: "+251933333333",
+    full_name: "Yonas Tadesse",
+    role_id: "r003",
+    role_name: "Store Manager",
+    is_active: true,
+    created_at: "2025-02-10T00:00:00Z",
+  },
+  {
+    id: "e5f6a7b8-c9d0-1234-efab-345678901234",
+    phone: "+251944444444",
+    full_name: "Hanna Gebre",
+    role_id: "r005",
+    role_name: "Junior Mechanic",
+    is_active: true,
+    created_at: "2025-03-01T00:00:00Z",
+  },
+  {
+    id: "f6a7b8c9-d0e1-2345-fabc-456789012345",
+    phone: "+251955555555",
+    full_name: "Dawit Eshetu",
+    role_id: "r002",
+    role_name: "Receptionist",
+    is_active: false,
+    created_at: "2025-01-20T00:00:00Z",
+  },
 ];
 
 export const mockRoles = [
@@ -35,6 +71,8 @@ export const mockRoles = [
       { module: "job_cards", can_create: true, can_read: true, can_update: true, can_delete: false },
       { module: "performa", can_create: true, can_read: true, can_update: false, can_delete: false },
       { module: "owners", can_create: true, can_read: true, can_update: true, can_delete: false },
+      { module: "vehicles", can_read: true, can_update: false, can_delete: false, can_create: false },
+      { module: "users", can_read: true, can_update: false, can_delete: false, can_create: false },
     ],
     created_at: "2025-01-10T00:00:00Z",
   },
@@ -44,8 +82,31 @@ export const mockRoles = [
     is_superadmin: false,
     permissions: [
       { module: "inventory", can_create: true, can_read: true, can_update: true, can_delete: false },
+      { module: "tools", can_read: true, can_update: false, can_delete: false, can_create: false },
+      { module: "job_cards", can_read: true, can_update: false, can_delete: false, can_create: false },
     ],
     created_at: "2025-01-10T00:00:00Z",
+  },
+  {
+    id: "r004",
+    name: "Senior Mechanic",
+    is_superadmin: false,
+    permissions: [
+      { module: "job_cards", can_create: false, can_read: true, can_update: true, can_delete: false },
+      { module: "tools", can_create: false, can_read: true, can_update: true, can_delete: false },
+      { module: "inventory", can_read: true, can_update: false, can_delete: false, can_create: false },
+    ],
+    created_at: "2025-01-20T00:00:00Z",
+  },
+  {
+    id: "r005",
+    name: "Junior Mechanic",
+    is_superadmin: false,
+    permissions: [
+      { module: "job_cards", can_read: true, can_update: true, can_delete: false, can_create: false },
+      { module: "tools", can_read: true, can_update: false, can_delete: false, can_create: false },
+    ],
+    created_at: "2025-02-01T00:00:00Z",
   },
 ];
 
@@ -56,14 +117,14 @@ export const mockEmployees = [
 ];
 
 export const mockOwners = [
-  { id: "o001", name: "Kebede Abebe", phone: "+251911200001", created_at: "2025-02-01T00:00:00Z" },
-  { id: "o002", name: "Sara Tadesse", phone: "+251911200002", created_at: "2025-02-15T00:00:00Z" },
+  { id: "o001", name: "Kebede Abebe", phone: "+251911200001", phone_secondary: "+251911200011", email: "kebede@email.com", owner_type: "individual", created_at: "2025-02-01T00:00:00Z" },
+  { id: "o002", name: "Sara Tadesse", phone: "+251911200002", phone_secondary: "", email: "", owner_type: "individual", created_at: "2025-02-15T00:00:00Z" },
 ];
 
 export const mockVehicles = [
-  { id: "v001", owner_id: "o001", model: "Toyota Hilux 2020", type: "Pickup", engine_number: "ENG-001", chassis_number: "CHS-001", plate_number: "AA-1234", created_at: "2025-02-01T00:00:00Z" },
-  { id: "v002", owner_id: "o002", model: "Isuzu D-Max 2022", type: "Pickup", engine_number: "ENG-002", chassis_number: "CHS-002", plate_number: "AA-5678", created_at: "2025-02-15T00:00:00Z" },
-  { id: "v003", owner_id: "o001", model: "Nissan Navara 2021", type: "Pickup", engine_number: "ENG-003", chassis_number: "CHS-003", plate_number: "BB-1234", created_at: "2025-03-01T00:00:00Z" },
+  { id: "v001", owner_id: "o001", model: "Toyota Hilux 2020", type: "Pickup", engine_number: "ENG-001", chassis_number: "CHS-001", plate_number: "AA-1234", current_mileage: 45000, created_at: "2025-02-01T00:00:00Z" },
+  { id: "v002", owner_id: "o002", model: "Isuzu D-Max 2022", type: "Pickup", engine_number: "ENG-002", chassis_number: "CHS-002", plate_number: "AA-5678", current_mileage: 32000, created_at: "2025-02-15T00:00:00Z" },
+  { id: "v003", owner_id: "o001", model: "Nissan Navara 2021", type: "Pickup", engine_number: "ENG-003", chassis_number: "CHS-003", plate_number: "BB-1234", current_mileage: 28000, created_at: "2025-03-01T00:00:00Z" },
 ];
 
 export const mockJobCards = [
@@ -84,11 +145,16 @@ export const mockJobCards = [
     updated_at: "2025-03-10T14:00:00Z",
     vehicle: mockVehicles[0],
     owner: mockOwners[0],
-    mechanics: [mockEmployees[0], mockEmployees[1]],
+    staff_assignments: [
+      { employee_id: "e001", employee_name: "Abebe Kebede", employee_job_title: "Senior Mechanic", role: "mechanic" },
+      { employee_id: "e002", employee_name: "Lemma Hailu", employee_job_title: "Mechanic", role: "disassembler" },
+    ],
     conditions: [
-      { id: "c001", job_card_id: "jc001", part_name: "trunk", condition_state: "dent" },
-      { id: "c002", job_card_id: "jc001", part_name: "lh_body", condition_state: "scratch" },
-      { id: "c003", job_card_id: "jc001", part_name: "interior", condition_state: "available" },
+      { id: "c001", job_card_id: "jc001", part_name: "trunk_steering_oil_cup", condition_state: "dent" },
+      { id: "c002", job_card_id: "jc001", part_name: "front_bumper", condition_state: "scratch" },
+      { id: "c003", job_card_id: "jc001", part_name: "int_speaker", condition_state: "crack" },
+      { id: "c004", job_card_id: "jc001", part_name: "rh_side_mirror", condition_state: "broken" },
+      { id: "c005", job_card_id: "jc001", part_name: "front_head_lamp_lh", condition_state: "available" },
     ],
   },
   {
@@ -108,10 +174,13 @@ export const mockJobCards = [
     updated_at: "2025-03-15T09:00:00Z",
     vehicle: mockVehicles[1],
     owner: mockOwners[1],
-    mechanics: [mockEmployees[2]],
+    staff_assignments: [
+      { employee_id: "e003", employee_name: "Tigist Wold", employee_job_title: "Electrician", role: "painter" },
+    ],
     conditions: [
-      { id: "c004", job_card_id: "jc002", part_name: "front_body", condition_state: "broken" },
-      { id: "c005", job_card_id: "jc002", part_name: "rh_body", condition_state: "damaged" },
+      { id: "c006", job_card_id: "jc002", part_name: "front_windshield", condition_state: "broken" },
+      { id: "c007", job_card_id: "jc002", part_name: "rh_door_handle_fr", condition_state: "damaged" },
+      { id: "c008", job_card_id: "jc002", part_name: "trunk_battery_with_cover", condition_state: "not_available" },
     ],
   },
 ];

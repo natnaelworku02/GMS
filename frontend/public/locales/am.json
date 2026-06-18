@@ -35,10 +35,12 @@
   "nav": {
     "dashboard": "ዳሽቦርድ",
     "jobCards": "የሥራ ካርዶች",
+    "owners": "ባለቤቶች",
+    "vehicles": "ተሽከርካሪዎች",
+    "employees": "ሰራተኞች",
     "performas": "ፐርፎርማዎች",
     "inventory": "ክምችት",
     "tools": "መሳሪያዎች",
-    "employees": "ሰራተኞች",
     "users": "ተጠቃሚዎች",
     "roles": "ሚናዎች",
     "settings": "ቅንብሮች",
@@ -69,13 +71,20 @@
     "in_repair": "በጥገና ላይ",
     "waiting_for_parts": "መለዋወጫ በመጠበቅ ላይ",
     "ready_for_testing": "ለፍተሻ ዝግጁ",
-    "completed": "ተጠናቋል"
+    "completed": "ተጠናቋል",
+    "assign_staff": "ሰራተኛ መድብ"
   },
   "owners": {
     "title": "ባለቤቶች",
     "create": "አዲስ ባለቤት",
+    "edit": "ባለቤት አስተካክል",
     "name": "ስም",
-    "phone": "ስልክ"
+    "phone": "ስልክ",
+    "phoneSecondary": "ሁለተኛ ስልክ",
+    "email": "ኢሜይል",
+    "ownerType": "የባለቤት አይነት",
+    "vehicles": "ተሽከርካሪዎች",
+    "noVehicles": "ምንም ተሽከርካሪ አልተመዘገበም"
   },
   "vehicles": {
     "title": "ተሽከርካሪዎች",
@@ -84,7 +93,9 @@
     "type": "አይነት",
     "plateNumber": "የታርጋ ቁጥር",
     "engineNumber": "የሞተር ቁጥር",
-    "chassisNumber": "የቻሲስ ቁጥር"
+    "chassisNumber": "የቻሲስ ቁጥር",
+    "currentMileage": "አሁን ያለው ማይልጅ (ኪሜ)",
+    "owner": "ባለቤት"
   },
   "performas": {
     "title": "ፐርፎርማዎች",
@@ -158,7 +169,8 @@
     "jobTitle": "የሥራ መደብ",
     "phone": "ስልክ",
     "active": "ንቁ",
-    "inactive": "እንቅስቃሴ የለም"
+    "inactive": "እንቅስቃሴ የለም",
+    "search": "ሰራተኞችን ፈልግ..."
   },
   "users": {
     "title": "ተጠቃሚዎች",

@@ -35,10 +35,12 @@
   "nav": {
     "dashboard": "Dashboard",
     "jobCards": "Job Cards",
+    "owners": "Owners",
+    "vehicles": "Vehicles",
+    "employees": "Employees",
     "performas": "Performas",
     "inventory": "Inventory",
     "tools": "Tools",
-    "employees": "Employees",
     "users": "Users",
     "roles": "Roles",
     "settings": "Settings",
@@ -69,22 +71,8 @@
     "in_repair": "In Repair",
     "waiting_for_parts": "Waiting for Parts",
     "ready_for_testing": "Ready for Testing",
-    "completed": "Completed"
-  },
-  "owners": {
-    "title": "Owners",
-    "create": "New Owner",
-    "name": "Name",
-    "phone": "Phone"
-  },
-  "vehicles": {
-    "title": "Vehicles",
-    "create": "New Vehicle",
-    "model": "Model",
-    "type": "Type",
-    "plateNumber": "Plate Number",
-    "engineNumber": "Engine Number",
-    "chassisNumber": "Chassis Number"
+    "completed": "Completed",
+    "assign_staff": "Assign Staff"
   },
   "performas": {
     "title": "Performas",
@@ -158,7 +146,31 @@
     "jobTitle": "Job Title",
     "phone": "Phone",
     "active": "Active",
-    "inactive": "Inactive"
+    "inactive": "Inactive",
+    "search": "Search employees..."
+  },
+  "owners": {
+    "title": "Owners",
+    "create": "New Owner",
+    "edit": "Edit Owner",
+    "name": "Name",
+    "phone": "Phone",
+    "phoneSecondary": "Phone (Secondary)",
+    "email": "Email",
+    "ownerType": "Owner Type",
+    "vehicles": "Vehicles",
+    "noVehicles": "No vehicles registered"
+  },
+  "vehicles": {
+    "title": "Vehicles",
+    "create": "New Vehicle",
+    "model": "Model",
+    "type": "Type",
+    "plateNumber": "Plate Number",
+    "engineNumber": "Engine Number",
+    "chassisNumber": "Chassis Number",
+    "currentMileage": "Current Mileage (km)",
+    "owner": "Owner"
   },
   "users": {
     "title": "Users",

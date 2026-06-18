@@ -6,6 +6,7 @@ import { useRouter } from "@/i18n/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { logout as logoutAction } from "@/features/auth/authSlice";
 import { storage } from "@/lib/storage";
+import { LogOut, ChevronDown } from "lucide-react";
 
 export function UserMenu() {
   const t = useTranslations("auth");
@@ -44,15 +45,17 @@ export function UserMenu() {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+        className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
       >
-        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-xs font-semibold">
+        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-500/10 text-xs font-semibold text-indigo-500">
           {initials}
         </span>
+        <span className="hidden sm:inline text-sm">{user.full_name}</span>
+        <ChevronDown size={12} className="hidden sm:block text-muted-foreground/50" />
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-1 w-56 rounded-lg border bg-card p-1 shadow-lg">
+        <div className="absolute right-0 top-full z-50 mt-1 w-56 rounded-xl border bg-card p-1 shadow-lg shadow-black/5">
           <div className="px-3 py-2">
             <p className="text-sm font-medium">{user.full_name}</p>
             <p className="text-xs text-muted-foreground">{user.role_name || user.role_id}</p>
@@ -62,7 +65,7 @@ export function UserMenu() {
             onClick={handleLogout}
             className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+            <LogOut size={15} />
             {t("logout")}
           </button>
         </div>
