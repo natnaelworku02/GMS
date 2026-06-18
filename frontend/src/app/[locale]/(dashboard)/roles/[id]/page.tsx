@@ -8,6 +8,8 @@ import {
   useUpdatePermissionsMutation,
 } from "@/features/auth/api";
 import { PermissionMatrix } from "@/features/auth/roles/components/PermissionMatrix";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, Loader2, Save } from "lucide-react";
 import type { PermissionSet } from "@/features/auth/types";
 
 type Props = {
@@ -21,7 +23,6 @@ export default function RoleDetailPage({ params }: Props) {
 
   const { data: role, isLoading } = useGetRoleQuery(id, { skip: isNew });
   const [updatePermissions, { isLoading: isSaving }] = useUpdatePermissionsMutation();
-
 
   const [permissions, setPermissions] = useState<PermissionSet[] | null>(null);
 
@@ -39,7 +40,7 @@ export default function RoleDetailPage({ params }: Props) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -50,24 +51,22 @@ export default function RoleDetailPage({ params }: Props) {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <button
-        onClick={() => router.push("/roles")}
-        className="mb-6 text-sm text-muted-foreground hover:text-foreground"
-      >
-        ← Back to Roles
-      </button>
+      <Button variant="ghost" onClick={() => router.push("/roles")} className="mb-6">
+        <ArrowLeft size={15} />
+        Back to Roles
+      </Button>
 
       <div className="mb-6">
         <h1 className="text-2xl font-semibold tracking-tight">
           {role?.name || "Role"}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {role?.is_superadmin ? "⭐ Super Admin — all permissions granted" : "Standard role"}
+          {role?.is_superadmin ? "Super Admin — all permissions granted" : "Standard role"}
         </p>
       </div>
 
       {role?.is_superadmin ? (
-        <div className="rounded-xl border bg-card p-6">
+        <div className="rounded-xl border bg-card p-6 shadow-sm">
           <p className="text-sm text-muted-foreground">
             Super Admin roles bypass all permission checks. No permission configuration needed.
           </p>
@@ -82,13 +81,11 @@ export default function RoleDetailPage({ params }: Props) {
             />
           </div>
 
-          <button
-            onClick={handleSave}
-            disabled={isSaving}
-            className="inline-flex h-10 items-center justify-center rounded-lg bg-foreground px-5 text-sm font-medium text-background transition-all hover:opacity-90 disabled:pointer-events-none disabled:opacity-50"
-          >
-            {isSaving ? "Saving..." : "Save Permissions"}
-          </button>
+          <Button onClick={handleSave} disabled={isSaving}>
+            {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
+            <Save size={15} />
+            Save Permissions
+          </Button>
         </div>
       )}
     </div>

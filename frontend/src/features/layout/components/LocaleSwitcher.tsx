@@ -3,6 +3,7 @@
 import { useLocale } from "next-intl";
 import { useRouter, usePathname } from "@/i18n/navigation";
 import { useTransition } from "react";
+import { Languages } from "lucide-react";
 
 export function LocaleSwitcher() {
   const locale = useLocale();
@@ -21,10 +22,11 @@ export function LocaleSwitcher() {
     <button
       onClick={toggle}
       disabled={isPending}
-      className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-50"
+      className="inline-flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-50"
       aria-label="Switch language"
     >
-      <span className="text-xs font-semibold">{locale === "en" ? "አማ" : "EN"}</span>
+      <Languages size={14} />
+      <span className="text-xs font-medium">{locale === "en" ? "አማ" : "EN"}</span>
     </button>
   );
 }

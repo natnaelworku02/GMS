@@ -3,6 +3,8 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createRoleSchema, type CreateRoleFormData } from "../schemas";
+import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 
 type Props = {
   defaultValues?: Partial<CreateRoleFormData>;
@@ -29,7 +31,7 @@ export function RoleForm({ defaultValues, onSubmit, isSubmitting }: Props) {
         <input
           id="name"
           {...register("name")}
-          className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         />
         {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
       </div>
@@ -39,19 +41,16 @@ export function RoleForm({ defaultValues, onSubmit, isSubmitting }: Props) {
           id="is_superadmin"
           type="checkbox"
           {...register("is_superadmin")}
-          className="h-4 w-4 rounded border-input text-foreground focus:ring-ring"
+          className="h-4 w-4 rounded border-input text-indigo-500 focus:ring-indigo-500"
         />
         <label htmlFor="is_superadmin" className="text-sm">Super Admin (bypasses all permissions)</label>
       </div>
 
       <div className="flex gap-3 pt-2">
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="inline-flex h-10 items-center justify-center rounded-lg bg-foreground px-5 text-sm font-medium text-background transition-all hover:opacity-90 disabled:pointer-events-none disabled:opacity-50"
-        >
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
           {isSubmitting ? "Saving..." : "Create Role"}
-        </button>
+        </Button>
       </div>
     </form>
   );

@@ -4,6 +4,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createUserSchema, type CreateUserFormData } from "../schemas";
 import { useGetRolesQuery } from "@/features/auth/api";
+import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 
 type Props = {
   defaultValues?: Partial<CreateUserFormData>;
@@ -33,7 +35,7 @@ export function UserForm({ defaultValues, onSubmit, isSubmitting, mode }: Props)
         <input
           id="full_name"
           {...register("full_name")}
-          className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         />
         {errors.full_name && <p className="text-xs text-destructive">{errors.full_name.message}</p>}
       </div>
@@ -44,7 +46,7 @@ export function UserForm({ defaultValues, onSubmit, isSubmitting, mode }: Props)
           id="phone"
           {...register("phone")}
           placeholder="+251..."
-          className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         />
         {errors.phone && <p className="text-xs text-destructive">{errors.phone.message}</p>}
       </div>
@@ -54,7 +56,7 @@ export function UserForm({ defaultValues, onSubmit, isSubmitting, mode }: Props)
         <select
           id="role_id"
           {...register("role_id")}
-          className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <option value="">Select a role</option>
           {roles?.map((r) => (
@@ -71,7 +73,7 @@ export function UserForm({ defaultValues, onSubmit, isSubmitting, mode }: Props)
             id="password"
             type="password"
             {...register("password")}
-            className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           />
           {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
         </div>
@@ -82,19 +84,16 @@ export function UserForm({ defaultValues, onSubmit, isSubmitting, mode }: Props)
           id="is_active"
           type="checkbox"
           {...register("is_active")}
-          className="h-4 w-4 rounded border-input text-foreground focus:ring-ring"
+          className="h-4 w-4 rounded border-input text-indigo-500 focus:ring-indigo-500"
         />
         <label htmlFor="is_active" className="text-sm">Active</label>
       </div>
 
       <div className="flex gap-3 pt-2">
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="inline-flex h-10 items-center justify-center rounded-lg bg-foreground px-5 text-sm font-medium text-background transition-all hover:opacity-90 disabled:pointer-events-none disabled:opacity-50"
-        >
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
           {isSubmitting ? "Saving..." : mode === "create" ? "Create User" : "Save Changes"}
-        </button>
+        </Button>
       </div>
     </form>
   );
