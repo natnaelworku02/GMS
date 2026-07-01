@@ -29,7 +29,6 @@ export default function EditOwnerPage({ params }: { params: Promise<{ id: string
     formState: { errors },
   } = useForm<OwnerFormData>({
     resolver: zodResolver(ownerSchema),
-    defaultValues: { owner_type: "individual", phone_secondary: "", email: "" },
   });
 
   useEffect(() => {
@@ -37,9 +36,6 @@ export default function EditOwnerPage({ params }: { params: Promise<{ id: string
       reset({
         name: owner.name,
         phone: owner.phone,
-        phone_secondary: owner.phone_secondary || "",
-        email: owner.email || "",
-        owner_type: owner.owner_type,
       });
     }
   }, [owner, reset]);
@@ -53,9 +49,6 @@ export default function EditOwnerPage({ params }: { params: Promise<{ id: string
         body: {
           name: data.name,
           phone: data.phone,
-          phone_secondary: data.phone_secondary || undefined,
-          email: data.email || undefined,
-          owner_type: data.owner_type,
         },
       }).unwrap();
       router.push("/owners");
@@ -80,32 +73,10 @@ export default function EditOwnerPage({ params }: { params: Promise<{ id: string
           <Input id="name" {...register("name")} />
           {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="phone">{t("phone")}</Label>
-            <Input id="phone" {...register("phone")} />
-            {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="phone2">{t("phoneSecondary")}</Label>
-            <Input id="phone2" {...register("phone_secondary")} />
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">{t("email")}</Label>
-            <Input id="email" type="email" {...register("email")} />
-            {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="type">{t("ownerType")}</Label>
-            <select id="type" {...register("owner_type")}
-              className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-              <option value="individual">Individual</option>
-              <option value="corporate">Corporate Fleet</option>
-              <option value="insurance">Insurance Company</option>
-            </select>
-          </div>
+        <div className="space-y-2">
+          <Label htmlFor="phone">{t("phone")}</Label>
+          <Input id="phone" {...register("phone")} />
+          {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
         </div>
         {errors.root && <p className="text-sm text-destructive">{errors.root.message}</p>}
         <Button type="submit" disabled={updating}>

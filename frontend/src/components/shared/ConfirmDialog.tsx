@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,6 +19,8 @@ type Props = {
   cancelLabel?: string;
   onConfirm: () => void;
   variant?: "default" | "destructive";
+  children?: ReactNode;
+  disableConfirm?: boolean;
 };
 
 export function ConfirmDialog({
@@ -29,6 +32,8 @@ export function ConfirmDialog({
   cancelLabel = "Cancel",
   onConfirm,
   variant = "default",
+  children,
+  disableConfirm,
 }: Props) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -37,10 +42,12 @@ export function ConfirmDialog({
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
+        {children}
         <AlertDialogFooter>
           <AlertDialogCancel>{cancelLabel}</AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
+            disabled={disableConfirm}
             className={
               variant === "destructive"
                 ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"

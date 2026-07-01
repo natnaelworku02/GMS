@@ -16,9 +16,6 @@ export const employeeUpdateSchema = z.object({
 export const ownerSchema = z.object({
   name: z.string().min(1, "Name is required"),
   phone: z.string().min(1, "Phone is required"),
-  phone_secondary: z.string().optional(),
-  email: z.string().optional(),
-  owner_type: z.enum(["individual", "corporate", "insurance"]),
 });
 
 export const vehicleCreateSchema = z.object({
@@ -28,7 +25,6 @@ export const vehicleCreateSchema = z.object({
   plate_number: z.string().min(1, "Plate number is required"),
   engine_number: z.string().min(1, "Engine number is required"),
   chassis_number: z.string().min(1, "Chassis number is required"),
-  current_mileage: z.number().int().positive().optional(),
 });
 
 export const jobCardCreateSchema = z.object({
@@ -41,12 +37,7 @@ export const jobCardCreateSchema = z.object({
   description: z.string().min(1, "Description is required"),
   remarks: z.string().optional(),
   requested_materials: z.string().optional(),
-  staff_assignments: z.array(
-    z.object({
-      employee_id: z.string().min(1),
-      role: z.string().min(1),
-    }),
-  ),
+  mechanic_ids: z.array(z.string().min(1)).optional(),
   conditions: z.array(
     z.object({
       part_name: z.string(),
@@ -65,9 +56,25 @@ export const jobCardUpdateSchema = z.object({
   requested_materials: z.string().optional(),
 });
 
+export const performaCreateSchema = z.object({
+  job_card_id: z.string().min(1, "Job card is required"),
+  client_email: z.string().optional(),
+  line_items: z
+    .array(
+      z.object({
+        type: z.enum(["labor", "part"]),
+        description: z.string().min(1, "Description is required"),
+        quantity: z.number().int().positive(),
+        unit_price: z.number().min(0),
+      }),
+    )
+    .min(1, "At least one line item is required"),
+});
+
 export type EmployeeCreateFormData = z.input<typeof employeeCreateSchema>;
 export type EmployeeUpdateFormData = z.input<typeof employeeUpdateSchema>;
 export type OwnerFormData = z.input<typeof ownerSchema>;
 export type VehicleCreateFormData = z.input<typeof vehicleCreateSchema>;
 export type JobCardCreateFormData = z.input<typeof jobCardCreateSchema>;
 export type JobCardUpdateFormData = z.input<typeof jobCardUpdateSchema>;
+export type PerformaCreateFormData = z.input<typeof performaCreateSchema>;

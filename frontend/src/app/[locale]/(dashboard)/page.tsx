@@ -29,12 +29,10 @@ export default function DashboardPage() {
         <DashboardCard
           title={tnav("jobCards")}
           description="Create and manage repair job cards"
-          comingSoon
         />
         <DashboardCard
           title={tnav("performas")}
           description="Generate and send performa invoices"
-          comingSoon
         />
         <DashboardCard
           title={tnav("inventory")}

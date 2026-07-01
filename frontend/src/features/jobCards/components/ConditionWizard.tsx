@@ -12,6 +12,11 @@ interface Props {
   conditions: VehicleConditionInput[];
   onChange: (conditions: VehicleConditionInput[]) => void;
   readOnly?: boolean;
+  showStepIndicator?: boolean;
+  step?: number;
+  onStepChange?: (step: number) => void;
+  onShowSummary?: (show: boolean) => void;
+  showSummary?: boolean;
 }
 
 function StatePicker({
@@ -74,11 +79,15 @@ function StatePicker({
   );
 }
 
-export function ConditionWizard({ conditions, onChange, readOnly }: Props) {
-  const [step, setStep] = useState(0);
+export function ConditionWizard({ conditions, onChange, readOnly, showStepIndicator = true, step: externalStep, onStepChange, onShowSummary, showSummary: externalShowSummary }: Props) {
+  const [internalStep, setInternalStep] = useState(0);
+  const [internalShowSummary, setInternalShowSummary] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerPart, setPickerPart] = useState<{ value: string; label: string } | null>(null);
-  const [showSummary, setShowSummary] = useState(false);
+  const step = externalStep ?? internalStep;
+  const showSummary = externalShowSummary ?? internalShowSummary;
+  const setStep = onStepChange ?? setInternalStep;
+  const setShowSummary = onShowSummary ?? setInternalShowSummary;
 
   const getState = useCallback(
     (partName: string) =>
@@ -223,42 +232,43 @@ export function ConditionWizard({ conditions, onChange, readOnly }: Props) {
 
   return (
     <div className="space-y-4">
-      {/* Step indicator */}
-      <div className="flex items-center gap-1.5">
-        {PART_SECTIONS.map((section, i) => (
-          <div key={section.sectionKey} className="flex items-center gap-1.5 flex-1">
-            <button
-              type="button"
-              onClick={() => setStep(i)}
-              className={cn(
-                "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-medium transition-all",
-                i === step
-                  ? "bg-indigo-500 text-white"
-                  : i < step
-                    ? "bg-emerald-500 text-white"
-                    : "bg-muted text-muted-foreground",
-              )}
-              title={section.sectionLabel}
-            >
-              {i < step ? <Check size={10} /> : i + 1}
-            </button>
-            {i < totalSections - 1 && (
-              <div
+      {showStepIndicator && (
+        <div className="flex items-center gap-1.5">
+          {PART_SECTIONS.map((section, i) => (
+            <div key={section.sectionKey} className="flex items-center gap-1.5 flex-1">
+              <button
+                type="button"
+                onClick={() => setStep(i)}
                 className={cn(
-                  "h-0.5 flex-1 rounded-full transition-all",
-                  i < step ? "bg-emerald-400" : "bg-muted",
+                  "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-medium transition-all",
+                  i === step
+                    ? "bg-indigo-500 text-white"
+                    : i < step
+                      ? "bg-emerald-500 text-white"
+                      : "bg-muted text-muted-foreground",
                 )}
-              />
-            )}
-          </div>
-        ))}
-      </div>
+                title={section.sectionLabel}
+              >
+                {i < step ? <Check size={10} /> : i + 1}
+              </button>
+              {i < totalSections - 1 && (
+                <div
+                  className={cn(
+                    "h-0.5 flex-1 rounded-full transition-all",
+                    i < step ? "bg-emerald-400" : "bg-muted",
+                  )}
+                />
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Section header */}
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-sm font-semibold">
-            Section {step + 1} of {totalSections} — {currentSection.sectionLabel}
+            {showStepIndicator ? `Section ${step + 1} of ${totalSections} — ` : ""}{currentSection.sectionLabel}
           </h3>
           <p className="text-xs text-muted-foreground">
             {currentSection.parts.length} parts
@@ -301,29 +311,31 @@ export function ConditionWizard({ conditions, onChange, readOnly }: Props) {
         })}
       </div>
 
-      {/* Navigation */}
-      <div className="flex items-center justify-between pt-2">
-        <div>
-          {step > 0 && (
-            <Button type="button" variant="outline" size="sm" onClick={() => setStep(step - 1)}>
-              <ChevronLeft size={14} />
-              Previous
-            </Button>
-          )}
+      {/* Navigation (internal mode only) */}
+      {!onStepChange && (
+        <div className="flex items-center justify-between pt-2">
+          <div>
+            {step > 0 && (
+              <Button type="button" variant="outline" size="sm" onClick={() => setStep(step - 1)}>
+                <ChevronLeft size={14} />
+                Previous
+              </Button>
+            )}
+          </div>
+          <div>
+            {step < totalSections - 1 ? (
+              <Button type="button" size="sm" onClick={() => setStep(step + 1)}>
+                Next
+                <ChevronRight size={14} />
+              </Button>
+            ) : (
+              <Button type="button" size="sm" variant="outline" onClick={() => setShowSummary(true)}>
+                Review Summary
+              </Button>
+            )}
+          </div>
         </div>
-        <div>
-          {step < totalSections - 1 ? (
-            <Button type="button" size="sm" onClick={() => setStep(step + 1)}>
-              Next
-              <ChevronRight size={14} />
-            </Button>
-          ) : (
-            <Button type="button" size="sm" variant="outline" onClick={() => setShowSummary(true)}>
-              Review Summary
-            </Button>
-          )}
-        </div>
-      </div>
+      )}
 
       {/* State picker dialog */}
       {pickerPart && (

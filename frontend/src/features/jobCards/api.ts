@@ -13,6 +13,17 @@ import type {
   VehicleCreateDTO,
 } from "./types";
 
+interface ToolCheckout {
+  id: string;
+  tool_id: string;
+  employee_id: string;
+  job_card_id: string;
+  quantity: number;
+  checked_out_at: string;
+  checked_in_at: string | null;
+  issued_by: string;
+}
+
 export const jobCardsApi = api.injectEndpoints({
   endpoints: (build) => ({
     // --- Owners ---
@@ -90,6 +101,12 @@ export const jobCardsApi = api.injectEndpoints({
       query: ({ id, body }) => ({ url: `/hr/employees/${id}`, method: "PATCH", body }),
       invalidatesTags: ["Employees"],
     }),
+
+    // --- Tool Checkouts ---
+    getToolCheckouts: build.query<ToolCheckout[], { job_card_id: string; unreturned_only?: string }>({
+      query: (params) => ({ url: "/tools/checkouts", params }),
+      providesTags: ["ToolCheckouts"],
+    }),
   }),
 });
 
@@ -110,4 +127,5 @@ export const {
   useGetEmployeeQuery,
   useCreateEmployeeMutation,
   useUpdateEmployeeMutation,
+  useGetToolCheckoutsQuery,
 } = jobCardsApi;

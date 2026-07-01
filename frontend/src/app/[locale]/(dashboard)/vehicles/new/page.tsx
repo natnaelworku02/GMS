@@ -74,7 +74,6 @@ export default function NewVehiclePage() {
         plate_number: data.plate_number,
         engine_number: data.engine_number,
         chassis_number: data.chassis_number,
-        current_mileage: data.current_mileage,
       }).unwrap();
       router.push("/vehicles");
     } catch {
@@ -143,11 +142,6 @@ export default function NewVehiclePage() {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="mileage">{t("currentMileage")}</Label>
-            <Input id="mileage" type="number" {...register("current_mileage")} />
-            {errors.current_mileage && <p className="text-sm text-destructive">{errors.current_mileage.message}</p>}
-          </div>
         </div>
 
         {errors.root && <p className="text-sm text-destructive">{errors.root.message}</p>}
