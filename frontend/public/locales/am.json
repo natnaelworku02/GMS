@@ -72,7 +72,16 @@
     "waiting_for_parts": "መለዋወጫ በመጠበቅ ላይ",
     "ready_for_testing": "ለፍተሻ ዝግጁ",
     "completed": "ተጠናቋል",
-    "assign_staff": "ሰራተኛ መድብ"
+    "assign_staff": "ሰራተኛ መድብ",
+    "signHere": "እዚህ ይፈርሙ",
+    "clearSignature": "አጽዳ",
+    "signatureRequired": "ፊርማ ያስፈልጋል",
+    "workshopSignature": "የዎርክሾፕ ፊርማ",
+    "toolCheckouts": "የመሳሪያ ቼክአውቶች",
+    "unreturnedTools": "ያልተመለሱ መሳሪያ(ዎች)",
+    "returnToolsFirst": "ከማጠናቀቅዎ በፊት ሁሉም መሳሪያዎች መመለስ አለባቸው",
+    "allToolsReturned": "ሁሉም መሳሪያዎች ተመልሰዋል",
+    "performas": "ፐርፎርማዎች"
   },
   "owners": {
     "title": "ባለቤቶች",

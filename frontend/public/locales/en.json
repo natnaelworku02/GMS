@@ -72,7 +72,16 @@
     "waiting_for_parts": "Waiting for Parts",
     "ready_for_testing": "Ready for Testing",
     "completed": "Completed",
-    "assign_staff": "Assign Staff"
+    "assign_staff": "Assign Staff",
+    "signHere": "Sign here",
+    "clearSignature": "Clear",
+    "signatureRequired": "Signature is required",
+    "workshopSignature": "Workshop Signature",
+    "toolCheckouts": "Tool Checkouts",
+    "unreturnedTools": "unreturned tool(s)",
+    "returnToolsFirst": "All tools must be returned before completing",
+    "allToolsReturned": "All tools returned",
+    "performas": "Performas"
   },
   "performas": {
     "title": "Performas",

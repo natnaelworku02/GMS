@@ -32,7 +32,7 @@ const navItems = [
   { href: "/owners", labelKey: "owners", icon: UserCircle, permission: "job_cards.read", disabled: false },
   { href: "/vehicles", labelKey: "vehicles", icon: Truck, permission: "job_cards.read", disabled: false },
   { href: "/employees", labelKey: "employees", icon: Briefcase, permission: "hr.read", disabled: false },
-  { href: "/performas", labelKey: "performas", icon: Receipt, permission: "performa.read", disabled: true },
+  { href: "/performas", labelKey: "performas", icon: Receipt, permission: "performa.read" },
   { href: "/inventory", labelKey: "inventory", icon: Package, permission: "inventory.read", disabled: true },
   { href: "/tools", labelKey: "tools", icon: Wrench, permission: "tools.read", disabled: true },
   { href: "/users", labelKey: "users", icon: Users, permission: "users.read", disabled: false },

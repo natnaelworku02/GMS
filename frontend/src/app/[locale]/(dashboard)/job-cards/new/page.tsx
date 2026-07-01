@@ -15,20 +15,24 @@ import {
 import { ConditionWizard } from "@/features/jobCards/components/ConditionWizard";
 import { MechanicAssign } from "@/features/jobCards/components/MechanicAssign";
 import { jobCardCreateSchema, type JobCardCreateFormData } from "@/lib/formSchemas";
+import { PART_SECTIONS } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Combobox } from "@/components/ui/combobox";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { ArrowLeft, Loader2, Plus } from "lucide-react";
-import type { VehicleConditionInput, StaffAssignmentInput } from "@/features/jobCards/types";
+import { cn } from "@/lib/utils";
+import { ArrowLeft, Loader2, Check, ChevronLeft, ChevronRight, Plus, User, Truck, Wrench, ClipboardCheck } from "lucide-react";
+import type { VehicleConditionInput } from "@/features/jobCards/types";
+
+const CONDITION_STEP_START = 2;
+
+const OUTER_STEPS = [
+  { label: "Owner", icon: User },
+  { label: "Vehicle", icon: Truck },
+  ...PART_SECTIONS.map((s) => ({ label: s.sectionLabel, icon: Wrench })),
+  { label: "Staff", icon: User },
+  { label: "Review", icon: ClipboardCheck },
+];
 
 export default function NewJobCardPage() {
   const t = useTranslations("jobCards");
@@ -38,6 +42,9 @@ export default function NewJobCardPage() {
   const { data: vehicles = [] } = useGetVehiclesQuery();
   const [createOwner, { isLoading: creatingOwner }] = useCreateOwnerMutation();
   const [createVehicle, { isLoading: creatingVehicle }] = useCreateVehicleMutation();
+
+  const [step, setStep] = useState(0);
+  const [cwStep, setCwStep] = useState(0);
 
   const {
     register,
@@ -55,14 +62,14 @@ export default function NewJobCardPage() {
       remarks: "",
       requested_materials: "",
       conditions: [],
-      staff_assignments: [],
+      mechanic_ids: [],
     },
   });
 
   const ownerId = watch("owner_id");
   const vehicleId = watch("vehicle_id");
   const conditions = watch("conditions");
-  const staffAssignments = watch("staff_assignments");
+  const mechanicIds = watch("mechanic_ids");
 
   const [showNewOwner, setShowNewOwner] = useState(false);
   const [newOwnerName, setNewOwnerName] = useState("");
@@ -88,6 +95,8 @@ export default function NewJobCardPage() {
     label: `${v.model} — ${v.plate_number}`,
     subtitle: v.type,
   }));
+
+  const totalSteps = OUTER_STEPS.length;
 
   const handleCreateOwner = useCallback(async () => {
     if (!newOwnerName.trim() || !newOwnerPhone.trim()) return;
@@ -142,7 +151,7 @@ export default function NewJobCardPage() {
         remarks: data.remarks || null,
         requested_materials: data.requested_materials || null,
         conditions: data.conditions.filter((c) => c.condition_state !== "available"),
-        staff_assignments: data.staff_assignments.filter((a) => a.employee_id && a.role),
+        mechanic_ids: data.mechanic_ids,
       }).unwrap();
       router.push("/job-cards");
     } catch {
@@ -150,235 +159,386 @@ export default function NewJobCardPage() {
     }
   };
 
+  const canGoNext = () => {
+    if (step === 0) return !!ownerId;
+    if (step === 1) return !!vehicleId;
+    return true;
+  };
+
+  const handleNext = () => {
+    if (step >= CONDITION_STEP_START && step < CONDITION_STEP_START + PART_SECTIONS.length - 1) {
+      setCwStep(cwStep + 1);
+    }
+    if (step < totalSteps - 1) setStep(step + 1);
+  };
+
+  const handlePrev = () => {
+    if (step > CONDITION_STEP_START && step <= CONDITION_STEP_START + PART_SECTIONS.length - 1) {
+      setCwStep(cwStep - 1);
+    }
+    if (step > 0) setStep(step - 1);
+  };
+
+  const isConditionStep = step >= CONDITION_STEP_START && step < CONDITION_STEP_START + PART_SECTIONS.length;
+  const isLastStep = step === totalSteps - 1;
+
+  const totalDamaged = conditions.filter((c) => c.condition_state !== "available").length;
+
   return (
     <div className="mx-auto max-w-3xl pb-24">
-      <Button variant="ghost" onClick={() => router.push("/job-cards")} className="mb-6">
+      <Button variant="ghost" onClick={() => router.push("/job-cards")} className="mb-4">
         <ArrowLeft size={15} />
         Back to Job Cards
       </Button>
-      <h1 className="mb-6 text-2xl font-semibold tracking-tight">{t("create")}</h1>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        {/* Owner + Vehicle */}
-        <div className="rounded-xl border bg-card p-6 shadow-sm space-y-5">
-          <h2 className="text-sm font-semibold">Owner & Vehicle</h2>
-
-          <div className="space-y-2">
-            <Label>{t("owner")}</Label>
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <Combobox
-                  options={ownerOptions}
-                  value={ownerId}
-                  onSelect={(val) => {
-                    setValue("owner_id", val, { shouldValidate: true });
-                    setValue("vehicle_id", "", { shouldValidate: true });
-                  }}
-                  placeholder="Select owner..."
-                  searchPlaceholder="Search owners..."
-                  emptyText="No owners found."
-                />
-              </div>
-              <Button
+      {/* Unified Step Indicator */}
+      <div className="mb-8 overflow-x-auto">
+        <div className="flex items-center gap-1 min-w-max">
+          {OUTER_STEPS.map((s, i) => (
+            <div key={i} className="flex items-center gap-1">
+              <button
                 type="button"
-                variant="outline"
-                size="icon"
-                onClick={() => setShowNewOwner(true)}
-                title="New Owner"
+                onClick={() => {
+                  if (i < step) {
+                    if (i >= CONDITION_STEP_START && i < CONDITION_STEP_START + PART_SECTIONS.length) {
+                      setCwStep(i - CONDITION_STEP_START);
+                    }
+                    setStep(i);
+                  }
+                }}
+                disabled={i > step}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all",
+                  i === step
+                    ? "bg-indigo-500 text-white shadow-sm"
+                    : i < step
+                      ? "bg-emerald-500/15 text-emerald-600"
+                      : "bg-muted text-muted-foreground",
+                )}
               >
-                <Plus size={15} />
-              </Button>
-            </div>
-            {errors.owner_id && <p className="text-sm text-destructive">{errors.owner_id.message}</p>}
-          </div>
-
-          <div className="space-y-2">
-            <Label>{t("vehicle")}</Label>
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <Combobox
-                  options={vehicleOptions}
-                  value={vehicleId}
-                  onSelect={(val) => setValue("vehicle_id", val, { shouldValidate: true })}
-                  placeholder={ownerId ? "Select vehicle..." : "Select owner first"}
-                  searchPlaceholder="Search vehicles..."
-                  emptyText="No vehicles for this owner."
-                  disabled={!ownerId}
-                />
-              </div>
-              {ownerId && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setShowNewVehicle(true)}
-                  title="New Vehicle"
-                >
-                  <Plus size={15} />
-                </Button>
+                <span className={cn(
+                  "flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold",
+                  i === step
+                    ? "bg-white/20 text-white"
+                    : i < step
+                      ? "bg-emerald-500 text-white"
+                      : "bg-muted-foreground/20 text-muted-foreground",
+                )}>
+                  {i < step ? <Check size={10} /> : i + 1}
+                </span>
+                <span className="hidden sm:inline whitespace-nowrap">{s.label}</span>
+              </button>
+              {i < totalSteps - 1 && (
+                <div className={cn("h-0.5 w-4 rounded-full", i < step ? "bg-emerald-400" : "bg-muted")} />
               )}
             </div>
-            {errors.vehicle_id && <p className="text-sm text-destructive">{errors.vehicle_id.message}</p>}
-          </div>
+          ))}
+        </div>
+      </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="mileage">{t("mileage")}</Label>
-            <input id="mileage" type="number" {...register("mileage_km", { valueAsNumber: true })}
-              className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
-            {errors.mileage_km && <p className="text-sm text-destructive">{errors.mileage_km.message}</p>}
-          </div>
+      {/* Progress bar */}
+      <div className="mb-6 h-1.5 w-full rounded-full bg-muted overflow-hidden">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-teal-400 transition-all duration-500"
+          style={{ width: `${((step + 1) / totalSteps) * 100}%` }}
+        />
+      </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="description">{t("description")}</Label>
-            <Textarea id="description" rows={3} {...register("description")} />
-            {errors.description && <p className="text-sm text-destructive">{errors.description.message}</p>}
-          </div>
+      <form id="job-card-form" onSubmit={handleSubmit(onSubmit)}>
+        {/* Step 1: Owner */}
+        {step === 0 && (
+          <div className="rounded-xl border bg-card p-6 shadow-sm space-y-5">
+            <h2 className="text-sm font-semibold">Step 1 — Owner</h2>
+            <p className="text-xs text-muted-foreground">Select an existing owner or create a new one.</p>
 
-          <div className="flex items-center gap-2">
-            <input id="pp" type="checkbox" {...register("private_paint")}
-              className="h-4 w-4 rounded border-input text-indigo-500 focus:ring-indigo-500" />
-            <Label htmlFor="pp">{t("privatePaint")}</Label>
-          </div>
+            <div className="space-y-2">
+              <Label>{t("owner")}</Label>
+              <Combobox
+                options={ownerOptions}
+                value={ownerId}
+                onSelect={(val) => {
+                  setValue("owner_id", val, { shouldValidate: true });
+                  setValue("vehicle_id", "", { shouldValidate: true });
+                }}
+                placeholder="Select owner..."
+                searchPlaceholder="Search owners..."
+                emptyText="No owners found."
+              />
+              {errors.owner_id && <p className="text-sm text-destructive">{errors.owner_id.message}</p>}
+            </div>
 
-          <div className="flex items-center gap-2">
-            <input id="pm" type="checkbox" {...register("private_mechanic")}
-              className="h-4 w-4 rounded border-input text-indigo-500 focus:ring-indigo-500" />
-            <Label htmlFor="pm">{t("privateMechanic")}</Label>
+            {/* Inline New Owner Form */}
+            {showNewOwner ? (
+              <div className="rounded-lg border border-indigo-200 bg-indigo-50/50 p-4 space-y-3">
+                <h3 className="text-xs font-semibold text-indigo-600">New Owner</h3>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Name</Label>
+                    <input value={newOwnerName} onChange={(e) => setNewOwnerName(e.target.value)}
+                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Phone</Label>
+                    <input value={newOwnerPhone} onChange={(e) => setNewOwnerPhone(e.target.value)}
+                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm" />
+                  </div>
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <Button type="button" variant="outline" size="sm" onClick={() => setShowNewOwner(false)}>Cancel</Button>
+                  <Button type="button" size="sm" onClick={handleCreateOwner}
+                    disabled={creatingOwner || !newOwnerName.trim() || !newOwnerPhone.trim()}>
+                    {creatingOwner && <Loader2 className="h-3 w-3 animate-spin" />}
+                    Create Owner
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button type="button" variant="outline" size="sm" onClick={() => setShowNewOwner(true)}>
+                <Plus size={14} />
+                New Owner
+              </Button>
+            )}
           </div>
+        )}
 
-          <div className="space-y-2">
-            <Label htmlFor="ins">{t("insuranceProvider")}</Label>
-            <input id="ins" {...register("insurance_provider")}
-              className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+        {/* Step 2: Vehicle */}
+        {step === 1 && (
+          <div className="rounded-xl border bg-card p-6 shadow-sm space-y-5">
+            <h2 className="text-sm font-semibold">Step 2 — Vehicle & Details</h2>
+            <p className="text-xs text-muted-foreground">Select a vehicle for {owners.find((o) => o.id === ownerId)?.name || "this owner"}.</p>
+
+            <div className="space-y-2">
+              <Label>{t("vehicle")}</Label>
+              <Combobox
+                options={vehicleOptions}
+                value={vehicleId}
+                onSelect={(val) => setValue("vehicle_id", val, { shouldValidate: true })}
+                placeholder={ownerId ? "Select vehicle..." : "Select owner first"}
+                searchPlaceholder="Search vehicles..."
+                emptyText="No vehicles for this owner."
+                disabled={!ownerId}
+              />
+              {errors.vehicle_id && <p className="text-sm text-destructive">{errors.vehicle_id.message}</p>}
+            </div>
+
+            {/* Inline New Vehicle Form */}
+            {showNewVehicle ? (
+              <div className="rounded-lg border border-indigo-200 bg-indigo-50/50 p-4 space-y-3">
+                <h3 className="text-xs font-semibold text-indigo-600">New Vehicle</h3>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Model</Label>
+                    <input value={newVehicleModel} onChange={(e) => setNewVehicleModel(e.target.value)}
+                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Type</Label>
+                    <input value={newVehicleType} onChange={(e) => setNewVehicleType(e.target.value)}
+                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Plate #</Label>
+                    <input value={newVehiclePlate} onChange={(e) => setNewVehiclePlate(e.target.value)}
+                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 font-mono text-sm" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Engine #</Label>
+                    <input value={newVehicleEngine} onChange={(e) => setNewVehicleEngine(e.target.value)}
+                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 font-mono text-sm" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Chassis #</Label>
+                    <input value={newVehicleChassis} onChange={(e) => setNewVehicleChassis(e.target.value)}
+                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 font-mono text-sm" />
+                  </div>
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <Button type="button" variant="outline" size="sm" onClick={() => setShowNewVehicle(false)}>Cancel</Button>
+                  <Button type="button" size="sm" onClick={handleCreateVehicle}
+                    disabled={creatingVehicle || !newVehicleModel.trim() || !newVehiclePlate.trim()}>
+                    {creatingVehicle && <Loader2 className="h-3 w-3 animate-spin" />}
+                    Create Vehicle
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              ownerId && (
+                <Button type="button" variant="outline" size="sm" onClick={() => setShowNewVehicle(true)}>
+                  <Plus size={14} />
+                  New Vehicle
+                </Button>
+              )
+            )}
+
+            <hr className="border-border" />
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="mileage">{t("mileage")}</Label>
+                <input id="mileage" type="number" {...register("mileage_km", { valueAsNumber: true })}
+                  className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+                {errors.mileage_km && <p className="text-sm text-destructive">{errors.mileage_km.message}</p>}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="ins">{t("insuranceProvider")}</Label>
+                <input id="ins" {...register("insurance_provider")}
+                  className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="description">{t("description")}</Label>
+              <Textarea id="description" rows={2} {...register("description")} />
+              {errors.description && <p className="text-sm text-destructive">{errors.description.message}</p>}
+            </div>
+
+            <div className="flex flex-wrap gap-4">
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" {...register("private_paint")}
+                  className="h-4 w-4 rounded border-input text-indigo-500 focus:ring-indigo-500" />
+                {t("privatePaint")}
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" {...register("private_mechanic")}
+                  className="h-4 w-4 rounded border-input text-indigo-500 focus:ring-indigo-500" />
+                {t("privateMechanic")}
+              </label>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="rem">{t("remarks")}</Label>
+                <Textarea id="rem" rows={2} {...register("remarks")} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="mat">{t("requestedMaterials")}</Label>
+                <Textarea id="mat" rows={2} {...register("requested_materials")} />
+              </div>
+            </div>
           </div>
+        )}
 
-          <div className="space-y-2">
-            <Label htmlFor="rem">{t("remarks")}</Label>
-            <Textarea id="rem" rows={2} {...register("remarks")} />
+        {/* Steps 3-9: Condition Wizard (embedded) */}
+        {isConditionStep && (
+          <div className="rounded-xl border bg-card p-6 shadow-sm">
+            <ConditionWizard
+              conditions={conditions}
+              onChange={(val: VehicleConditionInput[]) => setValue("conditions", val, { shouldValidate: true })}
+              showStepIndicator={false}
+              step={cwStep}
+              onStepChange={setCwStep}
+            />
           </div>
+        )}
 
-          <div className="space-y-2">
-            <Label htmlFor="mat">{t("requestedMaterials")}</Label>
-            <Textarea id="mat" rows={2} {...register("requested_materials")} />
+        {/* Step 10: Staff Assignments */}
+        {step === CONDITION_STEP_START + PART_SECTIONS.length && (
+          <div className="rounded-xl border bg-card p-6 shadow-sm space-y-4">
+            <h2 className="text-sm font-semibold">Step {CONDITION_STEP_START + PART_SECTIONS.length + 1} — Staff Assignments</h2>
+            <p className="text-xs text-muted-foreground">Assign mechanics and their roles to this job card.</p>
+            <MechanicAssign
+              value={mechanicIds || []}
+              onChange={(val: string[]) => setValue("mechanic_ids", val, { shouldValidate: true })}
+            />
+          </div>
+        )}
+
+        {/* Step 11: Review & Submit */}
+        {isLastStep && (
+          <div className="rounded-xl border bg-card p-6 shadow-sm space-y-5">
+            <h2 className="text-sm font-semibold">Step {totalSteps} — Review & Submit</h2>
+            <p className="text-xs text-muted-foreground">Review all information before creating the job card.</p>
+
+            {/* Owner Summary */}
+            {ownerId && (() => {
+              const owner = owners.find((o) => o.id === ownerId);
+              return owner ? (
+                <div className="rounded-lg border bg-muted/30 p-3 space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground">Owner</p>
+                  <p className="text-sm font-medium">{owner.name}</p>
+                  <p className="text-xs text-muted-foreground">{owner.phone}</p>
+                </div>
+              ) : null;
+            })()}
+
+            {/* Vehicle Summary */}
+            {vehicleId && (() => {
+              const vehicle = vehicles.find((v) => v.id === vehicleId);
+              return vehicle ? (
+                <div className="rounded-lg border bg-muted/30 p-3 space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground">Vehicle</p>
+                  <p className="text-sm font-medium">{vehicle.model}</p>
+                  <p className="text-xs text-muted-foreground">{vehicle.plate_number} · {vehicle.type}</p>
+                </div>
+              ) : null;
+            })()}
+
+            {/* Damage Summary */}
+            {totalDamaged > 0 ? (
+              <div className="rounded-lg border bg-muted/30 p-3 space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">Vehicle Condition</p>
+                <p className="text-sm">{totalDamaged} part(s) with issues</p>
+              </div>
+            ) : (
+              <div className="rounded-lg border bg-muted/30 p-3 space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">Vehicle Condition</p>
+                <p className="text-sm text-emerald-600">All parts available</p>
+              </div>
+            )}
+
+            {/* Staff Summary */}
+            <div className="rounded-lg border bg-muted/30 p-3 space-y-1">
+              <p className="text-xs font-medium text-muted-foreground">Staff</p>
+              {mechanicIds && mechanicIds.length > 0 ? (
+                <p className="text-sm">{mechanicIds.length} staff assigned</p>
+              ) : (
+                <p className="text-sm text-muted-foreground">No staff assigned</p>
+              )}
+            </div>
+
+            {errors.root && <p className="text-sm text-destructive">{errors.root.message}</p>}
+          </div>
+        )}
+
+        {/* Navigation */}
+        <div className="mt-6 flex items-center justify-between">
+          <div>
+            {step > 0 && (
+              <Button type="button" variant="outline" onClick={handlePrev}>
+                <ChevronLeft size={15} />
+                Previous
+              </Button>
+            )}
+          </div>
+          <div>
+            {!isLastStep ? (
+              <Button type="button" onClick={handleNext} disabled={!canGoNext()}>
+                Next
+                <ChevronRight size={15} />
+              </Button>
+            ) : (
+              <Button type="submit" disabled={isLoading}>
+                {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                {isLoading ? "Creating..." : t("create")}
+              </Button>
+            )}
           </div>
         </div>
+      </form>
 
-        {/* Conditions */}
-        <div className="rounded-xl border bg-card p-6 shadow-sm space-y-4">
-          <h2 className="text-sm font-semibold">{t("conditions")}</h2>
-          <ConditionWizard
-            conditions={conditions}
-            onChange={(val: VehicleConditionInput[]) => setValue("conditions", val, { shouldValidate: true })}
-          />
-        </div>
-
-        {/* Mechanics */}
-        <div className="rounded-xl border bg-card p-6 shadow-sm space-y-4">
-          <h2 className="text-sm font-semibold">{t("mechanics")}</h2>
-          <MechanicAssign
-            value={staffAssignments}
-            onChange={(val: StaffAssignmentInput[]) => setValue("staff_assignments", val, { shouldValidate: true })}
-          />
-        </div>
-
-        {errors.root && <p className="text-sm text-destructive">{errors.root.message}</p>}
-
-        {/* Inline submit */}
-        <div className="hidden md:block">
-          <Button type="submit" disabled={isLoading}>
-            {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-            {isLoading ? "Creating..." : t("create")}
-          </Button>
-        </div>
-
-        {/* Sticky submit bar (mobile) */}
+      {/* Sticky submit bar (mobile) */}
+      {isLastStep && (
         <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:hidden">
           <div className="flex items-center justify-between px-4 py-3">
-            <span className="text-sm text-muted-foreground">New job card</span>
-            <Button type="submit" disabled={isLoading} className="min-w-32">
+            <span className="text-sm text-muted-foreground">Review job card</span>
+            <Button type="submit" form="job-card-form" disabled={isLoading} className="min-w-32">
               {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
               {isLoading ? "Creating..." : t("create")}
             </Button>
           </div>
         </div>
-      </form>
-
-      {/* New Owner Dialog */}
-      <Dialog open={showNewOwner} onOpenChange={setShowNewOwner}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>New Owner</DialogTitle>
-            <DialogDescription>Add a new vehicle owner to the system.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label htmlFor="no_name">Name</Label>
-              <input id="no_name" value={newOwnerName} onChange={(e) => setNewOwnerName(e.target.value)}
-                className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="no_phone">Phone</Label>
-              <input id="no_phone" value={newOwnerPhone} onChange={(e) => setNewOwnerPhone(e.target.value)}
-                className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNewOwner(false)}>Cancel</Button>
-            <Button onClick={handleCreateOwner} disabled={creatingOwner || !newOwnerName.trim() || !newOwnerPhone.trim()}>
-              {creatingOwner && <Loader2 className="h-4 w-4 animate-spin" />}
-              Create Owner
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* New Vehicle Dialog */}
-      <Dialog open={showNewVehicle} onOpenChange={setShowNewVehicle}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>New Vehicle</DialogTitle>
-            <DialogDescription>Add a new vehicle for the selected owner.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label htmlFor="nv_model">Model</Label>
-              <input id="nv_model" value={newVehicleModel} onChange={(e) => setNewVehicleModel(e.target.value)}
-                className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label htmlFor="nv_type">Type</Label>
-                <input id="nv_type" value={newVehicleType} onChange={(e) => setNewVehicleType(e.target.value)}
-                  className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="nv_plate">Plate</Label>
-                <input id="nv_plate" value={newVehiclePlate} onChange={(e) => setNewVehiclePlate(e.target.value)}
-                  className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 font-mono text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label htmlFor="nv_engine">Engine #</Label>
-                <input id="nv_engine" value={newVehicleEngine} onChange={(e) => setNewVehicleEngine(e.target.value)}
-                  className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 font-mono text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="nv_chassis">Chassis #</Label>
-                <input id="nv_chassis" value={newVehicleChassis} onChange={(e) => setNewVehicleChassis(e.target.value)}
-                  className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 font-mono text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNewVehicle(false)}>Cancel</Button>
-            <Button onClick={handleCreateVehicle} disabled={creatingVehicle || !newVehicleModel.trim() || !newVehiclePlate.trim()}>
-              {creatingVehicle && <Loader2 className="h-4 w-4 animate-spin" />}
-              Create Vehicle
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      )}
     </div>
   );
 }

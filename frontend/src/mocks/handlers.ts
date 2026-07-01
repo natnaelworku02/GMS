@@ -34,10 +34,7 @@ export const handlers = [
     const body = (await request.json()) as { phone: string; password: string };
     const user = mockUsers.find((u) => u.phone === body.phone);
     if (user) {
-      return HttpResponse.json({
-        ...tokens,
-        user,
-      });
+      return HttpResponse.json(tokens);
     }
     return HttpResponse.json({ detail: "Invalid credentials" }, { status: 401 });
   }),
@@ -136,14 +133,11 @@ export const handlers = [
   }),
 
   http.post(`${base}/owners`, async ({ request }) => {
-    const body = (await request.json()) as { name: string; phone: string; phone_secondary?: string; email?: string; owner_type?: string };
+    const body = (await request.json()) as { name: string; phone: string };
     const newOwner = {
       id: crypto.randomUUID(),
       name: body.name,
       phone: body.phone,
-      phone_secondary: body.phone_secondary || "",
-      email: body.email || "",
-      owner_type: body.owner_type || "individual",
       created_at: new Date().toISOString(),
     };
     return HttpResponse.json(newOwner, { status: 201 });
@@ -201,27 +195,22 @@ export const handlers = [
   http.post(`${base}/job-cards`, async ({ request }) => {
     const body = (await request.json()) as Record<string, unknown>;
     const now = new Date().toISOString();
-    const enrichedAssignments = ((body.staff_assignments || []) as { employee_id: string; role: string }[]).map(
-      (a) => {
-        const emp = mockEmployees.find((e) => e.id === a.employee_id);
-        return {
-          employee_id: a.employee_id,
-          employee_name: emp?.name || "",
-          employee_job_title: emp?.job_title || "",
-          role: a.role,
-        };
-      },
-    );
     const newCard = {
       id: crypto.randomUUID(),
-      ...body,
-      staff_assignments: enrichedAssignments,
+      vehicle_id: body.vehicle_id,
+      owner_id: body.owner_id,
       status: "pending_inspection",
+      mileage_km: body.mileage_km ?? null,
+      private_paint: body.private_paint ?? false,
+      private_mechanic: body.private_mechanic ?? false,
+      insurance_provider: body.insurance_provider ?? null,
+      description: body.description ?? "",
+      remarks: body.remarks ?? null,
+      requested_materials: body.requested_materials ?? null,
+      created_by: body.created_by,
       created_at: now,
       updated_at: now,
-      vehicle: mockVehicles.find((v) => v.id === body.vehicle_id) || null,
-      owner: mockOwners.find((o) => o.id === body.owner_id) || null,
-      conditions: (body.conditions || []),
+      conditions: [],
     };
     return HttpResponse.json(newCard, { status: 201 });
   }),

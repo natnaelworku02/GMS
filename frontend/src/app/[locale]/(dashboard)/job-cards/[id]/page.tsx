@@ -3,15 +3,17 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { useGetJobCardQuery, useUpdateJobCardStatusMutation } from "@/features/jobCards/api";
+import { useGetJobCardQuery, useUpdateJobCardStatusMutation, useGetToolCheckoutsQuery, useGetOwnerQuery, useGetVehicleQuery, useGetEmployeesQuery } from "@/features/jobCards/api";
+import { useGetPerformasQuery } from "@/features/performas/api";
+import { PerformaStatusBadge } from "@/features/performas/components/PerformaStatusBadge";
 import { useGetUsersQuery } from "@/features/auth/api";
 import { StatusTimeline } from "@/features/jobCards/components/StatusTimeline";
 import { ConditionWizard } from "@/features/jobCards/components/ConditionWizard";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import { ArrowLeft, Pencil, Loader2, Clock, User } from "lucide-react";
-import { JOB_STATUS_LABELS, JOB_STATUS_TRANSITIONS, STAFF_ROLES } from "@/lib/constants";
+import { ArrowLeft, Pencil, Loader2, Clock, User, Wrench, Receipt, Plus } from "lucide-react";
+import { JOB_STATUS_LABELS, JOB_STATUS_TRANSITIONS } from "@/lib/constants";
 import type { VehicleConditionInput } from "@/features/jobCards/types";
 
 export default function JobCardDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -22,6 +24,17 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
   const router = useRouter();
   const { data: jobCard, isLoading } = useGetJobCardQuery(id, { skip: !id });
   const { data: users = [] } = useGetUsersQuery();
+  const { data: owner } = useGetOwnerQuery(jobCard?.owner_id || "", { skip: !jobCard?.owner_id });
+  const { data: vehicle } = useGetVehicleQuery(jobCard?.vehicle_id || "", { skip: !jobCard?.vehicle_id });
+  const { data: employees = [] } = useGetEmployeesQuery({ active_only: "true" });
+  const { data: unreturnedCheckouts = [] } = useGetToolCheckoutsQuery(
+    { job_card_id: id, unreturned_only: "true" },
+    { skip: !id },
+  );
+  const { data: linkedPerformas = [] } = useGetPerformasQuery(
+    { job_card_id: id },
+    { skip: !id },
+  );
   const [updateStatus, { isLoading: isTransitioning }] = useUpdateJobCardStatusMutation();
   const [confirmStatus, setConfirmStatus] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -35,6 +48,8 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
   if (!jobCard) return <div className="p-8 text-center text-muted-foreground">Job card not found</div>;
 
   const validTransitions = JOB_STATUS_TRANSITIONS[jobCard.status] || [];
+  const canComplete = jobCard.status === "ready_for_testing" && unreturnedCheckouts.length === 0;
+  const blockedByTools = jobCard.status === "ready_for_testing" && unreturnedCheckouts.length > 0;
   const conditionsInput: VehicleConditionInput[] = jobCard.conditions.map((c) => ({
     part_name: c.part_name,
     condition_state: c.condition_state,
@@ -72,7 +87,8 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
                   key={nextStatus}
                   size="sm"
                   onClick={() => openConfirm(nextStatus)}
-                  disabled={isTransitioning}
+                  disabled={isTransitioning || (nextStatus === "completed" && !canComplete)}
+                  title={blockedByTools ? t("returnToolsFirst") : ""}
                 >
                   {isTransitioning && <Loader2 className="h-4 w-4 animate-spin" />}
                   {JOB_STATUS_LABELS[nextStatus]}
@@ -88,10 +104,10 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">
-              {jobCard.vehicle.model}
+              {vehicle?.model || "Vehicle"}
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              {jobCard.vehicle.plate_number}
+              {vehicle?.plate_number}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -128,17 +144,17 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
       <div className="mb-6 grid gap-4 sm:grid-cols-2">
         <div className="rounded-xl border bg-card p-5 shadow-sm space-y-3">
           <h2 className="text-sm font-semibold">{t("owner")}</h2>
-          <p className="text-sm">{jobCard.owner.name}</p>
-          <p className="text-xs text-muted-foreground">{jobCard.owner.phone}</p>
+          <p className="text-sm">{owner?.name || "Loading..."}</p>
+          <p className="text-xs text-muted-foreground">{owner?.phone}</p>
         </div>
 
         <div className="rounded-xl border bg-card p-5 shadow-sm space-y-3">
           <h2 className="text-sm font-semibold">{t("vehicle")}</h2>
-          <p className="text-sm">{jobCard.vehicle.model}</p>
+          <p className="text-sm">{vehicle?.model}</p>
           <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-            <span className="font-mono">{t("plateNumber")}: {jobCard.vehicle.plate_number}</span>
-            <span className="font-mono">{t("engineNumber")}: {jobCard.vehicle.engine_number}</span>
-            <span className="font-mono">{t("chassisNumber")}: {jobCard.vehicle.chassis_number}</span>
+            <span className="font-mono">{t("plateNumber")}: {vehicle?.plate_number}</span>
+            <span className="font-mono">{t("engineNumber")}: {vehicle?.engine_number}</span>
+            <span className="font-mono">{t("chassisNumber")}: {vehicle?.chassis_number}</span>
           </div>
         </div>
       </div>
@@ -174,24 +190,64 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
 
         <div className="rounded-xl border bg-card p-5 shadow-sm space-y-3">
           <h2 className="text-sm font-semibold">{t("mechanics")}</h2>
-          {!jobCard.staff_assignments || jobCard.staff_assignments.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No staff assigned</p>
-          ) : (
-            <div className="space-y-2">
-              {jobCard.staff_assignments.map((sa, idx) => {
-                const role = STAFF_ROLES.find((r) => r.value === sa.role);
-                return (
-                  <div key={idx} className="flex items-center justify-between text-sm">
-                    <span className="font-medium">{sa.employee_name}</span>
-                    <span className="rounded-md bg-indigo-500/10 px-2 py-0.5 text-xs font-medium text-indigo-500">
-                      {role?.label || sa.role}
-                    </span>
-                  </div>
-                );
-              })}
+          <p className="text-sm text-muted-foreground">Assigned mechanics appear here when the field is available from the backend.</p>
+        </div>
+      </div>
+
+      {/* Tool Checkouts */}
+      {(jobCard.status === "ready_for_testing" || jobCard.status === "completed") && (
+        <div className="mb-6 rounded-xl border bg-card p-5 shadow-sm space-y-3">
+          <h2 className="text-sm font-semibold flex items-center gap-2">
+            <Wrench size={14} />
+            {t("toolCheckouts")}
+          </h2>
+          {blockedByTools && (
+            <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+              {t("returnToolsFirst")} ({unreturnedCheckouts.length} {t("unreturnedTools")})
             </div>
           )}
+          {unreturnedCheckouts.length === 0 && jobCard.status === "completed" && (
+            <p className="text-sm text-muted-foreground">{t("allToolsReturned")}</p>
+          )}
+          {unreturnedCheckouts.length === 0 && jobCard.status === "ready_for_testing" && (
+            <p className="text-sm text-emerald-600">{t("allToolsReturned")}</p>
+          )}
         </div>
+      )}
+
+      {/* Performas */}
+      <div className="mb-6 rounded-xl border bg-card p-5 shadow-sm space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold flex items-center gap-2">
+            <Receipt size={14} />
+            {t("performas")}
+          </h2>
+          <Button size="sm" variant="outline" onClick={() => router.push(`/performas/new?job_card_id=${id}`)}>
+            <Plus size={14} />
+            Create
+          </Button>
+        </div>
+        {linkedPerformas.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No performas yet</p>
+        ) : (
+          <div className="space-y-2">
+            {linkedPerformas.map((p) => (
+              <div
+                key={p.id}
+                className="flex cursor-pointer items-center justify-between rounded-lg border bg-card px-3 py-2 text-sm transition-colors hover:bg-accent/50"
+                onClick={() => router.push(`/performas/${p.id}`)}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">v{p.version}</span>
+                  <PerformaStatusBadge status={p.status} />
+                </div>
+                <span className="font-mono text-xs text-muted-foreground">
+                  {new Intl.NumberFormat("en-US", { style: "currency", currency: "ETB" }).format(p.grand_total)}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Description */}
