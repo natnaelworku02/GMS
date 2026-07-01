@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     smtp_user: str = ""
     smtp_password: str = ""
     smtp_from_email: str = ""
+    CORS_ORIGINS: list[str] = ["*"]
 
     model_config = SettingsConfigDict(
         env_file=".env",
