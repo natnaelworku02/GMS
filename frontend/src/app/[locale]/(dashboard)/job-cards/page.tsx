@@ -116,7 +116,7 @@ export default function JobCardsPage() {
         }
       />
 
-      <div className="mt-4 flex items-center gap-3">
+      <div className="mt-4 flex flex-wrap items-center gap-3">
         <div className="relative flex-1">
           <input
             value={search}

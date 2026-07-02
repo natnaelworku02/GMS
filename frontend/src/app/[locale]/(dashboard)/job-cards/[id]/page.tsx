@@ -191,7 +191,21 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
 
         <div className="rounded-xl border bg-card p-5 shadow-sm space-y-3">
           <h2 className="text-sm font-semibold">{t("mechanics")}</h2>
-          <p className="text-sm text-muted-foreground">Assigned mechanics appear here when the field is available from the backend.</p>
+          {jobCard.mechanics.length > 0 ? (
+            <div className="space-y-2">
+              {jobCard.mechanics.map((m) => (
+                <div key={m.id} className="flex items-center justify-between rounded-lg bg-muted/30 px-3 py-2">
+                  <div>
+                    <p className="text-sm font-medium">{m.name}</p>
+                    <p className="text-xs text-muted-foreground">{m.job_title}</p>
+                  </div>
+                  <span className="text-xs text-muted-foreground">{m.phone}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">{t("noMechanics")}</p>
+          )}
         </div>
       </div>
 
@@ -238,7 +252,7 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
                 className="flex cursor-pointer items-center justify-between rounded-lg border bg-card px-3 py-2 text-sm transition-colors hover:bg-accent/50"
                 onClick={() => router.push(`/performas/${p.id}`)}
               >
-                <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
                   <span className="font-medium">v{p.version}</span>
                   <PerformaStatusBadge status={p.status} />
                 </div>

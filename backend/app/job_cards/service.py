@@ -105,14 +105,14 @@ async def create_job_card(
 async def get_job_card(db: AsyncSession, job_card_id: uuid.UUID) -> JobCard | None:
     result = await db.execute(
         select(JobCard)
-        .options(selectinload(JobCard.conditions))
+        .options(selectinload(JobCard.conditions), selectinload(JobCard.mechanics))
         .where(JobCard.id == job_card_id)
     )
     return result.scalar_one_or_none()
 
 
 async def list_job_cards(db: AsyncSession, status: str | None = None) -> list[JobCard]:
-    query = select(JobCard).options(selectinload(JobCard.conditions)).order_by(JobCard.created_at.desc())
+    query = select(JobCard).options(selectinload(JobCard.conditions), selectinload(JobCard.mechanics)).order_by(JobCard.created_at.desc())
     if status:
         query = query.where(JobCard.status == status)
     result = await db.execute(query)

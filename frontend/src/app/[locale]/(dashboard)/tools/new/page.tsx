@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function NewToolPage() {
   const t = useTranslations("tools");
@@ -34,9 +35,10 @@ export default function NewToolPage() {
         specifications: data.specifications || undefined,
         total_quantity: data.total_quantity,
       }).unwrap();
+      toast.success("Tool created successfully");
       router.push("/tools");
     } catch {
-      setError("root", { message: "Failed to create tool" });
+      toast.error("Failed to create tool");
     }
   };
 
@@ -70,8 +72,6 @@ export default function NewToolPage() {
           />
           {errors.total_quantity && <p className="text-sm text-destructive">{errors.total_quantity.message}</p>}
         </div>
-
-        {errors.root && <p className="text-sm text-destructive">{errors.root.message}</p>}
 
         <Button type="submit" disabled={isLoading}>
           {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}

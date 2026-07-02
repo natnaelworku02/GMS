@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { X, ArrowLeft, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 const VEHICLE_TYPE_OPTIONS = ["Pickup", "SUV", "Sedan", "Truck", "Bus", "Minibus", "Motorcycle"];
 
@@ -59,9 +60,10 @@ export default function NewInventoryItemPage() {
         supplier_info: data.supplier_info || undefined,
         min_stock_threshold: data.min_stock_threshold || undefined,
       }).unwrap();
+      toast.success("Item created successfully");
       router.push("/inventory");
     } catch {
-      setError("root", { message: "Failed to create item" });
+      toast.error("Failed to create item");
     }
   };
 
@@ -134,12 +136,22 @@ export default function NewInventoryItemPage() {
           <Input id="supplier_info" {...register("supplier_info")} />
         </div>
 
-        {errors.root && <p className="text-sm text-destructive">{errors.root.message}</p>}
+        <div className="hidden md:block">
+          <Button type="submit" disabled={isLoading}>
+            {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+            {isLoading ? "Creating..." : t("createItem")}
+          </Button>
+        </div>
 
-        <Button type="submit" disabled={isLoading}>
-          {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-          {isLoading ? "Creating..." : t("createItem")}
-        </Button>
+        <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:hidden">
+          <div className="flex items-center justify-between px-4 py-3">
+            <span className="text-sm text-muted-foreground">{t("createItem")}</span>
+            <Button type="submit" disabled={isLoading} className="min-w-32">
+              {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+              {isLoading ? "Creating..." : t("createItem")}
+            </Button>
+          </div>
+        </div>
       </form>
     </div>
   );

@@ -20,6 +20,7 @@ import { useCreatePerformaMutation } from "@/features/performas/api";
 import { jobCardCreateSchema, type JobCardCreateFormData } from "@/lib/formSchemas";
 import { PART_SECTIONS } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -125,7 +126,7 @@ export default function StartJobPage() {
       setNewOwnerName("");
       setNewOwnerPhone("");
     } catch {
-      setError("root", { message: "Failed to create owner" });
+      toast.error("Failed to create owner");
     }
   }, [newOwnerName, newOwnerPhone, createOwner, setValue, setError]);
 
@@ -148,7 +149,7 @@ export default function StartJobPage() {
       setNewVehicleEngine("");
       setNewVehicleChassis("");
     } catch {
-      setError("root", { message: "Failed to create vehicle" });
+      toast.error("Failed to create vehicle");
     }
   }, [newVehicleModel, newVehicleType, newVehiclePlate, newVehicleEngine, newVehicleChassis, ownerId, createVehicle, setValue, setError]);
 
@@ -227,7 +228,7 @@ export default function StartJobPage() {
 
   return (
     <div className="mx-auto max-w-3xl pb-24">
-      <Button variant="ghost" onClick={() => router.push("/dashboard")} className="mb-4">
+      <Button variant="ghost" onClick={() => router.back()} className="mb-4">
         <ArrowLeft size={15} />
         {tc("back")}
       </Button>
@@ -235,48 +236,37 @@ export default function StartJobPage() {
       {/* Step indicator */}
       {!isPerformaStep && (
         <>
-          <div className="mb-8 overflow-x-auto">
-            <div className="flex items-center gap-1 min-w-max">
-              {STEPS.slice(0, -1).map((s, i) => (
-                <div key={i} className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (i < step) {
-                        if (i >= CONDITION_STEP_START && i < CONDITION_STEP_START + PART_SECTIONS.length) {
-                          setCwStep(i - CONDITION_STEP_START);
-                        }
-                        setStep(i);
+          <div className="mb-8 flex items-center justify-center gap-0.5">
+            {STEPS.slice(0, -1).map((s, i) => (
+              <div key={i} className="flex items-center gap-0.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (i < step) {
+                      if (i >= CONDITION_STEP_START && i < CONDITION_STEP_START + PART_SECTIONS.length) {
+                        setCwStep(i - CONDITION_STEP_START);
                       }
-                    }}
-                    disabled={i > step}
-                    className={cn(
-                      "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all",
-                      i === step
-                        ? "bg-indigo-500 text-white shadow-sm"
-                        : i < step
-                          ? "bg-emerald-500/15 text-emerald-600"
-                          : "bg-muted text-muted-foreground",
-                    )}
-                  >
-                    <span className={cn(
-                      "flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold",
-                      i === step
-                        ? "bg-white/20 text-white"
-                        : i < step
-                          ? "bg-emerald-500 text-white"
-                          : "bg-muted-foreground/20 text-muted-foreground",
-                    )}>
-                      {i < step ? <Check size={10} /> : i + 1}
-                    </span>
-                    <span className="hidden sm:inline whitespace-nowrap">{s.label}</span>
-                  </button>
-                  {i < totalSteps - 2 && (
-                    <div className={cn("h-0.5 w-4 rounded-full", i < step ? "bg-emerald-400" : "bg-muted")} />
+                      setStep(i);
+                    }
+                  }}
+                  disabled={i > step}
+                  className={cn(
+                    "flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-semibold transition-all shrink-0",
+                    i === step
+                      ? "bg-indigo-500 text-white shadow-sm ring-2 ring-indigo-500/30"
+                      : i < step
+                        ? "bg-emerald-500 text-white"
+                        : "bg-muted text-muted-foreground",
                   )}
-                </div>
-              ))}
-            </div>
+                  title={s.label}
+                >
+                  {i < step ? <Check size={10} /> : i + 1}
+                </button>
+                {i < totalSteps - 2 && (
+                  <div className={cn("h-px w-3 rounded-full", i < step ? "bg-emerald-400" : "bg-muted")} />
+                )}
+              </div>
+            ))}
           </div>
           <div className="mb-6 h-1.5 w-full rounded-full bg-muted overflow-hidden">
             <div
@@ -571,7 +561,7 @@ export default function StartJobPage() {
 
           {performaError && <p className="text-sm text-destructive">{performaError}</p>}
 
-          <div className="flex items-center justify-between">
+          <div className="hidden md:flex items-center justify-between">
             <Button type="button" variant="outline" onClick={() => setStep(totalSteps - 2)}>
               <ChevronLeft size={15} />
               {t("previous")}
@@ -585,12 +575,30 @@ export default function StartJobPage() {
               {isCreatingPerforma ? t("creatingPerforma") : t("createPerforma")}
             </Button>
           </div>
+
+          <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:hidden">
+            <div className="flex items-center justify-between px-4 py-3">
+              <Button type="button" variant="outline" size="sm" onClick={() => setStep(totalSteps - 2)}>
+                <ChevronLeft size={15} />
+                {t("previous")}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleCreatePerforma}
+                disabled={isCreatingPerforma}
+              >
+                {isCreatingPerforma && <Loader2 className="h-4 w-4 animate-spin" />}
+                {isCreatingPerforma ? t("creatingPerforma") : t("createPerforma")}
+              </Button>
+            </div>
+          </div>
         </div>
       )}
 
       {/* Navigation (steps 0-10) */}
       {!isPerformaStep && (
-        <div className="mt-6 flex items-center justify-between">
+        <div className="mt-6 hidden md:flex items-center justify-between">
           <div>
             {step > 0 && (
               <Button type="button" variant="outline" onClick={handlePrev}>
@@ -611,6 +619,35 @@ export default function StartJobPage() {
                 {isCreatingJobCard ? t("creatingJobCard") : t("createJobCard")}
               </Button>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Mobile navigation bar (steps 0-10) */}
+      {!isPerformaStep && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:hidden">
+          <div className="flex items-center justify-between px-4 py-3">
+            <div>
+              {step > 0 && (
+                <Button type="button" variant="outline" size="sm" onClick={handlePrev}>
+                  <ChevronLeft size={15} />
+                  {t("previous")}
+                </Button>
+              )}
+            </div>
+            <div>
+              {!isReviewStep ? (
+                <Button type="button" size="sm" onClick={handleNext} disabled={!canGoNext()}>
+                  {t("next")}
+                  <ChevronRight size={15} />
+                </Button>
+              ) : (
+                <Button type="submit" form="job-card-form" size="sm" disabled={isCreatingJobCard}>
+                  {isCreatingJobCard && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {isCreatingJobCard ? t("creatingJobCard") : t("createJobCard")}
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       )}

@@ -3,7 +3,6 @@
 import * as React from "react"
 import { Check, ChevronsUpDown } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
 import {
   Command,
   CommandEmpty,
@@ -49,18 +48,20 @@ export function Combobox({
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger disabled={disabled} className={cn("w-full", className)}>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="w-full justify-between"
-        >
-          {value
-            ? options.find((o) => o.value === value)?.label || placeholder
-            : placeholder}
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
+      <PopoverTrigger
+        disabled={disabled}
+        role="combobox"
+        aria-expanded={open}
+        className={cn(
+          "group/button inline-flex h-10 shrink-0 items-center justify-between rounded-lg border border-input bg-clip-padding px-3 py-2 text-sm font-normal text-foreground outline-none transition-all hover:bg-accent hover:text-accent-foreground focus-visible:border-indigo-500/30 focus-visible:ring-2 focus-visible:ring-indigo-500/20 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+          "w-full",
+          className
+        )}
+      >
+        {value
+          ? options.find((o) => o.value === value)?.label || placeholder
+          : placeholder}
+        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
       </PopoverTrigger>
       <PopoverContent className="w-[var(--popover-trigger-width)] p-0">
         <Command>

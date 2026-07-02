@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import type { LineItemInput } from "@/features/performas/types";
 
 export default function NewPerformaPage({ searchParams }: { searchParams: Promise<{ job_card_id?: string }> }) {
@@ -47,7 +48,7 @@ export default function NewPerformaPage({ searchParams }: { searchParams: Promis
 
   const onSubmit = async (data: PerformaCreateFormData) => {
     if (!lineItems.some((li) => li.description.trim())) {
-      setError("root", { message: "All line items must have a description" });
+      toast.error("All line items must have a description");
       return;
     }
     try {
@@ -56,9 +57,10 @@ export default function NewPerformaPage({ searchParams }: { searchParams: Promis
         client_email: data.client_email || undefined,
         line_items: lineItems.map((li) => ({ ...li, description: li.description.trim() })),
       }).unwrap();
+      toast.success("Performa created successfully");
       router.push(`/performas/${perf.id}`);
     } catch {
-      setError("root", { message: "Failed to create performa" });
+      toast.error("Failed to create performa");
     }
   };
 
@@ -106,8 +108,6 @@ export default function NewPerformaPage({ searchParams }: { searchParams: Promis
           {errors.line_items && <p className="text-sm text-destructive">{errors.line_items.message}</p>}
           <PerformaSummary subtotal={subtotal} vatRate={vatRate} vatAmount={vatAmount} grandTotal={grandTotal} />
         </div>
-
-        {errors.root && <p className="text-sm text-destructive">{errors.root.message}</p>}
 
         <div className="hidden md:block">
           <Button type="submit" disabled={isLoading}>

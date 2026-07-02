@@ -11,7 +11,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen">
-      <div className="hidden md:flex">
+      <div className="hidden lg:flex">
         <Sidebar />
       </div>
       <div className="flex flex-1 flex-col">

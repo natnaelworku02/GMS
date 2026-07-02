@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function NewOwnerPage() {
   const t = useTranslations("owners");
@@ -30,9 +31,10 @@ export default function NewOwnerPage() {
         name: data.name,
         phone: data.phone,
       }).unwrap();
+      toast.success("Owner created successfully");
       router.push("/owners");
     } catch {
-      setError("root", { message: "Failed to create owner" });
+      toast.error("Failed to create owner");
     }
   };
 
@@ -55,7 +57,6 @@ export default function NewOwnerPage() {
           <Input id="phone" {...register("phone")} />
           {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
         </div>
-        {errors.root && <p className="text-sm text-destructive">{errors.root.message}</p>}
         <Button type="submit" disabled={isLoading}>
           {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
           {isLoading ? "Creating..." : t("create")}

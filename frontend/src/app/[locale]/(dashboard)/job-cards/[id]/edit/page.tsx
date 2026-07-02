@@ -12,12 +12,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function EditJobCardPage({ params }: { params: Promise<{ id: string }> }) {
   const [id, setId] = useState("");
   useEffect(() => { params.then((p) => setId(p.id)); }, [params]);
 
   const t = useTranslations("jobCards");
+  const tc = useTranslations("common");
   const router = useRouter();
   const { data: jobCard, isLoading: loading } = useGetJobCardQuery(id, { skip: !id });
   const [update, { isLoading: updating }] = useUpdateJobCardMutation();
@@ -60,9 +62,10 @@ export default function EditJobCardPage({ params }: { params: Promise<{ id: stri
           requested_materials: data.requested_materials || null,
         },
       }).unwrap();
+      toast.success("Job card updated successfully");
       router.push(`/job-cards/${id}`);
     } catch {
-      setError("root", { message: "Failed to update job card" });
+      toast.error("Failed to update job card");
     }
   };
 
@@ -118,12 +121,10 @@ export default function EditJobCardPage({ params }: { params: Promise<{ id: stri
           </div>
         </div>
 
-        {errors.root && <p className="text-sm text-destructive">{errors.root.message}</p>}
-
         <div className="hidden md:block">
           <Button type="submit" disabled={updating}>
             {updating && <Loader2 className="h-4 w-4 animate-spin" />}
-            {updating ? "Saving..." : t("save")}
+            {updating ? "Saving..." : tc("save")}
           </Button>
         </div>
 
@@ -132,7 +133,7 @@ export default function EditJobCardPage({ params }: { params: Promise<{ id: stri
             <span className="text-sm text-muted-foreground">Edit job card</span>
             <Button type="submit" disabled={updating} className="min-w-32">
               {updating && <Loader2 className="h-4 w-4 animate-spin" />}
-              {updating ? "Saving..." : t("save")}
+              {updating ? "Saving..." : tc("save")}
             </Button>
           </div>
         </div>

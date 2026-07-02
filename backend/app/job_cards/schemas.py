@@ -3,6 +3,7 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
+from app.hr.schemas import EmployeeResponse
 from app.job_cards.models import ConditionState, JobStatus, PartName
 
 
@@ -116,5 +117,6 @@ class JobCardResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     conditions: list[VehicleConditionResponse] = []
+    mechanics: list[EmployeeResponse] = []
 
     model_config = {"from_attributes": True}

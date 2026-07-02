@@ -45,7 +45,16 @@
     "roles": "Roles",
     "settings": "Settings",
     "auditLogs": "Audit Logs",
-    "startJob": "Start a Job"
+    "startJob": "Start a Job",
+    "notifications": "Notifications"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "unread": "unread",
+    "all": "All",
+    "empty": "No notifications",
+    "markRead": "Mark as read",
+    "seeAll": "See All"
   },
   "jobCards": {
     "title": "Job Cards",
@@ -61,6 +70,7 @@
     "engineNumber": "Engine Number",
     "chassisNumber": "Chassis Number",
     "mechanics": "Assigned Mechanics",
+    "noMechanics": "No mechanics assigned",
     "conditions": "Vehicle Condition",
     "privatePaint": "Private Paint",
     "privateMechanic": "Private Mechanic",

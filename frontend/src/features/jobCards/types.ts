@@ -62,6 +62,7 @@ export interface JobCard {
   created_at: string;
   updated_at: string;
   conditions: VehicleCondition[];
+  mechanics: Employee[];
 }
 
 export interface JobCardCreateDTO {
@@ -86,11 +87,6 @@ export interface JobCardUpdateDTO {
   description?: string;
   remarks?: string | null;
   requested_materials?: string | null;
-}
-
-export interface SignatureInput {
-  name: string;
-  signature_data: string;
 }
 
 export interface Employee {
