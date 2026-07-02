@@ -43,7 +43,8 @@
     "passwordRequired": "የይለፍ ቃል ያስፈልጋል",
     "phonePlaceholder": "+251912345678",
     "passwordPlaceholder": "••••••••",
-    "signingIn": "በመግባት ላይ..."
+    "signingIn": "በመግባት ላይ...",
+    "profile": "ፕሮፋይል"
   },
   "nav": {
     "dashboard": "ዳሽቦርድ",
@@ -58,6 +59,7 @@
     "roles": "ሚናዎች",
     "settings": "ቅንብሮች",
     "auditLogs": "የኦዲት መዝገቦች",
+    "profile": "ፕሮፋይል",
     "startJob": "ሥራ ጀምር",
     "notifications": "ማሳወቂያዎች",
     "jobCardsDescription": "የጥገና ሥራ ካርዶችን ይፍጠሩ እና ያስተዳድሩ",
@@ -401,6 +403,26 @@
     "stepStaffLabel": "ሰራተኞች",
     "stepReviewLabel": "ግምገማ",
     "stepPerformaLabel": "ፐርፎርማ"
+  },
+  "profile": {
+    "title": "የእኔ ፕሮፋይል",
+    "detailsTab": "ዝርዝሮች",
+    "passwordTab": "የይለፍ ቃል",
+    "personalInfo": "የግል መረጃ",
+    "fullName": "ሙሉ ስም",
+    "phone": "ስልክ ቁጥር",
+    "role": "ሚና",
+    "memberSince": "ከ{date} ጀምሮ",
+    "changePassword": "የይለፍ ቃል ይቀይሩ",
+    "newPassword": "አዲስ የይለፍ ቃል",
+    "confirmPassword": "የይለፍ ቃል ያረጋግጡ",
+    "updatePassword": "የይለፍ ቃል ያዘምኑ",
+    "passwordsDontMatch": "የይለፍ ቃላት አይዛመዱም",
+    "passwordUpdated": "የይለፍ ቃል በተሳካ ሁኔታ ተዘምኗል",
+    "profileUpdated": "ፕሮፋይል በተሳካ ሁኔታ ተዘምኗል",
+    "saveChanges": "ለውጦችን ያስቀምጡ",
+    "passwordLengthError": "የይለፍ ቃል ቢያንስ 8 ቁምፊዎች መሆን አለበት",
+    "profileLink": "ፕሮፋይል"
   },
   "offline": {
     "banner": "ከመስመር ውጭ ነዎት — ሲመለሱ ለውጦቹ ይመሳሰላሉ",

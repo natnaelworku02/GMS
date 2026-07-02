@@ -6,7 +6,7 @@ import { useRouter } from "@/i18n/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { logout as logoutAction } from "@/features/auth/authSlice";
 import { storage } from "@/lib/storage";
-import { LogOut, ChevronDown } from "lucide-react";
+import { LogOut, ChevronDown, User } from "lucide-react";
 
 export function UserMenu() {
   const t = useTranslations("auth");
@@ -61,6 +61,13 @@ export function UserMenu() {
             <p className="text-xs text-muted-foreground">{user.role_name || "User"}</p>
           </div>
           <div className="border-t" />
+          <button
+            onClick={() => { setOpen(false); router.push("/profile"); }}
+            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+          >
+            <User size={15} />
+            {t("profile")}
+          </button>
           <button
             onClick={handleLogout}
             className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"

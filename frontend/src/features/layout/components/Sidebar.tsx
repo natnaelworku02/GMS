@@ -38,6 +38,7 @@ const navItems = [
   { href: "/tools", labelKey: "tools", icon: Wrench, permission: "tools.read", disabled: false },
   { href: "/users", labelKey: "users", icon: Users, permission: "users.read", disabled: false },
   { href: "/roles", labelKey: "roles", icon: ShieldCheck, permission: "users.read", disabled: false },
+  { href: "/profile", labelKey: "profile", icon: UserCircle, permission: null },
   { href: "/settings", labelKey: "settings", icon: Settings, permission: "settings.read", disabled: false },
   { href: "/audit-logs", labelKey: "auditLogs", icon: History, permission: "settings.read", disabled: false },
 ];

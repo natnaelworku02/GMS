@@ -43,7 +43,8 @@
     "passwordRequired": "Password is required",
     "phonePlaceholder": "+251912345678",
     "passwordPlaceholder": "••••••••",
-    "signingIn": "Signing in..."
+    "signingIn": "Signing in...",
+    "profile": "Profile"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -58,6 +59,7 @@
     "roles": "Roles",
     "settings": "Settings",
     "auditLogs": "Audit Logs",
+    "profile": "Profile",
     "startJob": "Start a Job",
     "notifications": "Notifications",
     "jobCardsDescription": "Create and manage repair job cards",
@@ -401,6 +403,26 @@
     "stepStaffLabel": "Staff",
     "stepReviewLabel": "Review",
     "stepPerformaLabel": "Performa"
+  },
+  "profile": {
+    "title": "My Profile",
+    "detailsTab": "Details",
+    "passwordTab": "Password",
+    "personalInfo": "Personal Information",
+    "fullName": "Full Name",
+    "phone": "Phone",
+    "role": "Role",
+    "memberSince": "Member since {date}",
+    "changePassword": "Change Password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm Password",
+    "updatePassword": "Update Password",
+    "passwordsDontMatch": "Passwords do not match",
+    "passwordUpdated": "Password updated successfully",
+    "profileUpdated": "Profile updated successfully",
+    "saveChanges": "Save Changes",
+    "passwordLengthError": "Password must be at least 8 characters",
+    "profileLink": "Profile"
   },
   "offline": {
     "banner": "You're offline — changes will sync when reconnected",
