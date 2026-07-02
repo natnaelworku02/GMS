@@ -13,6 +13,7 @@ import { useGetJobCardsQuery } from "@/features/jobCards/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Loader2, Undo2 } from "lucide-react";
+import { toast } from "sonner";
 import type { ToolCheckout } from "@/features/tools/types";
 
 export default function ToolDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -47,7 +48,7 @@ export default function ToolDetailPage({ params }: { params: Promise<{ id: strin
     try {
       await returnTool(checkoutId).unwrap();
     } catch {
-      // error handled by RTK
+      toast.error("Failed to return tool");
     }
   };
 

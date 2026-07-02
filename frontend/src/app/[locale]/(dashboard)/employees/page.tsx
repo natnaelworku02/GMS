@@ -3,12 +3,21 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
-import { useGetEmployeesQuery } from "@/features/jobCards/api";
+import { useGetEmployeesQuery, useCreateEmployeeMutation } from "@/features/jobCards/api";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable, type Column } from "@/components/shared/DataTable";
 import { Can } from "@/features/auth/components/Can";
 import { Button } from "@/components/ui/button";
-import { Plus, Pencil } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Plus, Pencil, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import type { Employee } from "@/features/jobCards/types";
 
 export default function EmployeesPage() {
@@ -18,6 +27,12 @@ export default function EmployeesPage() {
   const [search, setSearch] = useState("");
   const { data: employees = [], isLoading } = useGetEmployeesQuery();
 
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [jobTitle, setJobTitle] = useState("");
+  const [phone, setPhone] = useState("");
+  const [create, { isLoading: creating }] = useCreateEmployeeMutation();
+
   const filtered = search
     ? employees.filter(
         (e) =>
@@ -25,6 +40,20 @@ export default function EmployeesPage() {
           e.job_title.toLowerCase().includes(search.toLowerCase()),
       )
     : employees;
+
+  const handleCreate = async () => {
+    if (!name.trim() || !jobTitle.trim() || !phone.trim()) return;
+    try {
+      await create({ name: name.trim(), job_title: jobTitle.trim(), phone: phone.trim() }).unwrap();
+      toast.success(tc("save"));
+      setOpen(false);
+      setName("");
+      setJobTitle("");
+      setPhone("");
+    } catch {
+      toast.error(tc("error"));
+    }
+  };
 
   const columns: Column<Employee>[] = [
     {
@@ -87,7 +116,7 @@ export default function EmployeesPage() {
         description={`${employees.length} employee${employees.length !== 1 ? "s" : ""}`}
         action={
           <Can permission="hr.create">
-            <Button onClick={() => router.push("/employees/new")}>
+            <Button onClick={() => setOpen(true)}>
               <Plus size={15} />
               {t("create")}
             </Button>
@@ -105,6 +134,35 @@ export default function EmployeesPage() {
           onSearch={setSearch}
         />
       </div>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("create")}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={(e) => { e.preventDefault(); handleCreate(); }} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="emp-name">{t("name")}</Label>
+              <Input id="emp-name" value={name} onChange={(e) => setName(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="emp-title">{t("jobTitle")}</Label>
+              <Input id="emp-title" value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="emp-phone">{t("phone")}</Label>
+              <Input id="emp-phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>{tc("cancel")}</Button>
+              <Button type="submit" disabled={creating || !name.trim() || !jobTitle.trim() || !phone.trim()}>
+                {creating && <Loader2 className="h-4 w-4 animate-spin" />}
+                {creating ? tc("loading") : t("create")}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

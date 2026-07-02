@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import type { StockEntry } from "@/features/inventory/types";
 
 export default function InventoryItemDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -23,7 +24,6 @@ export default function InventoryItemDetailPage({ params }: { params: Promise<{ 
 
   const [selectedLocation, setSelectedLocation] = useState("");
   const [adjustQty, setAdjustQty] = useState(0);
-  const [adjustError, setAdjustError] = useState<string | null>(null);
 
   const totalStock = (entries: StockEntry[]) =>
     entries.reduce((sum, se) => sum + se.quantity, 0);
@@ -33,10 +33,9 @@ export default function InventoryItemDetailPage({ params }: { params: Promise<{ 
 
   const handleAdjust = async () => {
     if (!selectedLocation) {
-      setAdjustError(t("selectLocation"));
+      toast.error(t("selectLocation"));
       return;
     }
-    setAdjustError(null);
     try {
       await adjustStock({
         item_id: id,
@@ -46,7 +45,7 @@ export default function InventoryItemDetailPage({ params }: { params: Promise<{ 
       setSelectedLocation("");
       setAdjustQty(0);
     } catch {
-      setAdjustError("Failed to adjust stock");
+      toast.error("Failed to adjust stock");
     }
   };
 
@@ -184,7 +183,6 @@ export default function InventoryItemDetailPage({ params }: { params: Promise<{ 
               </Button>
             </div>
           </div>
-          {adjustError && <p className="text-sm text-destructive">{adjustError}</p>}
         </div>
       </div>
     </div>
