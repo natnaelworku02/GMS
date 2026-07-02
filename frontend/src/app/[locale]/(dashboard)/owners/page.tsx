@@ -13,6 +13,7 @@ import type { Owner } from "@/features/jobCards/types";
 
 export default function OwnersPage() {
   const t = useTranslations("owners");
+  const tc = useTranslations("common");
   const router = useRouter();
   const [search, setSearch] = useState("");
   const { data: owners = [], isLoading } = useGetOwnersQuery();
@@ -52,7 +53,7 @@ export default function OwnersPage() {
     },
     {
       key: "created_at",
-      header: "Registered",
+      header: t("registered"),
       render: (o) => (
         <span className="text-muted-foreground">{new Date(o.created_at).toLocaleDateString()}</span>
       ),
@@ -98,7 +99,7 @@ export default function OwnersPage() {
           columns={columns}
           data={filtered}
           isLoading={isLoading}
-          emptyMessage="No owners found"
+          emptyMessage={t("noOwners")}
           searchPlaceholder={t("name") + "..."}
           searchValue={search}
           onSearch={setSearch}

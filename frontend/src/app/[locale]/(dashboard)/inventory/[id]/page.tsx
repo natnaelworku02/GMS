@@ -33,7 +33,7 @@ export default function InventoryItemDetailPage({ params }: { params: Promise<{ 
 
   const handleAdjust = async () => {
     if (!selectedLocation) {
-      setAdjustError("Select a location");
+      setAdjustError(t("selectLocation"));
       return;
     }
     setAdjustError(null);

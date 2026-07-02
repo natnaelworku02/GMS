@@ -37,17 +37,17 @@ export default function DashboardPage() {
         />
         <DashboardCard
           title={tnav("jobCards")}
-          description="Create and manage repair job cards"
+          description={tnav("jobCardsDescription")}
           href="/job-cards"
         />
         <DashboardCard
           title={tnav("performas")}
-          description="Generate and send performa invoices"
+          description={tnav("performasDescription")}
           href="/performas"
         />
         <DashboardCard
           title={tnav("inventory")}
-          description="Track parts and stock levels"
+          description={tnav("inventoryDescription")}
           comingSoon
         />
       </div>

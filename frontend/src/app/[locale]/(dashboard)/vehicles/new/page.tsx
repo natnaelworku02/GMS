@@ -24,6 +24,7 @@ import { toast } from "sonner";
 
 export default function NewVehiclePage() {
   const t = useTranslations("vehicles");
+  const tc = useTranslations("common");
   const router = useRouter();
   const [create, { isLoading }] = useCreateVehicleMutation();
   const { data: owners = [] } = useGetOwnersQuery();
@@ -62,7 +63,7 @@ export default function NewVehiclePage() {
       setNewOwnerName("");
       setNewOwnerPhone("");
     } catch {
-      toast.error("Failed to create owner");
+      toast.error(tc("error"));
     }
   }, [newOwnerName, newOwnerPhone, createOwner, setValue, setError]);
 
@@ -76,10 +77,10 @@ export default function NewVehiclePage() {
         engine_number: data.engine_number,
         chassis_number: data.chassis_number,
       }).unwrap();
-      toast.success("Vehicle created successfully");
+      toast.success(tc("save"));
       router.push("/vehicles");
     } catch {
-      toast.error("Failed to create vehicle");
+      toast.error(tc("error"));
     }
   };
 
@@ -87,7 +88,7 @@ export default function NewVehiclePage() {
     <div className="mx-auto max-w-xl pb-24">
       <Button variant="ghost" onClick={() => router.push("/vehicles")} className="mb-6">
         <ArrowLeft size={15} />
-        Back to Vehicles
+        {tc("back")} {t("title")}
       </Button>
       <h1 className="mb-6 text-2xl font-semibold tracking-tight">{t("create")}</h1>
 
@@ -101,12 +102,12 @@ export default function NewVehiclePage() {
                   options={ownerOptions}
                   value={ownerId}
                   onSelect={(val) => setValue("owner_id", val, { shouldValidate: true })}
-                  placeholder="Select owner..."
-                  searchPlaceholder="Search owners..."
-                  emptyText="No owners found."
+                  placeholder={t("selectOwner")}
+                  searchPlaceholder={t("search") + "..."}
+                  emptyText={t("noVehicles")}
                 />
               </div>
-              <Button type="button" variant="outline" size="icon" onClick={() => setShowNewOwner(true)} title="New Owner">
+              <Button type="button" variant="outline" size="icon" onClick={() => setShowNewOwner(true)} title={t("newOwner")}>
                 <Plus size={15} />
               </Button>
             </div>
@@ -155,10 +156,10 @@ export default function NewVehiclePage() {
 
         <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:hidden">
           <div className="flex items-center justify-between px-4 py-3">
-            <span className="text-sm text-muted-foreground">New vehicle</span>
+            <span className="text-sm text-muted-foreground">{t("create")}</span>
             <Button type="submit" disabled={isLoading} className="min-w-32">
               {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-              {isLoading ? "Creating..." : t("create")}
+            {isLoading ? tc("loading") : t("create")}
             </Button>
           </div>
         </div>
@@ -167,12 +168,12 @@ export default function NewVehiclePage() {
       <Dialog open={showNewOwner} onOpenChange={setShowNewOwner}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>New Owner</DialogTitle>
-            <DialogDescription>Add a new vehicle owner before creating the vehicle.</DialogDescription>
+            <DialogTitle>{t("newOwner")}</DialogTitle>
+            <DialogDescription>{t("create")} {t("owner")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label htmlFor="vno_name">Name</Label>
+              <Label htmlFor="vno_name">{t("owner")}</Label>
               <input id="vno_name" value={newOwnerName} onChange={(e) => setNewOwnerName(e.target.value)}
                 className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
             </div>
@@ -183,10 +184,10 @@ export default function NewVehiclePage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNewOwner(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setShowNewOwner(false)}>{tc("cancel")}</Button>
             <Button onClick={handleCreateOwner} disabled={creatingOwner || !newOwnerName.trim() || !newOwnerPhone.trim()}>
               {creatingOwner && <Loader2 className="h-4 w-4 animate-spin" />}
-              Create Owner
+              {t("newOwner")}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -102,7 +102,7 @@ export default function NewInventoryItemPage() {
               list="vehicle-types"
               value={typeInput}
               onChange={(e) => setTypeInput(e.target.value)}
-              placeholder="Type or select..."
+              placeholder={t("typeOrSelect")}
               className="h-9 flex-1 rounded-md border border-input bg-background px-3 text-sm"
             />
             <Button type="button" variant="outline" size="sm" onClick={() => addVehicleType(typeInput)}>

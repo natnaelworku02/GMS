@@ -11,6 +11,7 @@ import type { InventoryLocation } from "@/features/inventory/types";
 
 export default function InventoryLocationsPage() {
   const t = useTranslations("inventory");
+  const tc = useTranslations("common");
   const router = useRouter();
   const { data: locations = [], isLoading } = useGetInventoryLocationsQuery();
 
@@ -23,7 +24,7 @@ export default function InventoryLocationsPage() {
     },
     {
       key: "created_at",
-      header: "Created",
+      header: tc("createdAt"),
       render: (l) => (
         <span className="text-muted-foreground">{new Date(l.created_at).toLocaleDateString()}</span>
       ),
@@ -35,7 +36,7 @@ export default function InventoryLocationsPage() {
     <div className="mx-auto max-w-4xl">
       <Button variant="ghost" onClick={() => router.push("/inventory")} className="mb-4">
         <ArrowLeft size={15} />
-        Back to Inventory
+        {tc("back")} to {t("title")}
       </Button>
       <PageHeader
         title={t("locations")}
@@ -52,7 +53,7 @@ export default function InventoryLocationsPage() {
           columns={columns}
           data={locations}
           isLoading={isLoading}
-          emptyMessage="No locations found"
+          emptyMessage={t("noLocations")}
         />
       </div>
     </div>

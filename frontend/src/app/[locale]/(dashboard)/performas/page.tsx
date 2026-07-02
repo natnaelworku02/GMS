@@ -46,7 +46,7 @@ export default function PerformasListPage() {
               filter === s ? "bg-indigo-500 text-white" : "bg-muted text-muted-foreground hover:bg-muted/80"
             }`}
           >
-            {s === "all" ? "All" : t(s)}
+            {s === "all" ? t("allStatusFilter") : t(s)}
           </button>
         ))}
       </div>

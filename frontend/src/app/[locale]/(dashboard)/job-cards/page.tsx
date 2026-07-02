@@ -13,13 +13,14 @@ import { Plus, Eye } from "lucide-react";
 import { JOB_STATUS_LABELS } from "@/lib/constants";
 import type { JobCard, Vehicle, Owner } from "@/features/jobCards/types";
 
-const STATUS_OPTIONS = [
-  { value: "", label: "All Statuses" },
+const STATUS_OPTIONS = (t: (key: string) => string) => [
+  { value: "", label: t("allStatuses") },
   ...Object.entries(JOB_STATUS_LABELS).map(([value, label]) => ({ value, label })),
 ];
 
 export default function JobCardsPage() {
   const t = useTranslations("jobCards");
+  const tc = useTranslations("common");
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -74,7 +75,7 @@ export default function JobCardsPage() {
     },
     {
       key: "created_at",
-      header: "Created",
+      header: tc("createdAt"),
       render: (jc) => (
         <span className="text-muted-foreground">
           {new Date(jc.created_at).toLocaleDateString()}
@@ -121,7 +122,7 @@ export default function JobCardsPage() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search plates, names, descriptions..."
+            placeholder={t("searchPlaceholder")}
             className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           />
         </div>
@@ -130,7 +131,7 @@ export default function JobCardsPage() {
           onChange={(e) => setStatusFilter(e.target.value)}
           className="h-10 rounded-lg border border-input bg-background px-3 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          {STATUS_OPTIONS.map((opt) => (
+          {STATUS_OPTIONS(t).map((opt) => (
             <option key={opt.value} value={opt.value}>{opt.label}</option>
           ))}
         </select>
@@ -141,7 +142,7 @@ export default function JobCardsPage() {
           columns={columns}
           data={filtered}
           isLoading={isLoading}
-          emptyMessage="No job cards found"
+          emptyMessage={t("noJobCards")}
         />
       </div>
     </div>

@@ -20,6 +20,7 @@ import {
   UserCircle,
   Truck,
   Briefcase,
+  History,
 } from "lucide-react";
 
 const navItems = [
@@ -33,11 +34,13 @@ const navItems = [
   { href: "/tools", labelKey: "tools", icon: Wrench, permission: "tools.read", disabled: false },
   { href: "/users", labelKey: "users", icon: Users, permission: "users.read", disabled: false },
   { href: "/roles", labelKey: "roles", icon: ShieldCheck, permission: "users.read", disabled: false },
-  { href: "/settings", labelKey: "settings", icon: Settings, permission: "settings.read", disabled: true },
+  { href: "/settings", labelKey: "settings", icon: Settings, permission: "settings.read", disabled: false },
+  { href: "/audit-logs", labelKey: "auditLogs", icon: History, permission: "settings.read", disabled: false },
 ];
 
 export function MobileNav({ open, onClose }: { open: boolean; onClose: () => void }) {
   const t = useTranslations("nav");
+  const tc = useTranslations("common");
   const pathname = usePathname();
   const { user } = useAppSelector((s) => s.auth);
   const dispatch = useAppDispatch();
@@ -95,7 +98,7 @@ export function MobileNav({ open, onClose }: { open: boolean; onClose: () => voi
                 )}
                 <Icon size={18} className="shrink-0" />
                 <span>{t(item.labelKey)}</span>
-                {item.disabled && <span className="ml-auto text-[10px] text-white/30">Soon</span>}
+                {item.disabled && <span className="ml-auto text-[10px] text-white/30">{tc("comingSoon")}</span>}
               </button>
             );
 
@@ -119,7 +122,7 @@ export function MobileNav({ open, onClose }: { open: boolean; onClose: () => voi
               </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-white/90">{user.full_name}</p>
-                <p className="truncate text-xs text-white/40">User</p>
+                <p className="truncate text-xs text-white/40">{user.role_name || "User"}</p>
               </div>
             </div>
           )}
@@ -128,7 +131,7 @@ export function MobileNav({ open, onClose }: { open: boolean; onClose: () => voi
             className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-white/40 transition-colors hover:bg-white/5 hover:text-white/70"
           >
             <LogOut size={16} />
-            Logout
+            {tc("logout")}
           </button>
         </div>
       </aside>

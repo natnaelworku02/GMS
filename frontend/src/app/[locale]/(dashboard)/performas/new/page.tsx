@@ -22,6 +22,7 @@ export default function NewPerformaPage({ searchParams }: { searchParams: Promis
   useEffect(() => { searchParams.then(setParams); }, [searchParams]);
 
   const t = useTranslations("performas");
+  const tc = useTranslations("common");
   const router = useRouter();
   const jobCardIdFromUrl = params.job_card_id || "";
   const [create, { isLoading }] = useCreatePerformaMutation();
@@ -48,7 +49,7 @@ export default function NewPerformaPage({ searchParams }: { searchParams: Promis
 
   const onSubmit = async (data: PerformaCreateFormData) => {
     if (!lineItems.some((li) => li.description.trim())) {
-      toast.error("All line items must have a description");
+      toast.error(t("lineItemRequired"));
       return;
     }
     try {
@@ -57,10 +58,10 @@ export default function NewPerformaPage({ searchParams }: { searchParams: Promis
         client_email: data.client_email || undefined,
         line_items: lineItems.map((li) => ({ ...li, description: li.description.trim() })),
       }).unwrap();
-      toast.success("Performa created successfully");
+      toast.success("Performa created");
       router.push(`/performas/${perf.id}`);
     } catch {
-      toast.error("Failed to create performa");
+      toast.error(tc("error"));
     }
   };
 
@@ -68,7 +69,7 @@ export default function NewPerformaPage({ searchParams }: { searchParams: Promis
     <div className="mx-auto max-w-2xl pb-24">
       <Button variant="ghost" onClick={() => router.push("/performas")} className="mb-6">
         <ArrowLeft size={15} />
-        Back to Performas
+        {tc("back")} {t("title")}
       </Button>
       <h1 className="mb-6 text-2xl font-semibold tracking-tight">{t("create")}</h1>
 
@@ -97,7 +98,7 @@ export default function NewPerformaPage({ searchParams }: { searchParams: Promis
           <h2 className="text-sm font-semibold">{t("detail")}</h2>
           <div className="space-y-2">
             <Label htmlFor="email">{t("clientEmail")}</Label>
-            <Input id="email" type="email" placeholder="client@example.com" {...register("client_email")} />
+            <Input id="email" type="email" placeholder={t("clientEmailPlaceholder")} {...register("client_email")} />
           </div>
         </div>
 

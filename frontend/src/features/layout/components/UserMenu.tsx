@@ -58,7 +58,7 @@ export function UserMenu() {
         <div className="absolute right-0 top-full z-50 mt-1 w-56 rounded-xl border bg-card p-1 shadow-lg shadow-black/5">
           <div className="px-3 py-2">
             <p className="text-sm font-medium">{user.full_name}</p>
-            <p className="text-xs text-muted-foreground">User</p>
+            <p className="text-xs text-muted-foreground">{user.role_name || "User"}</p>
           </div>
           <div className="border-t" />
           <button

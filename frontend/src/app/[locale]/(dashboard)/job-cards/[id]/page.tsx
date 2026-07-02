@@ -22,6 +22,7 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
   useEffect(() => { params.then((p) => setId(p.id)); }, [params]);
 
   const t = useTranslations("jobCards");
+  const tc = useTranslations("common");
   const router = useRouter();
   const { data: jobCard, isLoading } = useGetJobCardQuery(id, { skip: !id });
   const { data: users = [] } = useGetUsersQuery();
@@ -45,8 +46,8 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
     setDialogOpen(true);
   };
 
-  if (isLoading) return <div className="p-8 text-center text-muted-foreground">Loading...</div>;
-  if (!jobCard) return <div className="p-8 text-center text-muted-foreground">Job card not found</div>;
+  if (isLoading) return <div className="p-8 text-center text-muted-foreground">{tc("loading")}</div>;
+  if (!jobCard) return <div className="p-8 text-center text-muted-foreground">{t("notFound")}</div>;
 
   const validTransitions = JOB_STATUS_TRANSITIONS[jobCard.status] || [];
   const canComplete = jobCard.status === "ready_for_testing" && unreturnedCheckouts.length === 0;
@@ -74,12 +75,12 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
       <div className="mb-6 flex items-center justify-between">
         <Button variant="ghost" onClick={() => router.push("/job-cards")}>
           <ArrowLeft size={15} />
-          Back to Job Cards
+          {t("backToList")}
         </Button>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => router.push(`/job-cards/${id}/edit`)}>
             <Pencil size={14} />
-            Edit
+            {tc("edit")}
           </Button>
           {validTransitions.length > 0 && (
             <div className="flex gap-2">
@@ -121,7 +122,7 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
         <div className="mt-4 flex flex-wrap gap-4 text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1">
             <User size={12} />
-            Created by {creator?.full_name || jobCard.created_by}
+            {t("createdBy", { name: creator?.full_name || jobCard.created_by })}
           </span>
           <span className="inline-flex items-center gap-1">
             <Clock size={12} />
@@ -130,7 +131,7 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
           {jobCard.updated_at !== jobCard.created_at && (
             <span className="inline-flex items-center gap-1">
               <Clock size={12} />
-              Updated {new Date(jobCard.updated_at).toLocaleDateString()}
+              {t("updated")} {new Date(jobCard.updated_at).toLocaleDateString()}
             </span>
           )}
         </div>
@@ -145,7 +146,7 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
       <div className="mb-6 grid gap-4 sm:grid-cols-2">
         <div className="rounded-xl border bg-card p-5 shadow-sm space-y-3">
           <h2 className="text-sm font-semibold">{t("owner")}</h2>
-          <p className="text-sm">{owner?.name || "Loading..."}</p>
+          <p className="text-sm">{owner?.name || tc("loading")}</p>
           <p className="text-xs text-muted-foreground">{owner?.phone}</p>
         </div>
 
@@ -162,7 +163,7 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2">
         <div className="rounded-xl border bg-card p-5 shadow-sm space-y-3">
-          <h2 className="text-sm font-semibold">Details</h2>
+          <h2 className="text-sm font-semibold">{t("details")}</h2>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t("mileage")}</span>
@@ -174,11 +175,11 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t("privatePaint")}</span>
-              <span>{jobCard.private_paint ? "Yes" : "No"}</span>
+              <span>{jobCard.private_paint ? tc("yes") : tc("no")}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t("privateMechanic")}</span>
-              <span>{jobCard.private_mechanic ? "Yes" : "No"}</span>
+              <span>{jobCard.private_mechanic ? tc("yes") : tc("no")}</span>
             </div>
             {jobCard.insurance_provider && (
               <div className="flex justify-between">
@@ -239,11 +240,11 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
           </h2>
           <Button size="sm" variant="outline" onClick={() => router.push(`/performas/new?job_card_id=${id}`)}>
             <Plus size={14} />
-            Create
+            {tc("create")}
           </Button>
         </div>
         {linkedPerformas.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No performas yet</p>
+          <p className="text-sm text-muted-foreground">{t("noPerformas")}</p>
         ) : (
           <div className="space-y-2">
             {linkedPerformas.map((p) => (
@@ -293,9 +294,9 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
       <ConfirmDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        title={`Change status to "${confirmStatus ? JOB_STATUS_LABELS[confirmStatus] : ""}"?`}
-        description="This action cannot be undone."
-        confirmLabel="Confirm"
+        title={`${t("confirmStatusChange")} "${confirmStatus ? JOB_STATUS_LABELS[confirmStatus] : ""}"?`}
+        description={tc("cannotUndo")}
+        confirmLabel={tc("confirm")}
         onConfirm={handleStatusChange}
       />
     </div>

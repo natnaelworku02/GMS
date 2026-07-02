@@ -20,7 +20,13 @@
     "comingSoon": "Soon",
     "greetingMorning": "Good morning",
     "greetingAfternoon": "Good afternoon",
-    "greetingEvening": "Good evening"
+    "greetingEvening": "Good evening",
+    "yes": "Yes",
+    "no": "No",
+    "notFound": "{entity} not found",
+    "cannotUndo": "This action cannot be undone.",
+    "createdAt": "Created",
+    "logout": "Logout"
   },
   "auth": {
     "login": "Login",
@@ -30,7 +36,14 @@
     "loginTitle": "Sign in to GMS",
     "loginButton": "Sign In",
     "invalidCredentials": "Invalid phone or password",
-    "sessionExpired": "Session expired. Please login again."
+    "sessionExpired": "Session expired. Please login again.",
+    "companyName": "Fyamet Automotive",
+    "phoneRequired": "Phone is required",
+    "invalidPhone": "Invalid phone number",
+    "passwordRequired": "Password is required",
+    "phonePlaceholder": "+251912345678",
+    "passwordPlaceholder": "••••••••",
+    "signingIn": "Signing in..."
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -46,7 +59,10 @@
     "settings": "Settings",
     "auditLogs": "Audit Logs",
     "startJob": "Start a Job",
-    "notifications": "Notifications"
+    "notifications": "Notifications",
+    "jobCardsDescription": "Create and manage repair job cards",
+    "performasDescription": "Generate and send performa invoices",
+    "inventoryDescription": "Track parts and stock levels"
   },
   "notifications": {
     "title": "Notifications",
@@ -92,7 +108,17 @@
     "unreturnedTools": "unreturned tool(s)",
     "returnToolsFirst": "All tools must be returned before completing",
     "allToolsReturned": "All tools returned",
-    "performas": "Performas"
+    "performas": "Performas",
+    "backToList": "Back to Job Cards",
+    "createdBy": "Created by {name}",
+    "details": "Details",
+    "noPerformas": "No performas yet",
+    "searchPlaceholder": "Search plates, names, descriptions...",
+    "allStatuses": "All Statuses",
+    "noJobCards": "No job cards found",
+    "notFound": "Job card not found",
+    "updated": "Updated",
+    "confirmStatusChange": "Change status to"
   },
   "performas": {
     "title": "Performas",
@@ -122,7 +148,10 @@
     "send": "Send to Client",
     "approve": "Approve",
     "reject": "Reject",
-    "revise": "Revise"
+    "revise": "Revise",
+    "clientEmailPlaceholder": "client@example.com",
+    "lineItemRequired": "All line items must have a description",
+    "allStatusFilter": "All"
   },
   "inventory": {
     "title": "Inventory",
@@ -139,7 +168,12 @@
     "currentStock": "Current Stock",
     "location": "Location",
     "quantity": "Quantity",
-    "lowStock": "Low Stock"
+    "lowStock": "Low Stock",
+    "noItems": "No inventory items found",
+    "noLocations": "No locations found",
+    "allVehicleTypes": "All vehicle types",
+    "selectLocation": "Select a location",
+    "typeOrSelect": "Type or select..."
   },
   "tools": {
     "title": "Tools",
@@ -156,7 +190,9 @@
     "checkedOutAt": "Checked Out At",
     "returnedAt": "Returned At",
     "jobCard": "Job Card",
-    "employee": "Employee"
+    "employee": "Employee",
+    "noTools": "No tools found",
+    "noCheckouts": "No checkouts found"
   },
   "hr": {
     "title": "Employees",
@@ -167,7 +203,8 @@
     "phone": "Phone",
     "active": "Active",
     "inactive": "Inactive",
-    "search": "Search employees..."
+    "search": "Search employees...",
+    "noEmployees": "No employees found"
   },
   "owners": {
     "title": "Owners",
@@ -179,7 +216,9 @@
     "email": "Email",
     "ownerType": "Owner Type",
     "vehicles": "Vehicles",
-    "noVehicles": "No vehicles registered"
+    "noVehicles": "No vehicles registered",
+    "noOwners": "No owners found",
+    "registered": "Registered"
   },
   "vehicles": {
     "title": "Vehicles",
@@ -190,7 +229,11 @@
     "engineNumber": "Engine Number",
     "chassisNumber": "Chassis Number",
     "currentMileage": "Current Mileage (km)",
-    "owner": "Owner"
+    "owner": "Owner",
+    "noVehicles": "No vehicles found",
+    "selectOwner": "Select owner...",
+    "newOwner": "New Owner",
+    "searchPlaceholder": "Search plate, model or owner..."
   },
   "users": {
     "title": "Users",
@@ -201,7 +244,13 @@
     "role": "Role",
     "password": "Password",
     "isActive": "Active",
-    "resetPassword": "Reset Password"
+    "resetPassword": "Reset Password",
+    "noUsers": "No users found",
+    "notFound": "User not found",
+    "newPassword": "New password",
+    "resettingPassword": "Resetting...",
+    "passwordResetDone": "Password reset successfully",
+    "passwordLengthError": "Password must be at least 8 characters"
   },
   "roles": {
     "title": "Roles",
@@ -214,13 +263,21 @@
     "create": "Create",
     "read": "Read",
     "update": "Update",
-    "delete": "Delete"
+    "delete": "Delete",
+    "typeHeader": "Type",
+    "superAdmin": "Super Admin",
+    "noRoles": "No roles found",
+    "namePlaceholder": "e.g. Senior Mechanic",
+    "creating": "Creating..."
   },
   "settings": {
     "title": "Settings",
     "key": "Key",
     "value": "Value",
-    "update": "Update"
+    "update": "Update",
+    "updatedAt": "Last Updated",
+    "noSettings": "No settings found",
+    "count": "{count} setting{count, plural, one {} other {s}}"
   },
   "audit": {
     "title": "Audit Logs",
@@ -229,7 +286,10 @@
     "entityId": "Entity ID",
     "user": "User",
     "details": "Details",
-    "createdAt": "Date"
+    "createdAt": "Date",
+    "noLogs": "No audit logs found",
+    "allTypes": "All types",
+    "count": "{count} log{count, plural, one {} other {s}}"
   },
   "startJob": {
     "title": "Start a Job",
@@ -264,7 +324,36 @@
     "goToJobCard": "View Job Card",
     "success": "Job card and performa created successfully!",
     "next": "Next",
-    "previous": "Previous"
+    "previous": "Previous",
+    "ownerPlaceholder": "Select owner...",
+    "vehiclePlaceholder": "Select vehicle...",
+    "ownerFirstPlaceholder": "Select owner first",
+    "noOwnersFound": "No owners found.",
+    "noVehiclesForOwner": "No vehicles for this owner.",
+    "clientEmailPlaceholder": "client@example.com",
+    "lineItemRequired": "All line items must have a description",
+    "createOwnerError": "Failed to create owner",
+    "createVehicleError": "Failed to create vehicle",
+    "createJobCardError": "Failed to create job card",
+    "createPerformaError": "Failed to create performa",
+    "mileage": "Mileage (km)",
+    "insuranceProvider": "Insurance Provider",
+    "description": "Description",
+    "privatePaint": "Private Paint",
+    "privateMechanic": "Private Mechanic",
+    "remarks": "Remarks",
+    "requestedMaterials": "Requested Materials",
+    "clientEmail": "Client Email",
+    "lineItems": "Line Items",
+    "name": "Name",
+    "phone": "Phone",
+    "model": "Model",
+    "type": "Type",
+    "plateNumber": "Plate #",
+    "engineNumber": "Engine #",
+    "chassisNumber": "Chassis #",
+    "searchPlaceholder": "Search owners...",
+    "vehicleSearchPlaceholder": "Search vehicles..."
   },
   "offline": {
     "banner": "You're offline — changes will sync when reconnected",
