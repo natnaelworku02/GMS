@@ -14,8 +14,16 @@ const notoSansEthiopic = Noto_Sans_Ethiopic({
 });
 
 export const metadata: Metadata = {
-  title: "GMS",
+  title: {
+    default: "GMS — Garage Management System",
+    template: "%s — GMS",
+  },
   description: "Garage Management System",
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+  },
 };
 
 export default function RootLayout({

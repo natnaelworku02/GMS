@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Loader2, Plus } from "lucide-react";
+import { toast } from "sonner";
 
 export default function NewVehiclePage() {
   const t = useTranslations("vehicles");
@@ -61,7 +62,7 @@ export default function NewVehiclePage() {
       setNewOwnerName("");
       setNewOwnerPhone("");
     } catch {
-      setError("root", { message: "Failed to create owner" });
+      toast.error("Failed to create owner");
     }
   }, [newOwnerName, newOwnerPhone, createOwner, setValue, setError]);
 
@@ -75,9 +76,10 @@ export default function NewVehiclePage() {
         engine_number: data.engine_number,
         chassis_number: data.chassis_number,
       }).unwrap();
+      toast.success("Vehicle created successfully");
       router.push("/vehicles");
     } catch {
-      setError("root", { message: "Failed to create vehicle" });
+      toast.error("Failed to create vehicle");
     }
   };
 
@@ -129,7 +131,7 @@ export default function NewVehiclePage() {
             {errors.plate_number && <p className="text-sm text-destructive">{errors.plate_number.message}</p>}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="engine">{t("engineNumber")}</Label>
               <Input id="engine" className="font-mono" {...register("engine_number")} />
@@ -143,8 +145,6 @@ export default function NewVehiclePage() {
           </div>
 
         </div>
-
-        {errors.root && <p className="text-sm text-destructive">{errors.root.message}</p>}
 
         <div className="hidden md:block">
           <Button type="submit" disabled={isLoading}>

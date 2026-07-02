@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function NewInventoryLocationPage() {
   const t = useTranslations("inventory");
@@ -27,9 +28,10 @@ export default function NewInventoryLocationPage() {
   const onSubmit = async (data: InventoryLocationFormData) => {
     try {
       await create({ name: data.name }).unwrap();
+      toast.success("Location created successfully");
       router.push("/inventory/locations");
     } catch {
-      setError("root", { message: "Failed to create location" });
+      toast.error("Failed to create location");
     }
   };
 
@@ -47,7 +49,6 @@ export default function NewInventoryLocationPage() {
           <Input id="name" {...register("name")} />
           {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
         </div>
-        {errors.root && <p className="text-sm text-destructive">{errors.root.message}</p>}
         <Button type="submit" disabled={isLoading}>
           {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
           {isLoading ? "Creating..." : t("createLocation")}

@@ -11,12 +11,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function EditEmployeePage({ params }: { params: Promise<{ id: string }> }) {
   const [id, setId] = useState("");
   useEffect(() => { params.then((p) => setId(p.id)); }, [params]);
 
   const t = useTranslations("hr");
+  const tc = useTranslations("common");
   const router = useRouter();
   const { data: employee, isLoading: loading } = useGetEmployeeQuery(id, { skip: !id });
   const [update, { isLoading: updating }] = useUpdateEmployeeMutation();
@@ -44,9 +46,10 @@ export default function EditEmployeePage({ params }: { params: Promise<{ id: str
   const onSubmit = async (data: EmployeeUpdateFormData) => {
     try {
       await update({ id, body: data }).unwrap();
+      toast.success("Employee updated successfully");
       router.push("/employees");
     } catch {
-      setError("root", { message: "Failed to update employee" });
+      toast.error("Failed to update employee");
     }
   };
 
@@ -81,10 +84,9 @@ export default function EditEmployeePage({ params }: { params: Promise<{ id: str
             className="h-4 w-4 rounded border-input text-indigo-500 focus:ring-indigo-500" />
           <Label htmlFor="is_active">{t("active")}</Label>
         </div>
-        {errors.root && <p className="text-sm text-destructive">{errors.root.message}</p>}
         <Button type="submit" disabled={updating}>
           {updating && <Loader2 className="h-4 w-4 animate-spin" />}
-          {updating ? "Saving..." : t("save")}
+          {updating ? "Saving..." : tc("save")}
         </Button>
       </form>
     </div>

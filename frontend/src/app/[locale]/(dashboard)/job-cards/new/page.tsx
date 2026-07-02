@@ -22,6 +22,7 @@ import { Label } from "@/components/ui/label";
 import { Combobox } from "@/components/ui/combobox";
 import { cn } from "@/lib/utils";
 import { ArrowLeft, Loader2, Check, ChevronLeft, ChevronRight, Plus, User, Truck, Wrench, ClipboardCheck } from "lucide-react";
+import { toast } from "sonner";
 import type { VehicleConditionInput } from "@/features/jobCards/types";
 
 const CONDITION_STEP_START = 2;
@@ -111,7 +112,7 @@ export default function NewJobCardPage() {
       setNewOwnerName("");
       setNewOwnerPhone("");
     } catch {
-      setError("root", { message: "Failed to create owner" });
+      toast.error("Failed to create owner");
     }
   }, [newOwnerName, newOwnerPhone, createOwner, setValue, setError]);
 
@@ -134,7 +135,7 @@ export default function NewJobCardPage() {
       setNewVehicleEngine("");
       setNewVehicleChassis("");
     } catch {
-      setError("root", { message: "Failed to create vehicle" });
+      toast.error("Failed to create vehicle");
     }
   }, [newVehicleModel, newVehicleType, newVehiclePlate, newVehicleEngine, newVehicleChassis, ownerId, createVehicle, setValue, setError]);
 
@@ -155,7 +156,7 @@ export default function NewJobCardPage() {
       }).unwrap();
       router.push("/job-cards");
     } catch {
-      setError("root", { message: "Failed to create job card" });
+      toast.error("Failed to create job card");
     }
   };
 
@@ -497,7 +498,6 @@ export default function NewJobCardPage() {
               )}
             </div>
 
-            {errors.root && <p className="text-sm text-destructive">{errors.root.message}</p>}
           </div>
         )}
 

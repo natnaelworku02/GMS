@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function NewEmployeePage() {
   const t = useTranslations("hr");
@@ -27,9 +28,10 @@ export default function NewEmployeePage() {
   const onSubmit = async (data: EmployeeCreateFormData) => {
     try {
       await create({ name: data.name, job_title: data.job_title, phone: data.phone }).unwrap();
+      toast.success("Employee created successfully");
       router.push("/employees");
     } catch {
-      setError("root", { message: "Failed to create employee" });
+      toast.error("Failed to create employee");
     }
   };
 
@@ -57,7 +59,6 @@ export default function NewEmployeePage() {
           <Input id="phone" {...register("phone")} />
           {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
         </div>
-        {errors.root && <p className="text-sm text-destructive">{errors.root.message}</p>}
         <Button type="submit" disabled={isLoading}>
           {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
           {isLoading ? "Creating..." : t("create")}

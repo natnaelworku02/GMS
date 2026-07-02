@@ -45,7 +45,16 @@
     "roles": "ሚናዎች",
     "settings": "ቅንብሮች",
     "auditLogs": "የኦዲት መዝገቦች",
-    "startJob": "ሥራ ጀምር"
+    "startJob": "ሥራ ጀምር",
+    "notifications": "ማሳወቂያዎች"
+  },
+  "notifications": {
+    "title": "ማሳወቂያዎች",
+    "unread": "ያላነበቡ",
+    "all": "ሁሉም",
+    "empty": "ምንም ማሳወቂያ የለም",
+    "markRead": "እንደተነበበ ምልክት አድርግ",
+    "seeAll": "ሁሉንም ተመልከት"
   },
   "jobCards": {
     "title": "የሥራ ካርዶች",
@@ -61,6 +70,7 @@
     "engineNumber": "የሞተር ቁጥር",
     "chassisNumber": "የቻሲስ ቁጥር",
     "mechanics": "የተመደቡ መካኒኮች",
+    "noMechanics": "ምንም መካኒኮች አልተመደቡም",
     "conditions": "የተሽከርካሪ ሁኔታ",
     "privatePaint": "የግል ቀለም",
     "privateMechanic": "የግል መካኒክ",

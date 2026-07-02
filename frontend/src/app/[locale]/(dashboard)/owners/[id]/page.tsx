@@ -11,12 +11,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function EditOwnerPage({ params }: { params: Promise<{ id: string }> }) {
   const [id, setId] = useState("");
   useEffect(() => { params.then((p) => setId(p.id)); }, [params]);
 
   const t = useTranslations("owners");
+  const tc = useTranslations("common");
   const router = useRouter();
   const { data: owner, isLoading: loading } = useGetOwnerQuery(id, { skip: !id });
   const { data: vehicles = [] } = useGetVehiclesQuery();
@@ -51,9 +53,10 @@ export default function EditOwnerPage({ params }: { params: Promise<{ id: string
           phone: data.phone,
         },
       }).unwrap();
+      toast.success("Owner updated successfully");
       router.push("/owners");
     } catch {
-      setError("root", { message: "Failed to update owner" });
+      toast.error("Failed to update owner");
     }
   };
 
@@ -78,10 +81,9 @@ export default function EditOwnerPage({ params }: { params: Promise<{ id: string
           <Input id="phone" {...register("phone")} />
           {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
         </div>
-        {errors.root && <p className="text-sm text-destructive">{errors.root.message}</p>}
         <Button type="submit" disabled={updating}>
           {updating && <Loader2 className="h-4 w-4 animate-spin" />}
-          {updating ? "Saving..." : t("save")}
+          {updating ? "Saving..." : tc("save")}
         </Button>
       </form>
 

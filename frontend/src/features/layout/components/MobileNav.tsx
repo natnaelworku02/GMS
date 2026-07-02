@@ -59,7 +59,7 @@ export function MobileNav({ open, onClose }: { open: boolean; onClose: () => voi
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 md:hidden">
+    <div className="fixed inset-0 z-50 lg:hidden">
       <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <aside className="fixed left-0 top-0 flex h-full w-64 flex-col bg-gradient-to-b from-[#0f172a] to-[#1e293b] text-white shadow-xl">
         <div className="flex h-14 items-center justify-between border-b border-white/10 px-4">
@@ -119,7 +119,7 @@ export function MobileNav({ open, onClose }: { open: boolean; onClose: () => voi
               </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-white/90">{user.full_name}</p>
-                <p className="truncate text-xs text-white/40">{user.role_name || "User"}</p>
+                <p className="truncate text-xs text-white/40">User</p>
               </div>
             </div>
           )}
