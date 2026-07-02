@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useGetRolesQuery } from "@/features/auth/api";
@@ -14,7 +15,12 @@ export default function RolesPage() {
   const t = useTranslations("roles");
   const tc = useTranslations("common");
   const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState("");
   const { data: roles = [], isLoading } = useGetRolesQuery();
+
+  const filteredRoles = roles.filter((r) =>
+    r.name.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
 
   const columns: Column<Role>[] = [
     {
@@ -86,9 +92,12 @@ export default function RolesPage() {
       <div className="mt-6">
         <DataTable<Role>
           columns={columns}
-          data={roles}
+          data={filteredRoles}
           isLoading={isLoading}
           emptyMessage={t("noRoles")}
+          searchValue={searchQuery}
+          onSearch={setSearchQuery}
+          searchPlaceholder={t("searchPlaceholder") || tc("search")}
         />
       </div>
     </div>

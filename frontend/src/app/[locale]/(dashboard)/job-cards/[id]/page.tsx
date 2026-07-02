@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, use } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { useGetJobCardQuery, useUpdateJobCardStatusMutation, useGetOwnerQuery, useGetVehicleQuery, useGetEmployeesQuery } from "@/features/jobCards/api";
@@ -18,24 +18,21 @@ import { JOB_STATUS_LABELS, JOB_STATUS_TRANSITIONS } from "@/lib/constants";
 import type { VehicleConditionInput } from "@/features/jobCards/types";
 
 export default function JobCardDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const [id, setId] = useState("");
-  useEffect(() => { params.then((p) => setId(p.id)); }, [params]);
+  const { id } = use(params);
 
   const t = useTranslations("jobCards");
   const tc = useTranslations("common");
   const router = useRouter();
-  const { data: jobCard, isLoading } = useGetJobCardQuery(id, { skip: !id });
+  const { data: jobCard, isLoading } = useGetJobCardQuery(id);
   const { data: users = [] } = useGetUsersQuery();
   const { data: owner } = useGetOwnerQuery(jobCard?.owner_id || "", { skip: !jobCard?.owner_id });
   const { data: vehicle } = useGetVehicleQuery(jobCard?.vehicle_id || "", { skip: !jobCard?.vehicle_id });
   const { data: employees = [] } = useGetEmployeesQuery({ active_only: "true" });
   const { data: unreturnedCheckouts = [] } = useGetToolCheckoutsQuery(
     { job_card_id: id, unreturned_only: true },
-    { skip: !id },
   );
   const { data: linkedPerformas = [] } = useGetPerformasQuery(
     { job_card_id: id },
-    { skip: !id },
   );
   const [updateStatus, { isLoading: isTransitioning }] = useUpdateJobCardStatusMutation();
   const [confirmStatus, setConfirmStatus] = useState<string | null>(null);
@@ -46,8 +43,20 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
     setDialogOpen(true);
   };
 
-  if (isLoading) return <div className="p-8 text-center text-muted-foreground">{tc("loading")}</div>;
-  if (!jobCard) return <div className="p-8 text-center text-muted-foreground">{t("notFound")}</div>;
+  if (isLoading) return (
+    <div className="flex items-center justify-center py-20">
+      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+    </div>
+  );
+  if (!jobCard) return (
+    <div className="flex flex-col items-center justify-center gap-3 py-20">
+      <p className="text-sm text-muted-foreground">{t("notFound")}</p>
+      <Button variant="ghost" onClick={() => router.back()}>
+        <ArrowLeft size={15} />
+        {tc("back")}
+      </Button>
+    </div>
+  );
 
   const validTransitions = JOB_STATUS_TRANSITIONS[jobCard.status] || [];
   const canComplete = jobCard.status === "ready_for_testing" && unreturnedCheckouts.length === 0;

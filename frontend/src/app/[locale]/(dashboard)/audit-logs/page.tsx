@@ -9,11 +9,25 @@ import type { AuditLog } from "@/features/audit/types";
 
 export default function AuditLogsPage() {
   const t = useTranslations("audit");
+  const tc = useTranslations("common");
   const [entityFilter, setEntityFilter] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { data: logs = [], isLoading } = useGetAuditLogsQuery(
     entityFilter ? { entity_type: entityFilter } : undefined,
   );
+
+  const filteredLogs = useMemo(() => {
+    if (!searchQuery) return logs;
+    const q = searchQuery.toLowerCase();
+    return logs.filter(
+      (l) =>
+        l.action.toLowerCase().includes(q) ||
+        (l.entity_type && l.entity_type.toLowerCase().includes(q)) ||
+        (l.entity_id && l.entity_id.toLowerCase().includes(q)) ||
+        (l.user_name && l.user_name.toLowerCase().includes(q)),
+    );
+  }, [logs, searchQuery]);
 
   const entityTypes = useMemo(() => {
     const types = new Set(logs.map((l) => l.entity_type).filter(Boolean));
@@ -24,7 +38,18 @@ export default function AuditLogsPage() {
     {
       key: "action",
       header: t("action"),
-      render: (l) => <span className="font-medium">{l.action}</span>,
+      render: (l) => {
+        const action = l.action;
+        let cls = "border-gray-300 text-gray-600 bg-gray-50";
+        if (action === "create") cls = "border-emerald-300 text-emerald-600 bg-emerald-50";
+        else if (action === "update") cls = "border-amber-300 text-amber-600 bg-amber-50";
+        else if (action === "delete") cls = "border-red-300 text-red-600 bg-red-50";
+        return (
+          <span className={`inline-block rounded-md border px-2 py-0.5 text-xs font-medium uppercase ${cls}`}>
+            {action}
+          </span>
+        );
+      },
       sortable: true,
     },
     {
@@ -92,9 +117,12 @@ export default function AuditLogsPage() {
       <div className="mt-4">
         <DataTable<AuditLog>
           columns={columns}
-          data={logs}
+          data={filteredLogs}
           isLoading={isLoading}
           emptyMessage={t("noLogs")}
+          searchValue={searchQuery}
+          onSearch={setSearchQuery}
+          searchPlaceholder={t("searchPlaceholder") || tc("search")}
         />
       </div>
     </div>

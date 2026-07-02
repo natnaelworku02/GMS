@@ -59,7 +59,14 @@ export default function EmployeesPage() {
     {
       key: "name",
       header: t("name"),
-      render: (e) => <span className="font-medium">{e.name}</span>,
+      render: (e) => (
+        <div className="flex items-center gap-2">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500/10 to-indigo-500/5 text-xs font-semibold text-indigo-500">
+            {e.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
+          </span>
+          <span className="font-medium">{e.name}</span>
+        </div>
+      ),
       sortable: true,
     },
     {

@@ -26,6 +26,7 @@
     "notFound": "{entity} not found",
     "cannotUndo": "This action cannot be undone.",
     "createdAt": "Created",
+    "updated": "Updated successfully",
     "logout": "Logout"
   },
   "auth": {
@@ -195,7 +196,10 @@
     "revise": "Revise",
     "clientEmailPlaceholder": "client@example.com",
     "lineItemRequired": "All line items must have a description",
-    "allStatusFilter": "All"
+    "allStatusFilter": "All",
+    "jobCard": "Job Card",
+    "jobCardId": "Job Card ID",
+    "jobCardIdPlaceholder": "Enter job card ID"
   },
   "inventory": {
     "title": "Inventory",
@@ -288,6 +292,9 @@
     "role": "Role",
     "password": "Password",
     "isActive": "Active",
+    "isInactive": "Inactive",
+    "selectRole": "Select a role",
+    "phonePlaceholder": "+251912345678",
     "resetPassword": "Reset Password",
     "noUsers": "No users found",
     "notFound": "User not found",
@@ -298,7 +305,7 @@
   },
   "roles": {
     "title": "Roles",
-    "create": "New Role",
+    "newRole": "New Role",
     "edit": "Edit Role",
     "name": "Role Name",
     "isSuperAdmin": "Super Admin",
@@ -308,6 +315,13 @@
     "read": "Read",
     "update": "Update",
     "delete": "Delete",
+    "module_job_cards": "Job Cards",
+    "module_performa": "Performa",
+    "module_inventory": "Inventory",
+    "module_tools": "Tools",
+    "module_employees": "Employees",
+    "module_users": "Users",
+    "module_settings": "Settings",
     "typeHeader": "Type",
     "superAdmin": "Super Admin",
     "noRoles": "No roles found",

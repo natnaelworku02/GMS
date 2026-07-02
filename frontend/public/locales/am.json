@@ -26,6 +26,7 @@
     "notFound": "{entity} አልተገኘም",
     "cannotUndo": "ይህ እርምጃ መቀልበስ አይቻልም።",
     "createdAt": "የተፈጠረበት",
+    "updated": "በተሳካ ሁኔታ ተዘምኗል",
     "logout": "ውጣ"
   },
   "auth": {
@@ -195,7 +196,10 @@
     "revise": "አስተካክል",
     "clientEmailPlaceholder": "client@example.com",
     "lineItemRequired": "ሁሉም የዝርዝር ዕቃዎች መግለጫ ሊኖራቸው ይገባል",
-    "allStatusFilter": "ሁሉም"
+    "allStatusFilter": "ሁሉም",
+    "jobCard": "የስራ ካርድ",
+    "jobCardId": "የስራ ካርድ መለያ",
+    "jobCardIdPlaceholder": "የስራ ካርድ መለያ ያስገቡ"
   },
   "inventory": {
     "title": "ክምችት",
@@ -298,7 +302,7 @@
   },
   "roles": {
     "title": "ሚናዎች",
-    "create": "አዲስ ሚና",
+    "newRole": "አዲስ ሚና",
     "edit": "ሚና አስተካክል",
     "name": "የሚና ስም",
     "isSuperAdmin": "ሱፐር አድሚን",
@@ -308,6 +312,13 @@
     "read": "አንብብ",
     "update": "አስተካክል",
     "delete": "ሰርዝ",
+    "module_job_cards": "የስራ ካርዶች",
+    "module_performa": "ፐርፎርማ",
+    "module_inventory": "እቃዎች",
+    "module_tools": "መሳሪያዎች",
+    "module_employees": "ሰራተኞች",
+    "module_users": "ተጠቃሚዎች",
+    "module_settings": "ቅንብሮች",
     "typeHeader": "አይነት",
     "superAdmin": "ሱፐር አድሚን",
     "noRoles": "ምንም ሚናዎች አልተገኙም",

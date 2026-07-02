@@ -17,6 +17,7 @@ import { MechanicAssign } from "@/features/jobCards/components/MechanicAssign";
 import { jobCardCreateSchema, type JobCardCreateFormData } from "@/lib/formSchemas";
 import { PART_SECTIONS } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Combobox } from "@/components/ui/combobox";
@@ -276,13 +277,11 @@ export default function NewJobCardPage() {
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="space-y-1.5">
                     <Label className="text-xs">{t("name")}</Label>
-                    <input value={newOwnerName} onChange={(e) => setNewOwnerName(e.target.value)}
-                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm" />
+                    <Input value={newOwnerName} onChange={(e) => setNewOwnerName(e.target.value)} />
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">{t("phone")}</Label>
-                    <input value={newOwnerPhone} onChange={(e) => setNewOwnerPhone(e.target.value)}
-                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm" />
+                    <Input value={newOwnerPhone} onChange={(e) => setNewOwnerPhone(e.target.value)} />
                   </div>
                 </div>
                 <div className="flex gap-2 pt-1">
@@ -330,28 +329,23 @@ export default function NewJobCardPage() {
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="space-y-1.5">
                     <Label className="text-xs">{t("model")}</Label>
-                    <input value={newVehicleModel} onChange={(e) => setNewVehicleModel(e.target.value)}
-                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm" />
+                    <Input value={newVehicleModel} onChange={(e) => setNewVehicleModel(e.target.value)} />
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">{t("type")}</Label>
-                    <input value={newVehicleType} onChange={(e) => setNewVehicleType(e.target.value)}
-                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm" />
+                    <Input value={newVehicleType} onChange={(e) => setNewVehicleType(e.target.value)} />
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">{t("labelPlateNumber")}</Label>
-                    <input value={newVehiclePlate} onChange={(e) => setNewVehiclePlate(e.target.value)}
-                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 font-mono text-sm" />
+                    <Input value={newVehiclePlate} onChange={(e) => setNewVehiclePlate(e.target.value)} className="font-mono" />
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">{t("labelEngineNumber")}</Label>
-                    <input value={newVehicleEngine} onChange={(e) => setNewVehicleEngine(e.target.value)}
-                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 font-mono text-sm" />
+                    <Input value={newVehicleEngine} onChange={(e) => setNewVehicleEngine(e.target.value)} className="font-mono" />
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">{t("labelChassisNumber")}</Label>
-                    <input value={newVehicleChassis} onChange={(e) => setNewVehicleChassis(e.target.value)}
-                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 font-mono text-sm" />
+                    <Input value={newVehicleChassis} onChange={(e) => setNewVehicleChassis(e.target.value)} className="font-mono" />
                   </div>
                 </div>
                 <div className="flex gap-2 pt-1">
@@ -377,15 +371,13 @@ export default function NewJobCardPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label htmlFor="mileage">{t("mileage")}</Label>
-                <input id="mileage" type="number" {...register("mileage_km", { valueAsNumber: true })}
-                  className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+                <Input id="mileage" type="number" {...register("mileage_km", { valueAsNumber: true })} />
                 {errors.mileage_km && <p className="text-sm text-destructive">{errors.mileage_km.message}</p>}
               </div>
 
               <div className="space-y-1.5">
                 <Label htmlFor="ins">{t("insuranceProvider")}</Label>
-                <input id="ins" {...register("insurance_provider")}
-                  className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+                <Input id="ins" {...register("insurance_provider")} />
               </div>
             </div>
 

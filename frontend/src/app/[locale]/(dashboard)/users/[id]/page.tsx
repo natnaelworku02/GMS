@@ -11,7 +11,9 @@ import {
 } from "@/features/auth/api";
 import { UserForm } from "@/features/auth/users/components/UserForm";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ArrowLeft, Loader2, Eye, EyeOff } from "lucide-react";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import type { CreateUserFormData } from "@/features/auth/users/schemas";
 
 type Props = {
@@ -27,6 +29,8 @@ export default function EditUserPage({ params }: Props) {
   const [updateUser, { isLoading: isSaving }] = useUpdateUserMutation();
   const [resetPassword, { isLoading: isResetting }] = useResetPasswordMutation();
   const [newPassword, setNewPassword] = useState("");
+  const [showPwd, setShowPwd] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
 
   const onSubmit = async (data: CreateUserFormData) => {
     await updateUser({
@@ -40,14 +44,19 @@ export default function EditUserPage({ params }: Props) {
     router.push("/users");
   };
 
-  const handleReset = async () => {
+  const handleReset = () => {
     if (!newPassword || newPassword.length < 8) {
       toast.error(t("passwordLengthError"));
       return;
     }
+    setConfirmReset(true);
+  };
+
+  const confirmResetPassword = async () => {
     await resetPassword({ id, password: newPassword }).unwrap();
     toast.success(t("passwordResetDone"));
     setNewPassword("");
+    setConfirmReset(false);
   };
 
   if (loadingUser) {
@@ -88,18 +97,53 @@ export default function EditUserPage({ params }: Props) {
       <div className="mt-8 rounded-xl border bg-card p-6 shadow-sm">
         <h2 className="mb-4 text-sm font-semibold">{t("resetPassword")}</h2>
         <div className="flex items-center gap-3">
-          <input
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            type="password"
-            placeholder={t("newPassword")}
-            className="flex h-10 flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          />
+          <div className="relative flex-1">
+            <Input
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              type={showPwd ? "text" : "password"}
+              placeholder={t("newPassword")}
+              className="pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPwd(!showPwd)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
           <Button onClick={handleReset} disabled={isResetting} variant="outline">
             {isResetting ? t("resettingPassword") : t("resetPassword")}
           </Button>
         </div>
+        {newPassword && (
+          <div className="mt-3 flex items-center gap-2 text-xs">
+            <div
+              className={`h-1.5 flex-1 rounded-full ${
+                newPassword.length < 8 ? "bg-red-300" : newPassword.length < 12 ? "bg-amber-300" : "bg-emerald-300"
+              }`}
+            />
+            <span
+              className={
+                newPassword.length < 8 ? "text-red-500" : newPassword.length < 12 ? "text-amber-500" : "text-emerald-500"
+              }
+            >
+              {newPassword.length < 8 ? "Weak" : newPassword.length < 12 ? "Good" : "Strong"}
+            </span>
+          </div>
+        )}
       </div>
+
+      <ConfirmDialog
+        open={confirmReset}
+        onOpenChange={setConfirmReset}
+        title={t("resetPassword")}
+        description={`Reset password for ${user.full_name}? This action cannot be undone.`}
+        confirmLabel={tc("confirm")}
+        cancelLabel={tc("cancel")}
+        onConfirm={confirmResetPassword}
+      />
     </div>
   );
 }

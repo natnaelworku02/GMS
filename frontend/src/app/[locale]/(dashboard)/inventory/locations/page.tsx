@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useGetInventoryLocationsQuery } from "@/features/inventory/api";
@@ -13,7 +14,12 @@ export default function InventoryLocationsPage() {
   const t = useTranslations("inventory");
   const tc = useTranslations("common");
   const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState("");
   const { data: locations = [], isLoading } = useGetInventoryLocationsQuery();
+
+  const filteredLocations = locations.filter((l) =>
+    l.name.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
 
   const columns: Column<InventoryLocation>[] = [
     {
@@ -51,9 +57,12 @@ export default function InventoryLocationsPage() {
       <div className="mt-6">
         <DataTable<InventoryLocation>
           columns={columns}
-          data={locations}
+          data={filteredLocations}
           isLoading={isLoading}
           emptyMessage={t("noLocations")}
+          searchValue={searchQuery}
+          onSearch={setSearchQuery}
+          searchPlaceholder={t("searchPlaceholder") || tc("search")}
         />
       </div>
     </div>

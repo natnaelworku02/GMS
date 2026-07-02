@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
-import { useGetUsersQuery } from "@/features/auth/api";
+import { useGetUsersQuery, useGetRolesQuery } from "@/features/auth/api";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable, type Column } from "@/components/shared/DataTable";
 import { Can } from "@/features/auth/components/Can";
@@ -17,6 +17,8 @@ export default function UsersPage() {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const { data: users = [], isLoading } = useGetUsersQuery();
+  const { data: roles = [] } = useGetRolesQuery();
+  const roleMap = Object.fromEntries(roles.map((r) => [r.id, r.name]));
 
   const filtered = search
     ? users.filter(
@@ -30,7 +32,14 @@ export default function UsersPage() {
     {
       key: "full_name",
       header: t("fullName"),
-      render: (u) => <span className="font-medium">{u.full_name}</span>,
+      render: (u) => (
+        <div className="flex items-center gap-2">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500/10 to-indigo-500/5 text-xs font-semibold text-indigo-500">
+            {u.full_name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
+          </span>
+          <span className="font-medium">{u.full_name}</span>
+        </div>
+      ),
       sortable: true,
     },
     {
@@ -46,14 +55,19 @@ export default function UsersPage() {
         u.is_active ? (
           <span className="inline-flex items-center gap-1.5 text-xs text-[oklch(0.62_0.17_165)]">
             <span className="h-1.5 w-1.5 rounded-full bg-current" />
-            Active
+            {t("isActive")}
           </span>
         ) : (
           <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
             <span className="h-1.5 w-1.5 rounded-full bg-current" />
-            Inactive
+            {t("isInactive")}
           </span>
         ),
+    },
+    {
+      key: "role",
+      header: t("role"),
+      render: (u) => <span className="text-muted-foreground">{roleMap[u.role_id] || "—"}</span>,
     },
     {
       key: "created_at",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, use } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { useGetInventoryItemQuery, useGetInventoryLocationsQuery, useAdjustStockMutation } from "@/features/inventory/api";
@@ -8,22 +8,24 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ArrowLeft, Loader2, Package } from "lucide-react";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { toast } from "sonner";
 import type { StockEntry } from "@/features/inventory/types";
 
 export default function InventoryItemDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const [id, setId] = useState("");
-  useEffect(() => { params.then((p) => setId(p.id)); }, [params]);
+  const { id } = use(params);
 
   const t = useTranslations("inventory");
   const router = useRouter();
-  const { data: item, isLoading } = useGetInventoryItemQuery(id, { skip: !id });
+  const { data: item, isLoading } = useGetInventoryItemQuery(id);
   const { data: locations = [] } = useGetInventoryLocationsQuery();
   const [adjustStock, { isLoading: isAdjusting }] = useAdjustStockMutation();
 
   const [selectedLocation, setSelectedLocation] = useState("");
   const [adjustQty, setAdjustQty] = useState(0);
+  const [confirmStock, setConfirmStock] = useState(false);
 
   const totalStock = (entries: StockEntry[]) =>
     entries.reduce((sum, se) => sum + se.quantity, 0);
@@ -31,11 +33,15 @@ export default function InventoryItemDetailPage({ params }: { params: Promise<{ 
   const locationName = (locId: string) =>
     locations.find((l) => l.id === locId)?.name || locId;
 
-  const handleAdjust = async () => {
+  const handleAdjust = () => {
     if (!selectedLocation) {
       toast.error(t("selectLocation"));
       return;
     }
+    setConfirmStock(true);
+  };
+
+  const confirmAdjustStock = async () => {
     try {
       await adjustStock({
         item_id: id,
@@ -44,6 +50,7 @@ export default function InventoryItemDetailPage({ params }: { params: Promise<{ 
       }).unwrap();
       setSelectedLocation("");
       setAdjustQty(0);
+      setConfirmStock(false);
     } catch {
       toast.error("Failed to adjust stock");
     }
@@ -130,7 +137,10 @@ export default function InventoryItemDetailPage({ params }: { params: Promise<{ 
         <div className="rounded-xl border bg-card p-6 shadow-sm space-y-4">
           <h2 className="text-sm font-semibold">{t("currentStock")} — by Location</h2>
           {item.stock_entries.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No stock entries</p>
+            <div className="flex flex-col items-center gap-2 py-8 text-center">
+              <Package className="h-8 w-8 text-muted-foreground/40" />
+              <p className="text-sm text-muted-foreground">No stock entries</p>
+            </div>
           ) : (
             <div className="divide-y divide-border">
               {item.stock_entries.map((se) => (
@@ -149,17 +159,16 @@ export default function InventoryItemDetailPage({ params }: { params: Promise<{ 
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-1.5">
               <Label htmlFor="loc" className="text-xs">{t("location")}</Label>
-              <select
-                id="loc"
-                value={selectedLocation}
-                onChange={(e) => setSelectedLocation(e.target.value)}
-                className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-              >
-                <option value="">Select...</option>
-                {locations.map((l) => (
-                  <option key={l.id} value={l.id}>{l.name}</option>
-                ))}
-              </select>
+              <Select value={selectedLocation} onValueChange={(v) => setSelectedLocation(v || "")}>
+                <SelectTrigger id="loc" className="h-9">
+                  <SelectValue placeholder="Select..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {locations.map((l) => (
+                    <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="qty" className="text-xs">{t("quantity")}</Label>
@@ -185,6 +194,15 @@ export default function InventoryItemDetailPage({ params }: { params: Promise<{ 
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmStock}
+        onOpenChange={setConfirmStock}
+        title="Set Stock"
+        description={`Set stock at location ${locationName(selectedLocation)} to ${adjustQty}?`}
+        confirmLabel="Set"
+        onConfirm={confirmAdjustStock}
+      />
     </div>
   );
 }

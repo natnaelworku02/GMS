@@ -58,7 +58,7 @@ export default function NewPerformaPage({ searchParams }: { searchParams: Promis
         client_email: data.client_email || undefined,
         line_items: lineItems.map((li) => ({ ...li, description: li.description.trim() })),
       }).unwrap();
-      toast.success("Performa created");
+      toast.success(tc("updated"));
       router.push(`/performas/${perf.id}`);
     } catch {
       toast.error(tc("error"));
@@ -76,14 +76,14 @@ export default function NewPerformaPage({ searchParams }: { searchParams: Promis
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Job Card Info */}
         <div className="rounded-xl border bg-card p-6 shadow-sm space-y-4">
-          <h2 className="text-sm font-semibold">Job Card</h2>
+          <h2 className="text-sm font-semibold">{t("jobCard")}</h2>
           <div className="space-y-2">
-            <Label htmlFor="jc">Job Card ID</Label>
+            <Label htmlFor="jc">{t("jobCardId")}</Label>
             <Input
               id="jc"
               value={jobCardId}
               onChange={(e) => setJobCardId(e.target.value)}
-              placeholder="Enter job card ID"
+              placeholder={t("jobCardIdPlaceholder")}
             />
             {jobCard && (
               <p className="text-xs text-muted-foreground">

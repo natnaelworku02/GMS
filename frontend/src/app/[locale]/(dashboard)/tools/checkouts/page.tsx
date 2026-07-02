@@ -9,6 +9,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable, type Column } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Undo2 } from "lucide-react";
 import type { ToolCheckout } from "@/features/tools/types";
 
@@ -17,6 +18,7 @@ export default function CheckoutsPage() {
   const tc = useTranslations("common");
   const [unreturnedOnly, setUnreturnedOnly] = useState(false);
   const [jobCardFilter, setJobCardFilter] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { data: allCheckouts = [], isLoading } = useGetToolCheckoutsQuery({ unreturned_only: unreturnedOnly || undefined });
   const { data: tools = [] } = useGetToolsQuery();
@@ -35,9 +37,20 @@ export default function CheckoutsPage() {
   };
 
   const filtered = useMemo(() => {
-    if (!jobCardFilter) return allCheckouts;
-    return allCheckouts.filter((co) => co.job_card_id === jobCardFilter);
-  }, [allCheckouts, jobCardFilter]);
+    let result = allCheckouts;
+    if (jobCardFilter) {
+      result = result.filter((co) => co.job_card_id === jobCardFilter);
+    }
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(
+        (co) =>
+          toolName(co.tool_id).toLowerCase().includes(q) ||
+          employeeName(co.employee_id).toLowerCase().includes(q),
+      );
+    }
+    return result;
+  }, [allCheckouts, jobCardFilter, searchQuery]);
 
   const handleReturn = async (checkoutId: string) => {
     try {
@@ -128,11 +141,9 @@ export default function CheckoutsPage() {
       <div className="mt-6 space-y-4">
         <div className="flex items-center gap-3">
           <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={unreturnedOnly}
-              onChange={(e) => setUnreturnedOnly(e.target.checked)}
-              className="rounded border-input"
+              onCheckedChange={(checked) => setUnreturnedOnly(checked === true)}
             />
             {t("unreturnedTools")}
           </label>
@@ -157,6 +168,9 @@ export default function CheckoutsPage() {
           data={filtered}
           isLoading={isLoading}
           emptyMessage={t("noCheckouts")}
+          searchValue={searchQuery}
+          onSearch={setSearchQuery}
+          searchPlaceholder={t("searchPlaceholder") || tc("search")}
         />
       </div>
     </div>

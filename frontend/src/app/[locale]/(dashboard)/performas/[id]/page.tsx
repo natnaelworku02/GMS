@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, use } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import {
@@ -13,15 +13,17 @@ import { PerformaLineItems } from "@/features/performas/components/PerformaLineI
 import { PerformaSummary } from "@/features/performas/components/PerformaSummary";
 import { PerformaStatusBadge } from "@/features/performas/components/PerformaStatusBadge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { ArrowLeft, Loader2, Send, ThumbsUp, ThumbsDown, RotateCcw } from "lucide-react";
+import { toast } from "sonner";
 
 export default function PerformaDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const [id, setId] = useState("");
-  useEffect(() => { params.then((p) => setId(p.id)); }, [params]);
+  const { id } = use(params);
 
   const t = useTranslations("performas");
+  const tc = useTranslations("common");
   const router = useRouter();
-  const { data: performa, isLoading } = useGetPerformaQuery(id, { skip: !id });
+  const { data: performa, isLoading } = useGetPerformaQuery(id);
   const [send, { isLoading: sending }] = useSendPerformaMutation();
   const [updateStatus, { isLoading: updating }] = useUpdatePerformaStatusMutation();
   const [revise, { isLoading: revising }] = useRevisePerformaMutation();
@@ -32,19 +34,25 @@ export default function PerformaDetailPage({ params }: { params: Promise<{ id: s
     if (!clientEmail.trim()) return;
     try {
       await send({ id, client_email: clientEmail.trim() }).unwrap();
-    } catch {}
+    } catch {
+      toast.error(tc("error"));
+    }
   };
 
   const handleApprove = async () => {
     try {
       await updateStatus({ id, status: "approved" }).unwrap();
-    } catch {}
+    } catch {
+      toast.error(tc("error"));
+    }
   };
 
   const handleReject = async () => {
     try {
       await updateStatus({ id, status: "rejected" }).unwrap();
-    } catch {}
+    } catch {
+      toast.error(tc("error"));
+    }
   };
 
   const handleRevise = async () => {
@@ -60,11 +68,25 @@ export default function PerformaDetailPage({ params }: { params: Promise<{ id: s
         })),
       }).unwrap();
       router.push(`/performas/${newPerf.id}`);
-    } catch {}
+    } catch {
+      toast.error(tc("error"));
+    }
   };
 
-  if (isLoading) return <div className="p-8 text-center text-muted-foreground">Loading...</div>;
-  if (!performa) return <div className="p-8 text-center text-muted-foreground">Performa not found</div>;
+  if (isLoading) return (
+    <div className="flex items-center justify-center py-20">
+      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+    </div>
+  );
+  if (!performa) return (
+    <div className="flex flex-col items-center justify-center gap-3 py-20">
+      <p className="text-sm text-muted-foreground">{t("notFound") || "Not found"}</p>
+      <Button variant="ghost" onClick={() => router.back()}>
+        <ArrowLeft size={15} />
+        {tc("back")}
+      </Button>
+    </div>
+  );
 
   const lineItemInputs = performa.line_items.map((li) => ({
     type: li.type as "labor" | "part",
@@ -78,7 +100,7 @@ export default function PerformaDetailPage({ params }: { params: Promise<{ id: s
       <div className="mb-6 flex items-center justify-between">
         <Button variant="ghost" onClick={() => router.push("/performas")}>
           <ArrowLeft size={15} />
-          Back to Performas
+          {tc("back")}
         </Button>
         <PerformaStatusBadge status={performa.status} />
       </div>
@@ -126,17 +148,16 @@ export default function PerformaDetailPage({ params }: { params: Promise<{ id: s
 
       {/* Actions */}
       <div className="rounded-xl border bg-card p-6 shadow-sm space-y-4">
-        <h2 className="text-sm font-semibold">Actions</h2>
+        <h2 className="text-sm font-semibold">{tc("actions")}</h2>
 
         {/* Send */}
         {performa.status === "draft" && (
           <div className="flex items-center gap-2">
-            <input
+            <Input
               type="email"
               placeholder={t("clientEmail")}
               value={clientEmail}
               onChange={(e) => setClientEmail(e.target.value)}
-              className="h-10 flex-1 rounded-lg border border-input bg-background px-3 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             />
             <Button onClick={handleSend} disabled={sending || !clientEmail.trim()}>
               {sending && <Loader2 className="h-4 w-4 animate-spin" />}
