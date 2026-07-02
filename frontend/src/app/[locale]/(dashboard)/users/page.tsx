@@ -39,15 +39,6 @@ export default function UsersPage() {
       sortable: true,
     },
     {
-      key: "role_name",
-      header: t("role"),
-      render: (u) => (
-        <span className="rounded-md bg-muted px-2 py-0.5 text-xs font-medium">
-          {u.role_name || "—"}
-        </span>
-      ),
-    },
-    {
       key: "is_active",
       header: t("isActive"),
       render: (u) =>

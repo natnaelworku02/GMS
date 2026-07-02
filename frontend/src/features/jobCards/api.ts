@@ -13,22 +13,11 @@ import type {
   VehicleCreateDTO,
 } from "./types";
 
-interface ToolCheckout {
-  id: string;
-  tool_id: string;
-  employee_id: string;
-  job_card_id: string;
-  quantity: number;
-  checked_out_at: string;
-  checked_in_at: string | null;
-  issued_by: string;
-}
-
 export const jobCardsApi = api.injectEndpoints({
   endpoints: (build) => ({
     // --- Owners ---
     getOwners: build.query<Owner[], void>({
-      query: () => "/owners",
+      query: () => "/owners/",
       providesTags: ["Owners"],
     }),
     getOwner: build.query<Owner, string>({
@@ -36,7 +25,7 @@ export const jobCardsApi = api.injectEndpoints({
       providesTags: (_r, _e, id) => [{ type: "Owners", id }],
     }),
     createOwner: build.mutation<Owner, OwnerCreateDTO>({
-      query: (body) => ({ url: "/owners", method: "POST", body }),
+      query: (body) => ({ url: "/owners/", method: "POST", body }),
       invalidatesTags: ["Owners"],
     }),
     updateOwner: build.mutation<Owner, { id: string; body: OwnerUpdateDTO }>({
@@ -46,7 +35,7 @@ export const jobCardsApi = api.injectEndpoints({
 
     // --- Vehicles ---
     getVehicles: build.query<Vehicle[], Record<string, string> | void>({
-      query: (params) => ({ url: "/vehicles", params: params || undefined }),
+      query: (params) => ({ url: "/vehicles/", params: params || undefined }),
       providesTags: ["Vehicles"],
     }),
     getVehicle: build.query<Vehicle, string>({
@@ -54,13 +43,13 @@ export const jobCardsApi = api.injectEndpoints({
       providesTags: (_r, _e, id) => [{ type: "Vehicles", id }],
     }),
     createVehicle: build.mutation<Vehicle, VehicleCreateDTO>({
-      query: (body) => ({ url: "/vehicles", method: "POST", body }),
+      query: (body) => ({ url: "/vehicles/", method: "POST", body }),
       invalidatesTags: ["Vehicles"],
     }),
 
     // --- Job Cards ---
     getJobCards: build.query<JobCard[], Record<string, string> | void>({
-      query: (params) => ({ url: "/job-cards", params: params || undefined }),
+      query: (params) => ({ url: "/job-cards/", params: params || undefined }),
       providesTags: ["JobCards"],
     }),
     getJobCard: build.query<JobCard, string>({
@@ -68,7 +57,7 @@ export const jobCardsApi = api.injectEndpoints({
       providesTags: (_r, _e, id) => [{ type: "JobCards", id }],
     }),
     createJobCard: build.mutation<JobCard, JobCardCreateDTO>({
-      query: (body) => ({ url: "/job-cards", method: "POST", body }),
+      query: (body) => ({ url: "/job-cards/", method: "POST", body }),
       invalidatesTags: ["JobCards"],
     }),
     updateJobCard: build.mutation<JobCard, { id: string; body: JobCardUpdateDTO }>({
@@ -86,7 +75,7 @@ export const jobCardsApi = api.injectEndpoints({
 
     // --- Employees ---
     getEmployees: build.query<Employee[], Record<string, string> | void>({
-      query: (params) => ({ url: "/hr/employees", params: params || undefined }),
+      query: (params) => ({ url: "/hr/employees/", params: params || undefined }),
       providesTags: ["Employees"],
     }),
     getEmployee: build.query<Employee, string>({
@@ -94,18 +83,12 @@ export const jobCardsApi = api.injectEndpoints({
       providesTags: (_r, _e, id) => [{ type: "Employees", id }],
     }),
     createEmployee: build.mutation<Employee, EmployeeCreateDTO>({
-      query: (body) => ({ url: "/hr/employees", method: "POST", body }),
+      query: (body) => ({ url: "/hr/employees/", method: "POST", body }),
       invalidatesTags: ["Employees"],
     }),
     updateEmployee: build.mutation<Employee, { id: string; body: EmployeeUpdateDTO }>({
       query: ({ id, body }) => ({ url: `/hr/employees/${id}`, method: "PATCH", body }),
       invalidatesTags: ["Employees"],
-    }),
-
-    // --- Tool Checkouts ---
-    getToolCheckouts: build.query<ToolCheckout[], { job_card_id: string; unreturned_only?: string }>({
-      query: (params) => ({ url: "/tools/checkouts", params }),
-      providesTags: ["ToolCheckouts"],
     }),
   }),
 });
@@ -127,5 +110,4 @@ export const {
   useGetEmployeeQuery,
   useCreateEmployeeMutation,
   useUpdateEmployeeMutation,
-  useGetToolCheckoutsQuery,
 } = jobCardsApi;
