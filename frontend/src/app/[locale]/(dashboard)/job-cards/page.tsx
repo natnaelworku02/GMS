@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
-import { useGetJobCardsQuery } from "@/features/jobCards/api";
+import { useGetJobCardsQuery, useGetVehiclesQuery, useGetOwnersQuery } from "@/features/jobCards/api";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable, type Column } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -11,7 +11,7 @@ import { Can } from "@/features/auth/components/Can";
 import { Button } from "@/components/ui/button";
 import { Plus, Eye } from "lucide-react";
 import { JOB_STATUS_LABELS } from "@/lib/constants";
-import type { JobCard } from "@/features/jobCards/types";
+import type { JobCard, Vehicle, Owner } from "@/features/jobCards/types";
 
 const STATUS_OPTIONS = [
   { value: "", label: "All Statuses" },
@@ -27,13 +27,17 @@ export default function JobCardsPage() {
   const { data: jobCards = [], isLoading } = useGetJobCardsQuery(
     statusFilter ? { status: statusFilter } : undefined,
   );
+  const { data: vehicles = [] } = useGetVehiclesQuery();
+  const { data: owners = [] } = useGetOwnersQuery();
+  const vehicleMap = Object.fromEntries(vehicles.map((v) => [v.id, v]));
+  const ownerMap = Object.fromEntries(owners.map((o) => [o.id, o]));
 
   const filtered = search
     ? jobCards.filter(
         (jc) =>
           jc.description.toLowerCase().includes(search.toLowerCase()) ||
-          jc.vehicle.plate_number.toLowerCase().includes(search.toLowerCase()) ||
-          jc.owner.name.toLowerCase().includes(search.toLowerCase()),
+          (vehicleMap[jc.vehicle_id]?.plate_number || "").toLowerCase().includes(search.toLowerCase()) ||
+          (ownerMap[jc.owner_id]?.name || "").toLowerCase().includes(search.toLowerCase()),
       )
     : jobCards;
 
@@ -43,15 +47,15 @@ export default function JobCardsPage() {
       header: t("vehicle"),
       render: (jc) => (
         <div>
-          <p className="font-medium">{jc.vehicle.model}</p>
-          <p className="font-mono text-xs text-muted-foreground">{jc.vehicle.plate_number}</p>
+          <p className="font-medium">{vehicleMap[jc.vehicle_id]?.model || "—"}</p>
+          <p className="font-mono text-xs text-muted-foreground">{vehicleMap[jc.vehicle_id]?.plate_number || "—"}</p>
         </div>
       ),
     },
     {
       key: "owner",
       header: t("owner"),
-      render: (jc) => <span className="text-sm text-muted-foreground">{jc.owner.name}</span>,
+      render: (jc) => <span className="text-sm text-muted-foreground">{ownerMap[jc.owner_id]?.name || "—"}</span>,
     },
     {
       key: "description",
