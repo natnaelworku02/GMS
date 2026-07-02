@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useCreatePerformaMutation } from "@/features/performas/api";
-import { useGetJobCardQuery } from "@/features/jobCards/api";
+import { useGetJobCardQuery, useGetVehicleQuery } from "@/features/jobCards/api";
 import { PerformaLineItems } from "@/features/performas/components/PerformaLineItems";
 import { PerformaSummary } from "@/features/performas/components/PerformaSummary";
 import { performaCreateSchema, type PerformaCreateFormData } from "@/lib/formSchemas";
@@ -27,6 +27,7 @@ export default function NewPerformaPage({ searchParams }: { searchParams: Promis
 
   const [jobCardId, setJobCardId] = useState(jobCardIdFromUrl);
   const { data: jobCard } = useGetJobCardQuery(jobCardId, { skip: !jobCardId });
+  const { data: vehicle } = useGetVehicleQuery(jobCard?.vehicle_id || "", { skip: !jobCard?.vehicle_id });
   const [lineItems, setLineItems] = useState<LineItemInput[]>([{ type: "labor", description: "", quantity: 1, unit_price: 0 }]);
 
   const {
@@ -83,7 +84,7 @@ export default function NewPerformaPage({ searchParams }: { searchParams: Promis
             />
             {jobCard && (
               <p className="text-xs text-muted-foreground">
-                {jobCard.vehicle.model} — {jobCard.vehicle.plate_number}
+                {vehicle?.model || "—"} — {vehicle?.plate_number || "—"}
               </p>
             )}
           </div>

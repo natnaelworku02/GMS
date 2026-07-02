@@ -88,6 +88,11 @@ export interface JobCardUpdateDTO {
   requested_materials?: string | null;
 }
 
+export interface SignatureInput {
+  name: string;
+  signature_data: string;
+}
+
 export interface Employee {
   id: string;
   name: string;
