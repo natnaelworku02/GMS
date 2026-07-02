@@ -10,12 +10,14 @@ import { Can } from "@/features/auth/components/Can";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import type { Vehicle } from "@/features/jobCards/types";
+import CreateVehicleModal from "@/features/jobCards/components/CreateVehicleModal";
 
 export default function VehiclesPage() {
   const t = useTranslations("vehicles");
   const tc = useTranslations("common");
   const router = useRouter();
   const [search, setSearch] = useState("");
+  const [open, setOpen] = useState(false);
   const { data: vehicles = [], isLoading } = useGetVehiclesQuery();
   const { data: owners = [] } = useGetOwnersQuery();
 
@@ -79,7 +81,7 @@ export default function VehiclesPage() {
         description={`${vehicles.length} vehicle${vehicles.length !== 1 ? "s" : ""}`}
         action={
           <Can permission="job_cards.create">
-            <Button onClick={() => router.push("/vehicles/new")}>
+            <Button onClick={() => setOpen(true)}>
               <Plus size={15} />
               {t("create")}
             </Button>
@@ -97,6 +99,8 @@ export default function VehiclesPage() {
           onSearch={setSearch}
         />
       </div>
+
+      <CreateVehicleModal open={open} onOpenChange={setOpen} />
     </div>
   );
 }

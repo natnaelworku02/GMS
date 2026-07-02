@@ -3,13 +3,24 @@
 import { useState, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
-import { useGetInventoryItemsQuery } from "@/features/inventory/api";
+import { useGetInventoryItemsQuery, useCreateInventoryItemMutation } from "@/features/inventory/api";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable, type Column } from "@/components/shared/DataTable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plus, MapPin, Pencil } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Plus, MapPin, Pencil, X, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import type { InventoryItem } from "@/features/inventory/types";
+
+const VEHICLE_TYPE_OPTIONS = ["Pickup", "SUV", "Sedan", "Truck", "Bus", "Minibus", "Motorcycle"];
 
 export default function InventoryPage() {
   const t = useTranslations("inventory");
@@ -19,7 +30,16 @@ export default function InventoryPage() {
   const [vehicleFilter, setVehicleFilter] = useState("");
   const { data: items = [], isLoading } = useGetInventoryItemsQuery();
 
-  const vehicleTypes = useMemo(() => {
+  const [open, setOpen] = useState(false);
+  const [partName, setPartName] = useState("");
+  const [vehicleTypes, setVehicleTypes] = useState<string[]>([]);
+  const [typeInput, setTypeInput] = useState("");
+  const [unitPrice, setUnitPrice] = useState(0);
+  const [threshold, setThreshold] = useState(0);
+  const [supplier, setSupplier] = useState("");
+  const [create, { isLoading: creating }] = useCreateInventoryItemMutation();
+
+  const vehicleTypesList = useMemo(() => {
     const types = new Set<string>();
     items.forEach((item) => (item.applicable_vehicle_types ?? []).forEach((vt) => types.add(vt)));
     return Array.from(types).sort();
@@ -40,6 +60,39 @@ export default function InventoryPage() {
     }
     return result;
   }, [items, search, vehicleFilter]);
+
+  const addVehicleType = (vt: string) => {
+    if (!vt || vehicleTypes.includes(vt)) return;
+    setVehicleTypes((prev) => [...prev, vt]);
+    setTypeInput("");
+  };
+
+  const removeVehicleType = (vt: string) => {
+    setVehicleTypes((prev) => prev.filter((v) => v !== vt));
+  };
+
+  const handleCreate = async () => {
+    if (!partName.trim() || vehicleTypes.length === 0) return;
+    try {
+      await create({
+        part_name: partName.trim(),
+        applicable_vehicle_types: vehicleTypes,
+        unit_price: unitPrice,
+        supplier_info: supplier.trim() || undefined,
+        min_stock_threshold: threshold || undefined,
+      }).unwrap();
+      toast.success(tc("save"));
+      setOpen(false);
+      setPartName("");
+      setVehicleTypes([]);
+      setTypeInput("");
+      setUnitPrice(0);
+      setThreshold(0);
+      setSupplier("");
+    } catch {
+      toast.error(tc("error"));
+    }
+  };
 
   const totalStock = (item: InventoryItem) =>
     item.stock_entries.reduce((sum, se) => sum + se.quantity, 0);
@@ -138,7 +191,7 @@ export default function InventoryPage() {
               <MapPin size={14} />
               {t("locations")}
             </Button>
-            <Button onClick={() => router.push("/inventory/new")}>
+            <Button onClick={() => setOpen(true)}>
               <Plus size={15} />
               {t("createItem")}
             </Button>
@@ -148,14 +201,14 @@ export default function InventoryPage() {
 
       <div className="mt-6">
         <div className="mb-4 flex items-center gap-3">
-          {vehicleTypes.length > 0 && (
+          {vehicleTypesList.length > 0 && (
             <select
               value={vehicleFilter}
               onChange={(e) => setVehicleFilter(e.target.value)}
               className="h-9 rounded-lg border border-input bg-background px-3 text-sm"
             >
               <option value="">{t("allVehicleTypes")}</option>
-              {vehicleTypes.map((vt) => (
+              {vehicleTypesList.map((vt) => (
                 <option key={vt} value={vt}>{vt}</option>
               ))}
             </select>
@@ -172,6 +225,78 @@ export default function InventoryPage() {
           onRowClick={(item) => router.push(`/inventory/${item.id}`)}
         />
       </div>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("createItem")}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={(e) => { e.preventDefault(); handleCreate(); }} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="inv-name">{t("partName")}</Label>
+              <Input id="inv-name" value={partName} onChange={(e) => setPartName(e.target.value)} />
+            </div>
+
+            <div className="space-y-2">
+              <Label>{t("applicableVehicles")}</Label>
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {vehicleTypes.map((vt) => (
+                  <span
+                    key={vt}
+                    className="inline-flex items-center gap-1 rounded-full bg-indigo-500/10 px-2.5 py-0.5 text-xs font-medium text-indigo-500"
+                  >
+                    {vt}
+                    <button type="button" onClick={() => removeVehicleType(vt)} className="hover:text-indigo-700">
+                      <X size={12} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <input
+                  list="inv-vehicle-types"
+                  value={typeInput}
+                  onChange={(e) => setTypeInput(e.target.value)}
+                  placeholder={t("typeOrSelect")}
+                  className="h-9 flex-1 rounded-md border border-input bg-background px-3 text-sm"
+                />
+                <Button type="button" variant="outline" size="sm" onClick={() => addVehicleType(typeInput)}>
+                  Add
+                </Button>
+              </div>
+              <datalist id="inv-vehicle-types">
+                {VEHICLE_TYPE_OPTIONS.filter((o) => !vehicleTypes.includes(o)).map((o) => (
+                  <option key={o} value={o} />
+                ))}
+              </datalist>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="inv-price">{t("unitPrice")}</Label>
+                <Input id="inv-price" type="number" min={0} step={0.01} value={unitPrice} onChange={(e) => setUnitPrice(Number(e.target.value))} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="inv-threshold">{t("minStockThreshold")}</Label>
+                <Input id="inv-threshold" type="number" min={0} value={threshold} onChange={(e) => setThreshold(Number(e.target.value))} />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="inv-supplier">{t("supplierInfo")}</Label>
+              <Input id="inv-supplier" value={supplier} onChange={(e) => setSupplier(e.target.value)} />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>{tc("cancel")}</Button>
+              <Button type="submit" disabled={creating || !partName.trim() || vehicleTypes.length === 0}>
+                {creating && <Loader2 className="h-4 w-4 animate-spin" />}
+                {creating ? tc("loading") : t("createItem")}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

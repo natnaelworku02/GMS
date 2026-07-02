@@ -32,17 +32,16 @@ import type { LineItemInput } from "@/features/performas/types";
 
 const CONDITION_STEP_START = 2;
 
-const STEPS = [
-  { label: "Owner", icon: User },
-  { label: "Vehicle", icon: Truck },
-  ...PART_SECTIONS.map((s) => ({ label: s.sectionLabel, icon: Wrench })),
-  { label: "Staff", icon: User },
-  { label: "Review", icon: ClipboardCheck },
-  { label: "Performa", icon: Receipt },
-];
-
 export default function StartJobPage() {
   const t = useTranslations("startJob");
+  const STEPS = [
+    { label: t("stepOwnerLabel"), icon: User },
+    { label: t("stepVehicleLabel"), icon: Truck },
+    ...PART_SECTIONS.map((s) => ({ label: s.sectionLabel, icon: Wrench })),
+    { label: t("stepStaffLabel"), icon: User },
+    { label: t("stepReviewLabel"), icon: ClipboardCheck },
+    { label: t("stepPerformaLabel"), icon: Receipt },
+  ];
   const tc = useTranslations("common");
   const router = useRouter();
   const [createJobCard, { isLoading: isCreatingJobCard }] = useCreateJobCardMutation();
@@ -55,8 +54,6 @@ export default function StartJobPage() {
   const [step, setStep] = useState(0);
   const [cwStep, setCwStep] = useState(0);
   const [createdJobCardId, setCreatedJobCardId] = useState<string | null>(null);
-  const [jobCardError, setJobCardError] = useState<string | null>(null);
-  const [performaError, setPerformaError] = useState<string | null>(null);
 
   const {
     register,
@@ -154,7 +151,6 @@ export default function StartJobPage() {
   }, [newVehicleModel, newVehicleType, newVehiclePlate, newVehicleEngine, newVehicleChassis, ownerId, createVehicle, setValue, setError, t]);
 
   const handleCreateJobCard = async (data: JobCardCreateFormData) => {
-    setJobCardError(null);
     try {
       const jc = await createJobCard({
         vehicle_id: data.vehicle_id,
@@ -172,17 +168,16 @@ export default function StartJobPage() {
       setCreatedJobCardId(jc.id);
       setStep(totalSteps - 1);
     } catch {
-      setJobCardError(t("createJobCardError"));
+      toast.error(t("createJobCardError"));
     }
   };
 
   const handleCreatePerforma = useCallback(async () => {
     if (!createdJobCardId) return;
     if (!lineItems.some((li) => li.description.trim())) {
-      setPerformaError(t("lineItemRequired"));
+      toast.error(t("lineItemRequired"));
       return;
     }
-    setPerformaError(null);
     try {
       await createPerforma({
         job_card_id: createdJobCardId,
@@ -191,7 +186,7 @@ export default function StartJobPage() {
       }).unwrap();
       router.push(`/job-cards/${createdJobCardId}`);
     } catch {
-      setPerformaError(t("createPerformaError"));
+      toast.error(t("createPerformaError"));
     }
   }, [createdJobCardId, lineItems, createPerforma, clientEmail, router, t]);
 
@@ -524,7 +519,6 @@ export default function StartJobPage() {
               )}
             </div>
 
-            {jobCardError && <p className="text-sm text-destructive">{jobCardError}</p>}
           </div>
         )}
       </form>
@@ -558,8 +552,6 @@ export default function StartJobPage() {
             <PerformaLineItems items={lineItems} onChange={setLineItems} />
             <PerformaSummary subtotal={subtotal} vatRate={vatRate} vatAmount={vatAmount} grandTotal={grandTotal} />
           </div>
-
-          {performaError && <p className="text-sm text-destructive">{performaError}</p>}
 
           <div className="hidden md:flex items-center justify-between">
             <Button type="button" variant="outline" onClick={() => setStep(totalSteps - 2)}>

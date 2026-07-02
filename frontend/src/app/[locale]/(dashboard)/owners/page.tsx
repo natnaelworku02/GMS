@@ -3,12 +3,21 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
-import { useGetOwnersQuery, useGetVehiclesQuery } from "@/features/jobCards/api";
+import { useGetOwnersQuery, useGetVehiclesQuery, useCreateOwnerMutation } from "@/features/jobCards/api";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable, type Column } from "@/components/shared/DataTable";
 import { Can } from "@/features/auth/components/Can";
 import { Button } from "@/components/ui/button";
-import { Plus, Pencil } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Plus, Pencil, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import type { Owner } from "@/features/jobCards/types";
 
 export default function OwnersPage() {
@@ -19,6 +28,11 @@ export default function OwnersPage() {
   const { data: owners = [], isLoading } = useGetOwnersQuery();
   const { data: vehicles = [] } = useGetVehiclesQuery();
 
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [create, { isLoading: creating }] = useCreateOwnerMutation();
+
   const filtered = search
     ? owners.filter(
         (o) =>
@@ -26,6 +40,19 @@ export default function OwnersPage() {
           o.phone.includes(search),
       )
     : owners;
+
+  const handleCreate = async () => {
+    if (!name.trim() || !phone.trim()) return;
+    try {
+      await create({ name: name.trim(), phone: phone.trim() }).unwrap();
+      toast.success(tc("save"));
+      setOpen(false);
+      setName("");
+      setPhone("");
+    } catch {
+      toast.error(tc("error"));
+    }
+  };
 
   const columns: Column<Owner>[] = [
     {
@@ -87,7 +114,7 @@ export default function OwnersPage() {
         description={`${owners.length} owner${owners.length !== 1 ? "s" : ""}`}
         action={
           <Can permission="job_cards.create">
-            <Button onClick={() => router.push("/owners/new")}>
+            <Button onClick={() => setOpen(true)}>
               <Plus size={15} />
               {t("create")}
             </Button>
@@ -105,6 +132,31 @@ export default function OwnersPage() {
           onSearch={setSearch}
         />
       </div>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("create")}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={(e) => { e.preventDefault(); handleCreate(); }} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="owner-name">{t("name")}</Label>
+              <Input id="owner-name" value={name} onChange={(e) => setName(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="owner-phone">{t("phone")}</Label>
+              <Input id="owner-phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>{tc("cancel")}</Button>
+              <Button type="submit" disabled={creating || !name.trim() || !phone.trim()}>
+                {creating && <Loader2 className="h-4 w-4 animate-spin" />}
+                {creating ? tc("loading") : t("create")}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

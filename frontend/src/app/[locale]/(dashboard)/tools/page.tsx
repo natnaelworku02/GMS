@@ -3,12 +3,22 @@
 import { useState, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
-import { useGetToolsQuery } from "@/features/tools/api";
+import { useGetToolsQuery, useCreateToolMutation } from "@/features/tools/api";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable, type Column } from "@/components/shared/DataTable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plus, ClipboardList } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Plus, ClipboardList, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import type { Tool } from "@/features/tools/types";
 
 export default function ToolsPage() {
@@ -17,6 +27,12 @@ export default function ToolsPage() {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const { data: tools = [], isLoading } = useGetToolsQuery();
+
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [specs, setSpecs] = useState("");
+  const [qty, setQty] = useState(1);
+  const [create, { isLoading: creating }] = useCreateToolMutation();
 
   const filtered = useMemo(() => {
     if (!search) return tools;
@@ -27,6 +43,24 @@ export default function ToolsPage() {
         t.specifications?.toLowerCase().includes(q),
     );
   }, [tools, search]);
+
+  const handleCreate = async () => {
+    if (!name.trim()) return;
+    try {
+      await create({
+        name: name.trim(),
+        specifications: specs.trim() || undefined,
+        total_quantity: qty,
+      }).unwrap();
+      toast.success(tc("save"));
+      setOpen(false);
+      setName("");
+      setSpecs("");
+      setQty(1);
+    } catch {
+      toast.error(tc("error"));
+    }
+  };
 
   const columns: Column<Tool>[] = [
     {
@@ -72,7 +106,7 @@ export default function ToolsPage() {
               <ClipboardList size={14} />
               {t("checkouts")}
             </Button>
-            <Button onClick={() => router.push("/tools/new")}>
+            <Button onClick={() => setOpen(true)}>
               <Plus size={15} />
               {t("create")}
             </Button>
@@ -92,6 +126,35 @@ export default function ToolsPage() {
           onRowClick={(tool) => router.push(`/tools/${tool.id}`)}
         />
       </div>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("create")}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={(e) => { e.preventDefault(); handleCreate(); }} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="tool-name">{t("name")}</Label>
+              <Input id="tool-name" value={name} onChange={(e) => setName(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="tool-specs">{t("specifications")}</Label>
+              <Textarea id="tool-specs" rows={2} value={specs} onChange={(e) => setSpecs(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="tool-qty">{t("totalQuantity")}</Label>
+              <Input id="tool-qty" type="number" min={1} value={qty} onChange={(e) => setQty(Number(e.target.value))} />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>{tc("cancel")}</Button>
+              <Button type="submit" disabled={creating || !name.trim()}>
+                {creating && <Loader2 className="h-4 w-4 animate-spin" />}
+                {creating ? tc("loading") : t("create")}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
