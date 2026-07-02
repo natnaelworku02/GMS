@@ -1,6 +1,5 @@
 export interface PerformaLineItem {
   id: string;
-  performa_id: string;
   type: "labor" | "part";
   description: string;
   inventory_item_id: string | null;

@@ -4,7 +4,7 @@ import type { Performa, PerformaCreateDTO } from "./types";
 export const performasApi = api.injectEndpoints({
   endpoints: (build) => ({
     getPerformas: build.query<Performa[], { job_card_id?: string } | void>({
-      query: (params) => ({ url: "/performas", params: params || undefined }),
+      query: (params) => ({ url: "/performas/", params: params || undefined }),
       providesTags: ["Performas"],
     }),
     getPerforma: build.query<Performa, string>({
@@ -12,7 +12,7 @@ export const performasApi = api.injectEndpoints({
       providesTags: (_r, _e, id) => [{ type: "Performas", id }],
     }),
     createPerforma: build.mutation<Performa, PerformaCreateDTO>({
-      query: (body) => ({ url: "/performas", method: "POST", body }),
+      query: (body) => ({ url: "/performas/", method: "POST", body }),
       invalidatesTags: ["Performas"],
     }),
     sendPerforma: build.mutation<Performa, { id: string; client_email: string }>({

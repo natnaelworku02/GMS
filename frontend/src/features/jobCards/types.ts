@@ -37,7 +37,6 @@ export interface VehicleCreateDTO {
 
 export interface VehicleCondition {
   id: string;
-  job_card_id: string;
   part_name: string;
   condition_state: string;
 }

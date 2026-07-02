@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { useGetJobCardQuery, useUpdateJobCardStatusMutation, useGetToolCheckoutsQuery, useGetOwnerQuery, useGetVehicleQuery, useGetEmployeesQuery } from "@/features/jobCards/api";
+import { useGetJobCardQuery, useUpdateJobCardStatusMutation, useGetOwnerQuery, useGetVehicleQuery, useGetEmployeesQuery } from "@/features/jobCards/api";
+import { useGetToolCheckoutsQuery } from "@/features/tools/api";
 import { useGetPerformasQuery } from "@/features/performas/api";
 import { PerformaStatusBadge } from "@/features/performas/components/PerformaStatusBadge";
 import { useGetUsersQuery } from "@/features/auth/api";
@@ -28,7 +29,7 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
   const { data: vehicle } = useGetVehicleQuery(jobCard?.vehicle_id || "", { skip: !jobCard?.vehicle_id });
   const { data: employees = [] } = useGetEmployeesQuery({ active_only: "true" });
   const { data: unreturnedCheckouts = [] } = useGetToolCheckoutsQuery(
-    { job_card_id: id, unreturned_only: "true" },
+    { job_card_id: id, unreturned_only: true },
     { skip: !id },
   );
   const { data: linkedPerformas = [] } = useGetPerformasQuery(
