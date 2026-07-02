@@ -12,6 +12,7 @@ import type { Role } from "@/features/auth/types";
 
 export default function RolesPage() {
   const t = useTranslations("roles");
+  const tc = useTranslations("common");
   const router = useRouter();
   const { data: roles = [], isLoading } = useGetRolesQuery();
 
@@ -24,21 +25,21 @@ export default function RolesPage() {
     },
     {
       key: "is_superadmin",
-      header: "Type",
+      header: t("typeHeader"),
       render: (r) =>
         r.is_superadmin ? (
           <span className="inline-flex items-center gap-1 rounded-md bg-indigo-500/10 px-2 py-0.5 text-xs font-medium text-indigo-500">
-            Super Admin
+            {t("superAdmin")}
           </span>
         ) : (
           <span className="text-xs text-muted-foreground">
-            {r.permissions.length} permission{r.permissions.length !== 1 ? "s" : ""}
+            {r.permissions.length} {r.permissions.length !== 1 ? "permissions" : "permission"}
           </span>
         ),
     },
     {
       key: "created_at",
-      header: "Created",
+      header: tc("createdAt"),
       render: (r) => (
         <span className="text-muted-foreground">
           {new Date(r.created_at).toLocaleDateString()}
@@ -87,7 +88,7 @@ export default function RolesPage() {
           columns={columns}
           data={roles}
           isLoading={isLoading}
-          emptyMessage="No roles found"
+          emptyMessage={t("noRoles")}
         />
       </div>
     </div>

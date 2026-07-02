@@ -6,10 +6,13 @@ import { useCreateRoleMutation, useUpdatePermissionsMutation } from "@/features/
 import { PermissionMatrix } from "@/features/auth/roles/components/PermissionMatrix";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { MODULES } from "@/lib/constants";
 import type { PermissionSet } from "@/features/auth/types";
 
 export default function NewRolePage() {
+  const t = useTranslations("roles");
+  const tc = useTranslations("common");
   const router = useRouter();
   const [createRole, { isLoading: isCreating }] = useCreateRoleMutation();
   const [updatePermissions, { isLoading: isSettingPerms }] = useUpdatePermissionsMutation();
@@ -32,7 +35,7 @@ export default function NewRolePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
-      setError("Role name is required");
+      setError(tc("create") + " " + t("name"));
       return;
     }
     setError("");
@@ -44,7 +47,7 @@ export default function NewRolePage() {
       }
       router.push("/roles");
     } catch {
-      setError("Failed to create role");
+      setError(tc("error"));
     }
   };
 
@@ -52,20 +55,20 @@ export default function NewRolePage() {
     <div className="mx-auto max-w-2xl">
       <Button variant="ghost" onClick={() => router.push("/roles")} className="mb-6">
         <ArrowLeft size={15} />
-        Back to Roles
+        {tc("back")} {t("title")}
       </Button>
 
-      <h1 className="mb-6 text-2xl font-semibold tracking-tight">New Role</h1>
+      <h1 className="mb-6 text-2xl font-semibold tracking-tight">{t("create")}</h1>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="rounded-xl border bg-card p-6 shadow-sm space-y-5">
           <div className="space-y-2">
-            <label htmlFor="name" className="text-sm font-medium">Role Name</label>
+            <label htmlFor="name" className="text-sm font-medium">{t("name")}</label>
             <input
               id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Senior Mechanic"
+              placeholder={t("namePlaceholder")}
               className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             />
           </div>
@@ -79,14 +82,14 @@ export default function NewRolePage() {
               className="h-4 w-4 rounded border-input text-indigo-500 focus:ring-indigo-500"
             />
             <label htmlFor="is_superadmin" className="text-sm">
-              Super Admin — bypasses all permission checks
+              {t("isSuperAdmin")} — bypasses all permission checks
             </label>
           </div>
         </div>
 
         {!isSuperAdmin && (
           <div>
-            <h2 className="mb-3 text-sm font-semibold">Permissions</h2>
+            <h2 className="mb-3 text-sm font-semibold">{t("permissions")}</h2>
             <PermissionMatrix
               permissions={permissions}
               onChange={setPermissions}
@@ -96,7 +99,7 @@ export default function NewRolePage() {
 
         {isSuperAdmin && (
           <div className="rounded-xl border bg-muted/30 p-4 text-sm text-muted-foreground">
-            Super Admin roles have all permissions automatically. No module settings needed.
+            {t("isSuperAdmin")} roles have all permissions automatically.
           </div>
         )}
 
@@ -104,7 +107,7 @@ export default function NewRolePage() {
 
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-          {isSubmitting ? "Creating..." : "Create Role"}
+          {isSubmitting ? t("creating") : t("create")}
         </Button>
       </form>
     </div>

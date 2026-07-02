@@ -126,9 +126,9 @@ export default function StartJobPage() {
       setNewOwnerName("");
       setNewOwnerPhone("");
     } catch {
-      toast.error("Failed to create owner");
+      toast.error(t("createOwnerError"));
     }
-  }, [newOwnerName, newOwnerPhone, createOwner, setValue, setError]);
+  }, [newOwnerName, newOwnerPhone, createOwner, setValue, setError, t]);
 
   const handleCreateVehicle = useCallback(async () => {
     if (!newVehicleModel.trim() || !newVehiclePlate.trim()) return;
@@ -149,9 +149,9 @@ export default function StartJobPage() {
       setNewVehicleEngine("");
       setNewVehicleChassis("");
     } catch {
-      toast.error("Failed to create vehicle");
+      toast.error(t("createVehicleError"));
     }
-  }, [newVehicleModel, newVehicleType, newVehiclePlate, newVehicleEngine, newVehicleChassis, ownerId, createVehicle, setValue, setError]);
+  }, [newVehicleModel, newVehicleType, newVehiclePlate, newVehicleEngine, newVehicleChassis, ownerId, createVehicle, setValue, setError, t]);
 
   const handleCreateJobCard = async (data: JobCardCreateFormData) => {
     setJobCardError(null);
@@ -172,14 +172,14 @@ export default function StartJobPage() {
       setCreatedJobCardId(jc.id);
       setStep(totalSteps - 1);
     } catch {
-      setJobCardError("Failed to create job card");
+      setJobCardError(t("createJobCardError"));
     }
   };
 
-  const handleCreatePerforma = async () => {
+  const handleCreatePerforma = useCallback(async () => {
     if (!createdJobCardId) return;
     if (!lineItems.some((li) => li.description.trim())) {
-      setPerformaError("All line items must have a description");
+      setPerformaError(t("lineItemRequired"));
       return;
     }
     setPerformaError(null);
@@ -191,9 +191,9 @@ export default function StartJobPage() {
       }).unwrap();
       router.push(`/job-cards/${createdJobCardId}`);
     } catch {
-      setPerformaError("Failed to create performa");
+      setPerformaError(t("createPerformaError"));
     }
-  };
+  }, [createdJobCardId, lineItems, createPerforma, clientEmail, router, t]);
 
   const canGoNext = () => {
     if (step === 0) return !!ownerId;
@@ -293,9 +293,9 @@ export default function StartJobPage() {
                   setValue("owner_id", val, { shouldValidate: true });
                   setValue("vehicle_id", "", { shouldValidate: true });
                 }}
-                placeholder="Select owner..."
-                searchPlaceholder="Search owners..."
-                emptyText="No owners found."
+                placeholder={tc("search")}
+                searchPlaceholder={t("searchPlaceholder")}
+                emptyText={tc("noResults")}
               />
               {errors.owner_id && <p className="text-sm text-destructive">{errors.owner_id.message}</p>}
             </div>
@@ -305,18 +305,18 @@ export default function StartJobPage() {
                 <h3 className="text-xs font-semibold text-indigo-600">{t("newOwner")}</h3>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Name</Label>
+                    <Label className="text-xs">{t("name")}</Label>
                     <input value={newOwnerName} onChange={(e) => setNewOwnerName(e.target.value)}
                       className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Phone</Label>
+                    <Label className="text-xs">{t("phone")}</Label>
                     <input value={newOwnerPhone} onChange={(e) => setNewOwnerPhone(e.target.value)}
                       className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm" />
                   </div>
                 </div>
                 <div className="flex gap-2 pt-1">
-                  <Button type="button" variant="outline" size="sm" onClick={() => setShowNewOwner(false)}>Cancel</Button>
+                  <Button type="button" variant="outline" size="sm" onClick={() => setShowNewOwner(false)}>{tc("cancel")}</Button>
                   <Button type="button" size="sm" onClick={handleCreateOwner}
                     disabled={creatingOwner || !newOwnerName.trim() || !newOwnerPhone.trim()}>
                     {creatingOwner && <Loader2 className="h-3 w-3 animate-spin" />}
@@ -345,9 +345,9 @@ export default function StartJobPage() {
                 options={vehicleOptions}
                 value={vehicleId}
                 onSelect={(val) => setValue("vehicle_id", val, { shouldValidate: true })}
-                placeholder={ownerId ? "Select vehicle..." : "Select owner first"}
-                searchPlaceholder="Search vehicles..."
-                emptyText="No vehicles for this owner."
+                placeholder={ownerId ? t("vehiclePlaceholder") : t("ownerFirstPlaceholder")}
+                searchPlaceholder={t("vehicleSearchPlaceholder")}
+                emptyText={t("noVehiclesForOwner")}
                 disabled={!ownerId}
               />
               {errors.vehicle_id && <p className="text-sm text-destructive">{errors.vehicle_id.message}</p>}
@@ -358,33 +358,33 @@ export default function StartJobPage() {
                 <h3 className="text-xs font-semibold text-indigo-600">{t("newVehicle")}</h3>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Model</Label>
+                    <Label className="text-xs">{t("model")}</Label>
                     <input value={newVehicleModel} onChange={(e) => setNewVehicleModel(e.target.value)}
                       className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Type</Label>
+                    <Label className="text-xs">{t("type")}</Label>
                     <input value={newVehicleType} onChange={(e) => setNewVehicleType(e.target.value)}
                       className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Plate #</Label>
+                    <Label className="text-xs">{t("plateNumber")}</Label>
                     <input value={newVehiclePlate} onChange={(e) => setNewVehiclePlate(e.target.value)}
                       className="flex h-9 w-full rounded-md border border-input bg-background px-3 font-mono text-sm" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Engine #</Label>
+                    <Label className="text-xs">{t("engineNumber")}</Label>
                     <input value={newVehicleEngine} onChange={(e) => setNewVehicleEngine(e.target.value)}
                       className="flex h-9 w-full rounded-md border border-input bg-background px-3 font-mono text-sm" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Chassis #</Label>
+                    <Label className="text-xs">{t("chassisNumber")}</Label>
                     <input value={newVehicleChassis} onChange={(e) => setNewVehicleChassis(e.target.value)}
                       className="flex h-9 w-full rounded-md border border-input bg-background px-3 font-mono text-sm" />
                   </div>
                 </div>
                 <div className="flex gap-2 pt-1">
-                  <Button type="button" variant="outline" size="sm" onClick={() => setShowNewVehicle(false)}>Cancel</Button>
+                  <Button type="button" variant="outline" size="sm" onClick={() => setShowNewVehicle(false)}>{tc("cancel")}</Button>
                   <Button type="button" size="sm" onClick={handleCreateVehicle}
                     disabled={creatingVehicle || !newVehicleModel.trim() || !newVehiclePlate.trim()}>
                     {creatingVehicle && <Loader2 className="h-3 w-3 animate-spin" />}
@@ -405,20 +405,20 @@ export default function StartJobPage() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="mileage">Mileage (km)</Label>
+                <Label htmlFor="mileage">{t("mileage")}</Label>
                 <input id="mileage" type="number" {...register("mileage_km", { valueAsNumber: true })}
                   className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
                 {errors.mileage_km && <p className="text-sm text-destructive">{errors.mileage_km.message}</p>}
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="ins">Insurance Provider</Label>
+                <Label htmlFor="ins">{t("insuranceProvider")}</Label>
                 <input id="ins" {...register("insurance_provider")}
                   className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">{t("description")}</Label>
               <Textarea id="description" rows={2} {...register("description")} />
               {errors.description && <p className="text-sm text-destructive">{errors.description.message}</p>}
             </div>
@@ -427,22 +427,22 @@ export default function StartJobPage() {
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" {...register("private_paint")}
                   className="h-4 w-4 rounded border-input text-indigo-500 focus:ring-indigo-500" />
-                Private Paint
+                {t("privatePaint")}
               </label>
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" {...register("private_mechanic")}
                   className="h-4 w-4 rounded border-input text-indigo-500 focus:ring-indigo-500" />
-                Private Mechanic
+                {t("privateMechanic")}
               </label>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="rem">Remarks</Label>
+                <Label htmlFor="rem">{t("remarks")}</Label>
                 <Textarea id="rem" rows={2} {...register("remarks")} />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="mat">Requested Materials</Label>
+                <Label htmlFor="mat">{t("requestedMaterials")}</Label>
                 <Textarea id="mat" rows={2} {...register("requested_materials")} />
               </div>
             </div>
@@ -544,17 +544,17 @@ export default function StartJobPage() {
           </div>
 
           <div className="rounded-xl border bg-card p-6 shadow-sm space-y-4">
-            <h2 className="text-sm font-semibold">Client Email</h2>
+            <h2 className="text-sm font-semibold">{t("clientEmail")}</h2>
             <Input
               type="email"
-              placeholder="client@example.com"
+              placeholder={t("clientEmailPlaceholder")}
               value={clientEmail}
               onChange={(e) => setClientEmail(e.target.value)}
             />
           </div>
 
           <div className="rounded-xl border bg-card p-6 shadow-sm space-y-4">
-            <h2 className="text-sm font-semibold">Line Items</h2>
+            <h2 className="text-sm font-semibold">{t("lineItems")}</h2>
             <PerformaLineItems items={lineItems} onChange={setLineItems} />
             <PerformaSummary subtotal={subtotal} vatRate={vatRate} vatAmount={vatAmount} grandTotal={grandTotal} />
           </div>

@@ -2,6 +2,7 @@
 
 import { use, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
   useGetUserQuery,
@@ -19,6 +20,8 @@ type Props = {
 
 export default function EditUserPage({ params }: Props) {
   const { id } = use(params);
+  const t = useTranslations("users");
+  const tc = useTranslations("common");
   const router = useRouter();
   const { data: user, isLoading: loadingUser } = useGetUserQuery(id);
   const [updateUser, { isLoading: isSaving }] = useUpdateUserMutation();
@@ -39,11 +42,11 @@ export default function EditUserPage({ params }: Props) {
 
   const handleReset = async () => {
     if (!newPassword || newPassword.length < 8) {
-      toast.error("Password must be at least 8 characters");
+      toast.error(t("passwordLengthError"));
       return;
     }
     await resetPassword({ id, password: newPassword }).unwrap();
-    toast.success("Password reset successfully");
+    toast.success(t("passwordResetDone"));
     setNewPassword("");
   };
 
@@ -56,17 +59,17 @@ export default function EditUserPage({ params }: Props) {
   }
 
   if (!user) {
-    return <div className="py-20 text-center text-sm text-muted-foreground">User not found</div>;
+    return <div className="py-20 text-center text-sm text-muted-foreground">{t("notFound")}</div>;
   }
 
   return (
     <div className="mx-auto max-w-lg">
       <Button variant="ghost" onClick={() => router.push("/users")} className="mb-6">
         <ArrowLeft size={15} />
-        Back to Users
+        {tc("back")} {t("title")}
       </Button>
 
-      <h1 className="mb-6 text-2xl font-semibold tracking-tight">Edit User</h1>
+      <h1 className="mb-6 text-2xl font-semibold tracking-tight">{t("edit")}</h1>
 
       <div className="rounded-xl border bg-card p-6 shadow-sm">
         <UserForm
@@ -83,17 +86,17 @@ export default function EditUserPage({ params }: Props) {
       </div>
 
       <div className="mt-8 rounded-xl border bg-card p-6 shadow-sm">
-        <h2 className="mb-4 text-sm font-semibold">Reset Password</h2>
+        <h2 className="mb-4 text-sm font-semibold">{t("resetPassword")}</h2>
         <div className="flex items-center gap-3">
           <input
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
             type="password"
-            placeholder="New password"
+            placeholder={t("newPassword")}
             className="flex h-10 flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           />
           <Button onClick={handleReset} disabled={isResetting} variant="outline">
-            {isResetting ? "Resetting..." : "Reset"}
+            {isResetting ? t("resettingPassword") : t("resetPassword")}
           </Button>
         </div>
       </div>

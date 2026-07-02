@@ -13,6 +13,7 @@ import type { User } from "@/features/auth/types";
 
 export default function UsersPage() {
   const t = useTranslations("users");
+  const tc = useTranslations("common");
   const router = useRouter();
   const [search, setSearch] = useState("");
   const { data: users = [], isLoading } = useGetUsersQuery();
@@ -56,7 +57,7 @@ export default function UsersPage() {
     },
     {
       key: "created_at",
-      header: "Created",
+      header: tc("createdAt"),
       render: (u) => (
         <span className="text-muted-foreground">
           {new Date(u.created_at).toLocaleDateString()}
@@ -105,7 +106,7 @@ export default function UsersPage() {
           columns={columns}
           data={filtered}
           isLoading={isLoading}
-          emptyMessage="No users found"
+          emptyMessage={t("noUsers")}
           searchPlaceholder={t("fullName") + "..."}
           searchValue={search}
           onSearch={setSearch}

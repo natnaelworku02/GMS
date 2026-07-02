@@ -20,7 +20,13 @@
     "comingSoon": "በቅርቡ",
     "greetingMorning": "እንደምን አደሩ",
     "greetingAfternoon": "እንደምን ዋሉ",
-    "greetingEvening": "እንደምን አመሹ"
+    "greetingEvening": "እንደምን አመሹ",
+    "yes": "አዎ",
+    "no": "አይ",
+    "notFound": "{entity} አልተገኘም",
+    "cannotUndo": "ይህ እርምጃ መቀልበስ አይቻልም።",
+    "createdAt": "የተፈጠረበት",
+    "logout": "ውጣ"
   },
   "auth": {
     "login": "ግባ",
@@ -30,7 +36,14 @@
     "loginTitle": "ወደ GMS ይግቡ",
     "loginButton": "ግባ",
     "invalidCredentials": "ልክ ያልሆነ ስልክ ወይም የይለፍ ቃል",
-    "sessionExpired": "ክፍለ ጊዜዎ አልቋል። እባክዎ እንደገና ይግቡ።"
+    "sessionExpired": "ክፍለ ጊዜዎ አልቋል። እባክዎ እንደገና ይግቡ።",
+    "companyName": "ፍያመት አውቶሞቲቭ",
+    "phoneRequired": "ስልክ ቁጥር ያስፈልጋል",
+    "invalidPhone": "ልክ ያልሆነ ስልክ ቁጥር",
+    "passwordRequired": "የይለፍ ቃል ያስፈልጋል",
+    "phonePlaceholder": "+251912345678",
+    "passwordPlaceholder": "••••••••",
+    "signingIn": "በመግባት ላይ..."
   },
   "nav": {
     "dashboard": "ዳሽቦርድ",
@@ -46,7 +59,10 @@
     "settings": "ቅንብሮች",
     "auditLogs": "የኦዲት መዝገቦች",
     "startJob": "ሥራ ጀምር",
-    "notifications": "ማሳወቂያዎች"
+    "notifications": "ማሳወቂያዎች",
+    "jobCardsDescription": "የጥገና ሥራ ካርዶችን ይፍጠሩ እና ያስተዳድሩ",
+    "performasDescription": "ፐርፎርማ ኢንቮይሶችን ያመንጩ እና ይላኩ",
+    "inventoryDescription": "መለዋወጫዎችን እና የክምችት ደረጃዎችን ይከታተሉ"
   },
   "notifications": {
     "title": "ማሳወቂያዎች",
@@ -92,30 +108,17 @@
     "unreturnedTools": "ያልተመለሱ መሳሪያ(ዎች)",
     "returnToolsFirst": "ከማጠናቀቅዎ በፊት ሁሉም መሳሪያዎች መመለስ አለባቸው",
     "allToolsReturned": "ሁሉም መሳሪያዎች ተመልሰዋል",
-    "performas": "ፐርፎርማዎች"
-  },
-  "owners": {
-    "title": "ባለቤቶች",
-    "create": "አዲስ ባለቤት",
-    "edit": "ባለቤት አስተካክል",
-    "name": "ስም",
-    "phone": "ስልክ",
-    "phoneSecondary": "ሁለተኛ ስልክ",
-    "email": "ኢሜይል",
-    "ownerType": "የባለቤት አይነት",
-    "vehicles": "ተሽከርካሪዎች",
-    "noVehicles": "ምንም ተሽከርካሪ አልተመዘገበም"
-  },
-  "vehicles": {
-    "title": "ተሽከርካሪዎች",
-    "create": "አዲስ ተሽከርካሪ",
-    "model": "ሞዴል",
-    "type": "አይነት",
-    "plateNumber": "የታርጋ ቁጥር",
-    "engineNumber": "የሞተር ቁጥር",
-    "chassisNumber": "የቻሲስ ቁጥር",
-    "currentMileage": "አሁን ያለው ማይልጅ (ኪሜ)",
-    "owner": "ባለቤት"
+    "performas": "ፐርፎርማዎች",
+    "backToList": "ወደ የሥራ ካርዶች ተመለስ",
+    "createdBy": "በ{name} የተፈጠረ",
+    "details": "ዝርዝሮች",
+    "noPerformas": "ገና ፐርፎርማዎች የሉም",
+    "searchPlaceholder": "ታርጋ፣ ስም፣ መግለጫ ይፈልጉ...",
+    "allStatuses": "ሁሉም ሁኔታዎች",
+    "noJobCards": "ምንም የሥራ ካርዶች አልተገኙም",
+    "notFound": "የሥራ ካርድ አልተገኘም",
+    "updated": "የተሻሻለ",
+    "confirmStatusChange": "ሁኔታ ወደ"
   },
   "performas": {
     "title": "ፐርፎርማዎች",
@@ -145,7 +148,10 @@
     "send": "ለደንበኛ ላክ",
     "approve": "ቀበል",
     "reject": "ውድቅ",
-    "revise": "አስተካክል"
+    "revise": "አስተካክል",
+    "clientEmailPlaceholder": "client@example.com",
+    "lineItemRequired": "ሁሉም የዝርዝር ዕቃዎች መግለጫ ሊኖራቸው ይገባል",
+    "allStatusFilter": "ሁሉም"
   },
   "inventory": {
     "title": "ክምችት",
@@ -162,7 +168,12 @@
     "currentStock": "አሁን ያለ ክምችት",
     "location": "ቦታ",
     "quantity": "ብዛት",
-    "lowStock": "ክምችቱ አነስተኛ ነው"
+    "lowStock": "ክምችቱ አነስተኛ ነው",
+    "noItems": "ምንም የክምችት ዕቃዎች አልተገኙም",
+    "noLocations": "ምንም ቦታዎች አልተገኙም",
+    "allVehicleTypes": "ሁሉም የተሽከርካሪ አይነቶች",
+    "selectLocation": "ቦታ ይምረጡ",
+    "typeOrSelect": "ይተይቡ ወይም ይምረጡ..."
   },
   "tools": {
     "title": "መሳሪያዎች",
@@ -179,7 +190,9 @@
     "checkedOutAt": "የወጣበት ቀን",
     "returnedAt": "የተመለሰበት ቀን",
     "jobCard": "የሥራ ካርድ",
-    "employee": "ሰራተኛ"
+    "employee": "ሰራተኛ",
+    "noTools": "ምንም መሳሪያዎች አልተገኙም",
+    "noCheckouts": "ምንም የወጡ መሳሪያዎች የሉም"
   },
   "hr": {
     "title": "ሰራተኞች",
@@ -190,7 +203,37 @@
     "phone": "ስልክ",
     "active": "ንቁ",
     "inactive": "እንቅስቃሴ የለም",
-    "search": "ሰራተኞችን ፈልግ..."
+    "search": "ሰራተኞችን ፈልግ...",
+    "noEmployees": "ምንም ሰራተኞች አልተገኙም"
+  },
+  "owners": {
+    "title": "ባለቤቶች",
+    "create": "አዲስ ባለቤት",
+    "edit": "ባለቤት አስተካክል",
+    "name": "ስም",
+    "phone": "ስልክ",
+    "phoneSecondary": "ሁለተኛ ስልክ",
+    "email": "ኢሜይል",
+    "ownerType": "የባለቤት አይነት",
+    "vehicles": "ተሽከርካሪዎች",
+    "noVehicles": "ምንም ተሽከርካሪ አልተመዘገበም",
+    "noOwners": "ምንም ባለቤቶች አልተገኙም",
+    "registered": "የተመዘገበ"
+  },
+  "vehicles": {
+    "title": "ተሽከርካሪዎች",
+    "create": "አዲስ ተሽከርካሪ",
+    "model": "ሞዴል",
+    "type": "አይነት",
+    "plateNumber": "የታርጋ ቁጥር",
+    "engineNumber": "የሞተር ቁጥር",
+    "chassisNumber": "የቻሲስ ቁጥር",
+    "currentMileage": "አሁን ያለው ማይልጅ (ኪሜ)",
+    "owner": "ባለቤት",
+    "noVehicles": "ምንም ተሽከርካሪዎች አልተገኙም",
+    "selectOwner": "ባለቤት ይምረጡ...",
+    "newOwner": "አዲስ ባለቤት",
+    "searchPlaceholder": "ታርጋ፣ ሞዴል ወይም ባለቤት ይፈልጉ..."
   },
   "users": {
     "title": "ተጠቃሚዎች",
@@ -201,7 +244,13 @@
     "role": "ሚና",
     "password": "የይለፍ ቃል",
     "isActive": "ንቁ",
-    "resetPassword": "የይለፍ ቃል ዳግም አስጀምር"
+    "resetPassword": "የይለፍ ቃል ዳግም አስጀምር",
+    "noUsers": "ምንም ተጠቃሚዎች አልተገኙም",
+    "notFound": "ተጠቃሚ አልተገኘም",
+    "newPassword": "አዲስ የይለፍ ቃል",
+    "resettingPassword": "በማስጀመር ላይ...",
+    "passwordResetDone": "የይለፍ ቃል በተሳካ ሁኔታ ተጀምሯል",
+    "passwordLengthError": "የይለፍ ቃል ቢያንስ 8 ቁምፊዎች መሆን አለበት"
   },
   "roles": {
     "title": "ሚናዎች",
@@ -214,13 +263,21 @@
     "create": "ፍጠር",
     "read": "አንብብ",
     "update": "አስተካክል",
-    "delete": "ሰርዝ"
+    "delete": "ሰርዝ",
+    "typeHeader": "አይነት",
+    "superAdmin": "ሱፐር አድሚን",
+    "noRoles": "ምንም ሚናዎች አልተገኙም",
+    "namePlaceholder": "ለምሳሌ ከፍተኛ መካኒክ",
+    "creating": "በመፍጠር ላይ..."
   },
   "settings": {
     "title": "ቅንብሮች",
     "key": "ቁልፍ",
     "value": "እሴት",
-    "update": "አልቅ"
+    "update": "አልቅ",
+    "updatedAt": "የተሻሻለበት",
+    "noSettings": "ምንም ቅንብሮች አልተገኙም",
+    "count": "{count} ቅንብር{count, plural, one {} other {ች}}"
   },
   "audit": {
     "title": "የኦዲት መዝገቦች",
@@ -229,7 +286,10 @@
     "entityId": "የዕቃ መለያ",
     "user": "ተጠቃሚ",
     "details": "ዝርዝሮች",
-    "createdAt": "ቀን"
+    "createdAt": "ቀን",
+    "noLogs": "ምንም የኦዲት መዝገቦች አልተገኙም",
+    "allTypes": "ሁሉም አይነቶች",
+    "count": "{count} መዝገብ{count, plural, one {} other {ች}}"
   },
   "startJob": {
     "title": "ሥራ ጀምር",
@@ -264,7 +324,36 @@
     "goToJobCard": "የሥራ ካርድ ይመልከቱ",
     "success": "የሥራ ካርድ እና ፐርፎርማ በተሳካ ሁኔታ ተፈጥረዋል!",
     "next": "ቀጣይ",
-    "previous": "ቀዳሚ"
+    "previous": "ቀዳሚ",
+    "ownerPlaceholder": "ባለቤት ይምረጡ...",
+    "vehiclePlaceholder": "ተሽከርካሪ ይምረጡ...",
+    "ownerFirstPlaceholder": "በመጀመሪያ ባለቤት ይምረጡ",
+    "noOwnersFound": "ምንም ባለቤቶች አልተገኙም።",
+    "noVehiclesForOwner": "ለዚህ ባለቤት ምንም ተሽከርካሪ የለም።",
+    "clientEmailPlaceholder": "client@example.com",
+    "lineItemRequired": "ሁሉም የዝርዝር ዕቃዎች መግለጫ ሊኖራቸው ይገባል",
+    "createOwnerError": "ባለቤት መፍጠር አልተሳካም",
+    "createVehicleError": "ተሽከርካሪ መፍጠር አልተሳካም",
+    "createJobCardError": "የሥራ ካርድ መፍጠር አልተሳካም",
+    "createPerformaError": "ፐርፎርማ መፍጠር አልተሳካም",
+    "mileage": "ማይልጅ (ኪሜ)",
+    "insuranceProvider": "የኢንሹራንስ አቅራቢ",
+    "description": "መግለጫ",
+    "privatePaint": "የግል ቀለም",
+    "privateMechanic": "የግል መካኒክ",
+    "remarks": "ማስታወሻዎች",
+    "requestedMaterials": "የተጠየቁ ቁሳቁሶች",
+    "clientEmail": "የደንበኛ ኢሜይል",
+    "lineItems": "የዝርዝር ዕቃዎች",
+    "name": "ስም",
+    "phone": "ስልክ",
+    "model": "ሞዴል",
+    "type": "አይነት",
+    "plateNumber": "ታርጋ #",
+    "engineNumber": "ሞተር #",
+    "chassisNumber": "ቻሲስ #",
+    "searchPlaceholder": "ባለቤቶችን ይፈልጉ...",
+    "vehicleSearchPlaceholder": "ተሽከርካሪዎችን ይፈልጉ..."
   },
   "offline": {
     "banner": "ከመስመር ውጭ ነዎት — ሲመለሱ ለውጦቹ ይመሳሰላሉ",

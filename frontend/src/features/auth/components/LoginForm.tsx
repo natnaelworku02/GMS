@@ -11,12 +11,12 @@ import { useLoginMutation, useLazyGetMeQuery, useLazyGetRoleQuery } from "@/feat
 import { useAppDispatch } from "@/lib/hooks";
 import { setCredentials, setTokens } from "@/features/auth/authSlice";
 import { storage } from "@/lib/storage";
-const loginSchema = z.object({
-  phone: z.string().min(1, "Phone is required").regex(/^\+?[0-9]+$/, "Invalid phone number"),
-  password: z.string().min(1, "Password is required"),
+const loginSchema = (t: (key: string) => string) => z.object({
+  phone: z.string().min(1, t("phoneRequired")).regex(/^\+?[0-9]+$/, t("invalidPhone")),
+  password: z.string().min(1, t("passwordRequired")),
 });
 
-type LoginFormData = z.infer<typeof loginSchema>;
+type LoginFormData = z.infer<ReturnType<typeof loginSchema>>;
 
 export function LoginForm() {
   const t = useTranslations("auth");
@@ -27,7 +27,7 @@ export function LoginForm() {
   const [getRole] = useLazyGetRoleQuery();
 
   const form = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
+    resolver: zodResolver(loginSchema(t)),
     defaultValues: { phone: "", password: "" },
   });
 
@@ -85,7 +85,7 @@ export function LoginForm() {
           id="phone"
           type="tel"
           autoComplete="tel"
-          placeholder="+251912345678"
+          placeholder={t("phonePlaceholder")}
           className="flex h-11 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 transition-all focus:border-indigo-500/50 focus:bg-white/10 focus:outline-none focus:ring-1 focus:ring-indigo-500/30"
           {...register("phone")}
         />
@@ -102,7 +102,7 @@ export function LoginForm() {
           id="password"
           type="password"
           autoComplete="current-password"
-          placeholder="••••••••"
+          placeholder={t("passwordPlaceholder")}
           className="flex h-11 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 transition-all focus:border-indigo-500/50 focus:bg-white/10 focus:outline-none focus:ring-1 focus:ring-indigo-500/30"
           {...register("password")}
         />
@@ -119,7 +119,7 @@ export function LoginForm() {
         {isLoading ? (
           <span className="flex items-center gap-2">
             <Loader2 className="h-4 w-4 animate-spin" />
-            Signing in...
+            {t("signingIn")}
           </span>
         ) : (
           t("loginButton")

@@ -13,6 +13,7 @@ import type { Employee } from "@/features/jobCards/types";
 
 export default function EmployeesPage() {
   const t = useTranslations("hr");
+  const tc = useTranslations("common");
   const router = useRouter();
   const [search, setSearch] = useState("");
   const { data: employees = [], isLoading } = useGetEmployeesQuery();
@@ -98,7 +99,7 @@ export default function EmployeesPage() {
           columns={columns}
           data={filtered}
           isLoading={isLoading}
-          emptyMessage="No employees found"
+          emptyMessage={t("noEmployees")}
           searchPlaceholder={t("search")}
           searchValue={search}
           onSearch={setSearch}

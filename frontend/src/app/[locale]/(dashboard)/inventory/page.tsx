@@ -13,6 +13,7 @@ import type { InventoryItem } from "@/features/inventory/types";
 
 export default function InventoryPage() {
   const t = useTranslations("inventory");
+  const tc = useTranslations("common");
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [vehicleFilter, setVehicleFilter] = useState("");
@@ -153,7 +154,7 @@ export default function InventoryPage() {
               onChange={(e) => setVehicleFilter(e.target.value)}
               className="h-9 rounded-lg border border-input bg-background px-3 text-sm"
             >
-              <option value="">All vehicle types</option>
+              <option value="">{t("allVehicleTypes")}</option>
               {vehicleTypes.map((vt) => (
                 <option key={vt} value={vt}>{vt}</option>
               ))}
@@ -164,7 +165,7 @@ export default function InventoryPage() {
           columns={columns}
           data={filtered}
           isLoading={isLoading}
-          emptyMessage="No inventory items found"
+          emptyMessage={t("noItems")}
           searchPlaceholder={t("partName") + "..."}
           searchValue={search}
           onSearch={setSearch}

@@ -14,6 +14,7 @@ import type { ToolCheckout } from "@/features/tools/types";
 
 export default function CheckoutsPage() {
   const t = useTranslations("tools");
+  const tc = useTranslations("common");
   const [unreturnedOnly, setUnreturnedOnly] = useState(false);
   const [jobCardFilter, setJobCardFilter] = useState("");
 
@@ -82,12 +83,12 @@ export default function CheckoutsPage() {
     },
     {
       key: "status",
-      header: "Status",
+      header: tc("status"),
       render: (co) =>
         co.checked_in_at ? (
-          <Badge variant="outline" className="text-emerald-600 border-emerald-300 bg-emerald-50">Returned</Badge>
+          <Badge variant="outline" className="text-emerald-600 border-emerald-300 bg-emerald-50">{t("return")}d</Badge>
         ) : (
-          <Badge variant="destructive">Checked Out</Badge>
+          <Badge variant="destructive">{t("checkout")}d</Badge>
         ),
       sortable: true,
     },
@@ -133,7 +134,7 @@ export default function CheckoutsPage() {
               onChange={(e) => setUnreturnedOnly(e.target.checked)}
               className="rounded border-input"
             />
-            Unreturned only
+            {t("unreturnedTools")}
           </label>
           {jobCards.length > 0 && (
             <select
@@ -141,7 +142,7 @@ export default function CheckoutsPage() {
               onChange={(e) => setJobCardFilter(e.target.value)}
               className="h-9 rounded-lg border border-input bg-background px-3 text-sm"
             >
-              <option value="">All job cards</option>
+              <option value="">{t("jobCard")}s</option>
               {jobCards.map((jc) => (
                 <option key={jc.id} value={jc.id}>
                   #{jc.id.slice(0, 8)}
@@ -155,7 +156,7 @@ export default function CheckoutsPage() {
           columns={columns}
           data={filtered}
           isLoading={isLoading}
-          emptyMessage="No checkouts found"
+          emptyMessage={t("noCheckouts")}
         />
       </div>
     </div>

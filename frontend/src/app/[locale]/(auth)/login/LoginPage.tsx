@@ -26,7 +26,7 @@ export function LoginPage() {
           <h1 className="text-2xl font-semibold tracking-tight text-white">
             {t("loginTitle")}
           </h1>
-          <p className="mt-1.5 text-sm text-white/50">Fyamet Automotive</p>
+          <p className="mt-1.5 text-sm text-white/50">{t("companyName")}</p>
         </div>
 
         <div className="rounded-2xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl shadow-2xl shadow-black/20">

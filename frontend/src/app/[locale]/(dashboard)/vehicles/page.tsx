@@ -13,6 +13,7 @@ import type { Vehicle } from "@/features/jobCards/types";
 
 export default function VehiclesPage() {
   const t = useTranslations("vehicles");
+  const tc = useTranslations("common");
   const router = useRouter();
   const [search, setSearch] = useState("");
   const { data: vehicles = [], isLoading } = useGetVehiclesQuery();
@@ -90,8 +91,8 @@ export default function VehiclesPage() {
           columns={columns}
           data={filtered}
           isLoading={isLoading}
-          emptyMessage="No vehicles found"
-          searchPlaceholder="Search plate, model or owner..."
+          emptyMessage={t("noVehicles")}
+          searchPlaceholder={t("searchPlaceholder")}
           searchValue={search}
           onSearch={setSearch}
         />

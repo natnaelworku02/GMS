@@ -13,6 +13,7 @@ import type { Tool } from "@/features/tools/types";
 
 export default function ToolsPage() {
   const t = useTranslations("tools");
+  const tc = useTranslations("common");
   const router = useRouter();
   const [search, setSearch] = useState("");
   const { data: tools = [], isLoading } = useGetToolsQuery();
@@ -84,7 +85,7 @@ export default function ToolsPage() {
           columns={columns}
           data={filtered}
           isLoading={isLoading}
-          emptyMessage="No tools found"
+          emptyMessage={t("noTools")}
           searchPlaceholder={t("name") + "..."}
           searchValue={search}
           onSearch={setSearch}
