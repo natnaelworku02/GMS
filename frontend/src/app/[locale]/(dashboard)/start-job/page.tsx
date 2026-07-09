@@ -46,8 +46,10 @@ export default function StartJobPage() {
   const router = useRouter();
   const [createJobCard, { isLoading: isCreatingJobCard }] = useCreateJobCardMutation();
   const [createPerforma, { isLoading: isCreatingPerforma }] = useCreatePerformaMutation();
-  const { data: owners = [] } = useGetOwnersQuery();
-  const { data: vehicles = [] } = useGetVehiclesQuery();
+  const { data: ownersResp } = useGetOwnersQuery({ page: 1, page_size: 100 });
+  const owners = ownersResp?.items ?? [];
+  const { data: vehiclesResp } = useGetVehiclesQuery({ page: 1, page_size: 100 });
+  const vehicles = vehiclesResp?.items ?? [];
   const [createOwner, { isLoading: creatingOwner }] = useCreateOwnerMutation();
   const [createVehicle, { isLoading: creatingVehicle }] = useCreateVehicleMutation();
 
@@ -61,10 +63,12 @@ export default function StartJobPage() {
     setValue,
     watch,
     setError,
+    trigger,
     formState: { errors },
   } = useForm<JobCardCreateFormData>({
     resolver: zodResolver(jobCardCreateSchema),
     defaultValues: {
+      mileage_km: 0,
       private_paint: false,
       private_mechanic: false,
       insurance_provider: "",
@@ -155,7 +159,7 @@ export default function StartJobPage() {
       const jc = await createJobCard({
         vehicle_id: data.vehicle_id,
         owner_id: data.owner_id,
-        mileage_km: data.mileage_km,
+        mileage_km: data.mileage_km ?? 0,
         private_paint: data.private_paint,
         private_mechanic: data.private_mechanic,
         insurance_provider: data.insurance_provider || null,
@@ -190,13 +194,16 @@ export default function StartJobPage() {
     }
   }, [createdJobCardId, lineItems, createPerforma, clientEmail, router, t]);
 
-  const canGoNext = () => {
-    if (step === 0) return !!ownerId;
-    if (step === 1) return !!vehicleId;
-    return true;
-  };
+  const canGoNext = () => true;
 
-  const handleNext = () => {
+  const handleNext = async () => {
+    let valid = true;
+    if (step === 0) {
+      valid = await trigger("owner_id");
+    } else if (step === 1) {
+      valid = await trigger(["vehicle_id", "mileage_km", "description"]);
+    }
+    if (!valid) return;
     if (step >= CONDITION_STEP_START && step < CONDITION_STEP_START + PART_SECTIONS.length - 1) {
       setCwStep(cwStep + 1);
     }
@@ -477,6 +484,17 @@ export default function StartJobPage() {
           <div className="rounded-xl border bg-card p-6 shadow-sm space-y-5">
             <h2 className="text-sm font-semibold">{t("step", { step: step + 1 })} — {t("review")}</h2>
             <p className="text-xs text-muted-foreground">{t("reviewDescription")}</p>
+
+            {Object.keys(errors).length > 0 && (
+              <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 space-y-1">
+                <p className="text-xs font-medium text-destructive">Please fix the following errors:</p>
+                <ul className="list-disc list-inside text-xs text-destructive/80 space-y-0.5">
+                  {Object.entries(errors).map(([key, err]) => (
+                    <li key={key}>{(err as { message?: string })?.message || key}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {ownerId && (() => {
               const owner = owners.find((o) => o.id === ownerId);

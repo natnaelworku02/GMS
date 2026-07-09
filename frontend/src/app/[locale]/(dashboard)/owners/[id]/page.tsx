@@ -20,7 +20,8 @@ export default function EditOwnerPage({ params }: { params: Promise<{ id: string
   const tc = useTranslations("common");
   const router = useRouter();
   const { data: owner, isLoading: loading } = useGetOwnerQuery(id);
-  const { data: vehicles = [] } = useGetVehiclesQuery();
+  const { data: vehiclesResp } = useGetVehiclesQuery({ page: 1, page_size: 100 });
+  const vehicles = vehiclesResp?.items ?? [];
   const [update, { isLoading: updating }] = useUpdateOwnerMutation();
   const {
     register,

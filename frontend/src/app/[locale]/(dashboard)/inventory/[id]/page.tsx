@@ -3,6 +3,8 @@
 import { useState, use } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useGetInventoryItemQuery, useGetInventoryLocationsQuery, useAdjustStockMutation } from "@/features/inventory/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +14,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeft, Loader2, Package } from "lucide-react";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { toast } from "sonner";
+import { stockAdjustSchema } from "@/lib/formSchemas";
+import { z } from "zod";
+type StockAdjustFormData = z.input<typeof stockAdjustSchema>;
 import type { StockEntry } from "@/features/inventory/types";
 
 export default function InventoryItemDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -20,12 +25,26 @@ export default function InventoryItemDetailPage({ params }: { params: Promise<{ 
   const t = useTranslations("inventory");
   const router = useRouter();
   const { data: item, isLoading } = useGetInventoryItemQuery(id);
-  const { data: locations = [] } = useGetInventoryLocationsQuery();
+  const { data: locationsResp } = useGetInventoryLocationsQuery({ page: 1, page_size: 100 });
+  const locations = locationsResp?.items ?? [];
   const [adjustStock, { isLoading: isAdjusting }] = useAdjustStockMutation();
 
-  const [selectedLocation, setSelectedLocation] = useState("");
-  const [adjustQty, setAdjustQty] = useState(0);
   const [confirmStock, setConfirmStock] = useState(false);
+  const [pendingData, setPendingData] = useState<StockAdjustFormData | null>(null);
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    formState: { errors },
+  } = useForm<StockAdjustFormData>({
+    resolver: zodResolver(stockAdjustSchema),
+    defaultValues: { store_location_id: "", quantity: 0 },
+  });
+
+  const selectedLocation = watch("store_location_id") ?? "";
 
   const totalStock = (entries: StockEntry[]) =>
     entries.reduce((sum, se) => sum + se.quantity, 0);
@@ -33,24 +52,22 @@ export default function InventoryItemDetailPage({ params }: { params: Promise<{ 
   const locationName = (locId: string) =>
     locations.find((l) => l.id === locId)?.name || locId;
 
-  const handleAdjust = () => {
-    if (!selectedLocation) {
-      toast.error(t("selectLocation"));
-      return;
-    }
+  const handleAdjust = (data: StockAdjustFormData) => {
+    setPendingData(data);
     setConfirmStock(true);
   };
 
   const confirmAdjustStock = async () => {
+    if (!pendingData) return;
     try {
       await adjustStock({
         item_id: id,
-        store_location_id: selectedLocation,
-        quantity: adjustQty,
+        store_location_id: pendingData.store_location_id,
+        quantity: pendingData.quantity,
       }).unwrap();
-      setSelectedLocation("");
-      setAdjustQty(0);
+      reset({ store_location_id: "", quantity: 0 });
       setConfirmStock(false);
+      setPendingData(null);
     } catch {
       toast.error("Failed to adjust stock");
     }
@@ -154,12 +171,12 @@ export default function InventoryItemDetailPage({ params }: { params: Promise<{ 
         </div>
 
         {/* Stock Adjustment */}
-        <div className="rounded-xl border bg-card p-6 shadow-sm space-y-4">
+        <form onSubmit={handleSubmit(handleAdjust)} className="rounded-xl border bg-card p-6 shadow-sm space-y-4">
           <h2 className="text-sm font-semibold">Adjust Stock</h2>
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-1.5">
               <Label htmlFor="loc" className="text-xs">{t("location")}</Label>
-              <Select value={selectedLocation} onValueChange={(v) => setSelectedLocation(v || "")}>
+              <Select value={selectedLocation || null} onValueChange={(v) => setValue("store_location_id", v || "", { shouldValidate: true })}>
                 <SelectTrigger id="loc" className="h-9">
                   <SelectValue placeholder="Select..." />
                 </SelectTrigger>
@@ -169,6 +186,7 @@ export default function InventoryItemDetailPage({ params }: { params: Promise<{ 
                   ))}
                 </SelectContent>
               </Select>
+              {errors.store_location_id && <p className="text-xs text-destructive">{errors.store_location_id.message}</p>}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="qty" className="text-xs">{t("quantity")}</Label>
@@ -176,15 +194,14 @@ export default function InventoryItemDetailPage({ params }: { params: Promise<{ 
                 id="qty"
                 type="number"
                 min={0}
-                value={adjustQty}
-                onChange={(e) => setAdjustQty(parseInt(e.target.value) || 0)}
+                {...register("quantity", { valueAsNumber: true })}
               />
+              {errors.quantity && <p className="text-xs text-destructive">{errors.quantity.message}</p>}
             </div>
             <div className="flex items-end">
               <Button
-                type="button"
-                onClick={handleAdjust}
-                disabled={isAdjusting || !selectedLocation}
+                type="submit"
+                disabled={isAdjusting}
                 className="w-full"
               >
                 {isAdjusting && <Loader2 className="h-4 w-4 animate-spin" />}
@@ -192,14 +209,14 @@ export default function InventoryItemDetailPage({ params }: { params: Promise<{ 
               </Button>
             </div>
           </div>
-        </div>
+        </form>
       </div>
 
       <ConfirmDialog
         open={confirmStock}
         onOpenChange={setConfirmStock}
         title="Set Stock"
-        description={`Set stock at location ${locationName(selectedLocation)} to ${adjustQty}?`}
+        description={`Set stock at location ${locationName(pendingData?.store_location_id ?? "")} to ${pendingData?.quantity ?? 0}?`}
         confirmLabel="Set"
         onConfirm={confirmAdjustStock}
       />

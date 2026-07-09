@@ -52,5 +52,9 @@ class PerformaStatusUpdate(BaseModel):
     status: str
 
 
+class PerformaRevise(BaseModel):
+    line_items: list[LineItemCreate]
+
+
 class PerformaSendRequest(BaseModel):
     client_email: str

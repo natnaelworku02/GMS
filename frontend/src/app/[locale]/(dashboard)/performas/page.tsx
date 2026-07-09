@@ -14,10 +14,16 @@ export default function PerformasListPage() {
   const t = useTranslations("performas");
   const tnav = useTranslations("nav");
   const router = useRouter();
+  const [page, setPage] = useState(1);
   const [filter, setFilter] = useState("all");
-  const { data: performas = [] } = useGetPerformasQuery();
-
-  const filtered = filter === "all" ? performas : performas.filter((p) => p.status === filter);
+  const { data: performasResp } = useGetPerformasQuery({
+    page,
+    page_size: 20,
+    status: filter === "all" ? undefined : filter,
+  });
+  const performas = performasResp?.items ?? [];
+  const total = performasResp?.total ?? 0;
+  const totalPages = performasResp?.total_pages ?? 0;
 
   const fmt = (n: number) =>
     new Intl.NumberFormat("en-US", { style: "currency", currency: "ETB", minimumFractionDigits: 2 }).format(n);
@@ -41,7 +47,7 @@ export default function PerformasListPage() {
           <button
             key={s}
             type="button"
-            onClick={() => setFilter(s)}
+            onClick={() => { setFilter(s); setPage(1); }}
             className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
               filter === s ? "bg-indigo-500 text-white" : "bg-muted text-muted-foreground hover:bg-muted/80"
             }`}
@@ -51,7 +57,7 @@ export default function PerformasListPage() {
         ))}
       </div>
 
-      {filtered.length === 0 ? (
+      {performas.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border bg-card py-16 text-center">
           <Receipt className="mb-3 h-10 w-10 text-muted-foreground/40" />
           <p className="text-sm text-muted-foreground">{t("title")}</p>
@@ -61,7 +67,7 @@ export default function PerformasListPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {filtered.map((p) => (
+          {performas.map((p) => (
             <div
               key={p.id}
               className="flex cursor-pointer items-center justify-between rounded-xl border bg-card p-4 shadow-sm transition-colors hover:bg-accent/50"
@@ -82,6 +88,17 @@ export default function PerformasListPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+      {totalPages > 1 && (
+        <div className="mt-4 flex items-center justify-center gap-2">
+          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+            Previous
+          </Button>
+          <span className="text-sm text-muted-foreground">Page {page} of {totalPages}</span>
+          <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+            Next
+          </Button>
         </div>
       )}
     </div>

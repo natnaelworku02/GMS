@@ -14,12 +14,12 @@ export default function InventoryLocationsPage() {
   const t = useTranslations("inventory");
   const tc = useTranslations("common");
   const router = useRouter();
+  const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
-  const { data: locations = [], isLoading } = useGetInventoryLocationsQuery();
-
-  const filteredLocations = locations.filter((l) =>
-    l.name.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
+  const { data: locationsResp, isLoading } = useGetInventoryLocationsQuery({ page, page_size: 20, search: searchQuery || undefined });
+  const locations = locationsResp?.items ?? [];
+  const total = locationsResp?.total ?? 0;
+  const totalPages = locationsResp?.total_pages ?? 0;
 
   const columns: Column<InventoryLocation>[] = [
     {
@@ -46,7 +46,7 @@ export default function InventoryLocationsPage() {
       </Button>
       <PageHeader
         title={t("locations")}
-        description={`${locations.length} location${locations.length !== 1 ? "s" : ""}`}
+        description={`${total} location${total !== 1 ? "s" : ""}`}
         action={
           <Button onClick={() => router.push("/inventory/locations/new")}>
             <Plus size={15} />
@@ -57,13 +57,24 @@ export default function InventoryLocationsPage() {
       <div className="mt-6">
         <DataTable<InventoryLocation>
           columns={columns}
-          data={filteredLocations}
+          data={locations}
           isLoading={isLoading}
           emptyMessage={t("noLocations")}
           searchValue={searchQuery}
-          onSearch={setSearchQuery}
+          onSearch={(v) => { setSearchQuery(v); setPage(1); }}
           searchPlaceholder={t("searchPlaceholder") || tc("search")}
         />
+        {totalPages > 1 && (
+          <div className="mt-4 flex items-center justify-center gap-2">
+            <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+              {tc("previous")}
+            </Button>
+            <span className="text-sm text-muted-foreground">Page {page} of {totalPages}</span>
+            <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+              {tc("next")}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

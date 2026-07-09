@@ -54,6 +54,7 @@
     "vehicles": "Vehicles",
     "employees": "Employees",
     "performas": "Performas",
+    "invoices": "Invoices",
     "inventory": "Inventory",
     "tools": "Tools",
     "users": "Users",
@@ -65,6 +66,7 @@
     "notifications": "Notifications",
     "jobCardsDescription": "Create and manage repair job cards",
     "performasDescription": "Generate and send performa invoices",
+    "invoicesDescription": "View invoices from approved performas",
     "inventoryDescription": "Track parts and stock levels"
   },
   "notifications": {
@@ -194,12 +196,26 @@
     "approve": "Approve",
     "reject": "Reject",
     "revise": "Revise",
+    "convertToInvoice": "Convert to Invoice",
+    "downloadPdf": "Download PDF",
     "clientEmailPlaceholder": "client@example.com",
     "lineItemRequired": "All line items must have a description",
     "allStatusFilter": "All",
     "jobCard": "Job Card",
     "jobCardId": "Job Card ID",
-    "jobCardIdPlaceholder": "Enter job card ID"
+    "jobCardIdPlaceholder": "Enter job card ID",
+    "selectJobCard": "Select a job card...",
+    "repairedParts": "Repaired parts",
+    "replacedParts": "Replaced parts",
+    "addLabor": "Add repaired part",
+    "addPart": "Add replaced part",
+    "noRepairedParts": "No repaired parts",
+    "noReplacedParts": "No replaced parts",
+    "damagedItems": "Damaged items from inspection",
+    "addToLineItems": "Add",
+    "fromInventory": "From inventory",
+    "searchInventory": "Search inventory...",
+    "noInventory": "No items found"
   },
   "inventory": {
     "title": "Inventory",

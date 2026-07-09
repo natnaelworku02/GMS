@@ -1,10 +1,11 @@
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.auth.models import Role, RolePermission, SystemSetting, User
+from app.core.pagination import paginate_query
 from app.core.security import hash_password, verify_password, create_access_token, create_refresh_token
 
 
@@ -43,9 +44,14 @@ async def get_user(db: AsyncSession, user_id: uuid.UUID) -> User | None:
     return result.scalar_one_or_none()
 
 
-async def list_users(db: AsyncSession) -> list[User]:
-    result = await db.execute(select(User).order_by(User.created_at.desc()))
-    return list(result.scalars().all())
+async def list_users(db: AsyncSession, page: int = 1, page_size: int = 20, search: str | None = None, is_active: bool | None = None):
+    query = select(User).order_by(User.created_at.desc())
+    if search:
+        query = query.where(or_(User.full_name.ilike(f"%{search}%"), User.phone.ilike(f"%{search}%")))
+    if is_active is not None:
+        query = query.where(User.is_active == is_active)
+    items, total, page, page_size, total_pages = await paginate_query(db, query, page, page_size)
+    return {"items": items, "total": total, "page": page, "page_size": page_size, "total_pages": total_pages}
 
 
 async def update_user(db: AsyncSession, user: User, **kwargs) -> User:
@@ -79,9 +85,12 @@ async def get_role(db: AsyncSession, role_id: uuid.UUID) -> Role | None:
     return result.scalar_one_or_none()
 
 
-async def list_roles(db: AsyncSession) -> list[Role]:
-    result = await db.execute(select(Role).options(selectinload(Role.permissions)).order_by(Role.name))
-    return list(result.scalars().all())
+async def list_roles(db: AsyncSession, page: int = 1, page_size: int = 20, search: str | None = None):
+    query = select(Role).options(selectinload(Role.permissions)).order_by(Role.name)
+    if search:
+        query = query.where(Role.name.ilike(f"%{search}%"))
+    items, total, page, page_size, total_pages = await paginate_query(db, query, page, page_size)
+    return {"items": items, "total": total, "page": page, "page_size": page_size, "total_pages": total_pages}
 
 
 async def set_role_permissions(db: AsyncSession, role_id: uuid.UUID, permissions: list[dict]) -> Role:

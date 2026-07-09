@@ -27,7 +27,8 @@ interface Props {
 
 export function MechanicAssign({ value, onChange }: Props) {
   const t = useTranslations("jobCards");
-  const { data: employees = [] } = useGetEmployeesQuery({ active_only: "true" });
+  const { data: employeesResp } = useGetEmployeesQuery({ page: 1, page_size: 100, active_only: true });
+  const employees = employeesResp?.items ?? [];
   const [open, setOpen] = React.useState(false);
 
   const toggle = (empId: string) => {

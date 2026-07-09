@@ -1,4 +1,5 @@
 import { api } from "@/lib/api";
+import type { PaginatedResponse } from "@/types/api";
 import type {
   Employee,
   EmployeeCreateDTO,
@@ -16,8 +17,8 @@ import type {
 export const jobCardsApi = api.injectEndpoints({
   endpoints: (build) => ({
     // --- Owners ---
-    getOwners: build.query<Owner[], void>({
-      query: () => "/owners/",
+    getOwners: build.query<PaginatedResponse<Owner>, { page?: number; page_size?: number; search?: string } | void>({
+      query: (params) => ({ url: "/owners/", params: params || undefined }),
       providesTags: ["Owners"],
     }),
     getOwner: build.query<Owner, string>({
@@ -34,7 +35,9 @@ export const jobCardsApi = api.injectEndpoints({
     }),
 
     // --- Vehicles ---
-    getVehicles: build.query<Vehicle[], Record<string, string> | void>({
+    getVehicles: build.query<PaginatedResponse<Vehicle>, {
+      page?: number; page_size?: number; search?: string; owner_id?: string;
+    } | void>({
       query: (params) => ({ url: "/vehicles/", params: params || undefined }),
       providesTags: ["Vehicles"],
     }),
@@ -48,7 +51,10 @@ export const jobCardsApi = api.injectEndpoints({
     }),
 
     // --- Job Cards ---
-    getJobCards: build.query<JobCard[], Record<string, string> | void>({
+    getJobCards: build.query<PaginatedResponse<JobCard>, {
+      page?: number; page_size?: number; search?: string; status?: string;
+      owner_id?: string; vehicle_id?: string; date_from?: string; date_to?: string;
+    } | void>({
       query: (params) => ({ url: "/job-cards/", params: params || undefined }),
       providesTags: ["JobCards"],
     }),
@@ -74,7 +80,9 @@ export const jobCardsApi = api.injectEndpoints({
     }),
 
     // --- Employees ---
-    getEmployees: build.query<Employee[], Record<string, string> | void>({
+    getEmployees: build.query<PaginatedResponse<Employee>, {
+      page?: number; page_size?: number; search?: string; active_only?: boolean;
+    } | void>({
       query: (params) => ({ url: "/hr/employees/", params: params || undefined }),
       providesTags: ["Employees"],
     }),

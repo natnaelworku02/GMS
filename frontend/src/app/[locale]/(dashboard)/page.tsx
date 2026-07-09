@@ -7,7 +7,8 @@ import { useRouter } from "@/i18n/navigation";
 import { useGetJobCardsQuery } from "@/features/jobCards/api";
 import { useGetInventoryItemsQuery } from "@/features/inventory/api";
 import { useGetToolCheckoutsQuery } from "@/features/tools/api";
-import { ArrowRight, PlusCircle, FileText, Package, Wrench } from "lucide-react";
+import { useGetInvoicesQuery } from "@/features/invoices/api";
+import { ArrowRight, PlusCircle, FileText, Package, Wrench, Receipt } from "lucide-react";
 import type { InventoryItem } from "@/features/inventory/types";
 
 export default function DashboardPage() {
@@ -51,6 +52,11 @@ export default function DashboardPage() {
           href="/performas"
         />
         <DashboardCard
+          title={tnav("invoices")}
+          description={tnav("invoicesDescription")}
+          href="/invoices"
+        />
+        <DashboardCard
           title={tnav("inventory")}
           description={tnav("inventoryDescription")}
           comingSoon
@@ -92,11 +98,16 @@ const totalStock = (item: InventoryItem) =>
   item.stock_entries.reduce((sum, se) => sum + se.quantity, 0);
 
 function StatCards() {
-  const { data: jobCards = [], isLoading: jcLoading } = useGetJobCardsQuery();
-  const { data: inventory = [], isLoading: invLoading } = useGetInventoryItemsQuery();
-  const { data: checkouts = [], isLoading: coLoading } = useGetToolCheckoutsQuery(
-    { unreturned_only: true },
+  const { data: jobCardsResp, isLoading: jcLoading } = useGetJobCardsQuery({ page: 1, page_size: 100 });
+  const jobCards = jobCardsResp?.items ?? [];
+  const { data: inventoryResp, isLoading: invLoading } = useGetInventoryItemsQuery({ page: 1, page_size: 100 });
+  const inventory = inventoryResp?.items ?? [];
+  const { data: checkoutsResp, isLoading: coLoading } = useGetToolCheckoutsQuery(
+    { page: 1, page_size: 100, unreturned_only: true },
   );
+  const checkouts = checkoutsResp?.items ?? [];
+  const { data: invoicesResp, isLoading: invcLoading } = useGetInvoicesQuery({ page: 1, page_size: 1 });
+  const invoiceCount = invoicesResp?.total ?? 0;
 
   const openJobs = jobCards.filter((jc) => jc.status !== "completed").length;
   const lowStock = inventory.filter(
@@ -105,7 +116,7 @@ function StatCards() {
   const activeCheckouts = checkouts.filter((c) => !c.checked_in_at).length;
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
       <StatCard
         label="Open Job Cards"
         count={jcLoading ? "-" : openJobs}
@@ -126,6 +137,13 @@ function StatCards() {
         icon={Wrench}
         gradient="from-emerald-500/10 to-emerald-500/5"
         iconColor="text-emerald-500"
+      />
+      <StatCard
+        label="Invoices"
+        count={invcLoading ? "-" : invoiceCount}
+        icon={Receipt}
+        gradient="from-teal-500/10 to-teal-500/5"
+        iconColor="text-teal-500"
       />
     </div>
   );

@@ -1,4 +1,5 @@
 import { api } from "@/lib/api";
+import type { PaginatedResponse } from "@/types/api";
 import type {
   CreateUserDTO,
   LoginRequest,
@@ -33,7 +34,7 @@ export const authApi = api.injectEndpoints({
       query: (id) => `/roles/${id}`,
       providesTags: (_r, _e, id) => [{ type: "Roles", id }],
     }),
-    getUsers: build.query<User[], Record<string, string> | void>({
+    getUsers: build.query<PaginatedResponse<User>, { page?: number; page_size?: number; search?: string; is_active?: boolean } | void>({
       query: (params) => ({
         url: "/auth/users",
         params: params || undefined,
@@ -67,8 +68,11 @@ export const authApi = api.injectEndpoints({
         body: { new_password: password },
       }),
     }),
-    getRoles: build.query<Role[], void>({
-      query: () => "/roles/",
+    getRoles: build.query<PaginatedResponse<Role>, { page?: number; page_size?: number; search?: string } | void>({
+      query: (params) => ({
+        url: "/roles/",
+        params: params || undefined,
+      }),
       providesTags: ["Roles"],
     }),
     createRole: build.mutation<Role, { name: string; is_superadmin: boolean }>({

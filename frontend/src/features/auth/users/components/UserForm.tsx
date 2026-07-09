@@ -29,7 +29,8 @@ type Props = {
 export function UserForm({ defaultValues, onSubmit, isSubmitting, mode, formId }: Props) {
   const t = useTranslations("users");
   const tc = useTranslations("common");
-  const { data: roles } = useGetRolesQuery();
+  const { data: rolesResp } = useGetRolesQuery({ page: 1, page_size: 100 });
+  const roles = rolesResp?.items ?? [];
 
   const form = useForm<CreateUserFormData>({
     resolver: zodResolver(createUserSchema),

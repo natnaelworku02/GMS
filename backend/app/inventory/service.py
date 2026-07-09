@@ -1,9 +1,10 @@
 import uuid
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.pagination import paginate_query
 from app.inventory.models import InventoryItem, StockEntry, StoreLocation
 
 
@@ -15,9 +16,12 @@ async def create_location(db: AsyncSession, name: str) -> StoreLocation:
     return loc
 
 
-async def list_locations(db: AsyncSession) -> list[StoreLocation]:
-    result = await db.execute(select(StoreLocation).order_by(StoreLocation.name))
-    return list(result.scalars().all())
+async def list_locations(db: AsyncSession, page: int = 1, page_size: int = 20, search: str | None = None):
+    query = select(StoreLocation).order_by(StoreLocation.name)
+    if search:
+        query = query.where(StoreLocation.name.ilike(f"%{search}%"))
+    items, total, page, page_size, total_pages = await paginate_query(db, query, page, page_size)
+    return {"items": items, "total": total, "page": page, "page_size": page_size, "total_pages": total_pages}
 
 
 async def create_item(db: AsyncSession, **kwargs) -> InventoryItem:
@@ -34,11 +38,16 @@ async def get_item(db: AsyncSession, item_id: uuid.UUID) -> InventoryItem | None
     return result.scalar_one_or_none()
 
 
-async def list_items(db: AsyncSession) -> list[InventoryItem]:
-    result = await db.execute(
-        select(InventoryItem).options(selectinload(InventoryItem.stock_entries)).order_by(InventoryItem.part_name)
-    )
-    return list(result.scalars().all())
+async def list_items(db: AsyncSession, page: int = 1, page_size: int = 20, search: str | None = None, vehicle_type: str | None = None):
+    query = select(InventoryItem).options(selectinload(InventoryItem.stock_entries)).order_by(InventoryItem.part_name)
+    if search:
+        query = query.where(
+            or_(InventoryItem.part_name.ilike(f"%{search}%"), InventoryItem.supplier_info.ilike(f"%{search}%"))
+        )
+    if vehicle_type:
+        query = query.where(InventoryItem.applicable_vehicle_types.any(vehicle_type))
+    items, total, page, page_size, total_pages = await paginate_query(db, query, page, page_size)
+    return {"items": items, "total": total, "page": page, "page_size": page_size, "total_pages": total_pages}
 
 
 async def update_item(db: AsyncSession, item: InventoryItem, **kwargs) -> InventoryItem:

@@ -54,6 +54,7 @@
     "vehicles": "ተሽከርካሪዎች",
     "employees": "ሰራተኞች",
     "performas": "ፐርፎርማዎች",
+    "invoices": "ኢንቮይሶች",
     "inventory": "ክምችት",
     "tools": "መሳሪያዎች",
     "users": "ተጠቃሚዎች",
@@ -65,6 +66,7 @@
     "notifications": "ማሳወቂያዎች",
     "jobCardsDescription": "የጥገና ሥራ ካርዶችን ይፍጠሩ እና ያስተዳድሩ",
     "performasDescription": "ፐርፎርማ ኢንቮይሶችን ያመንጩ እና ይላኩ",
+    "invoicesDescription": "ከተፈቀዱ ፐርፎርማዎች ኢንቮይሶችን ይመልከቱ",
     "inventoryDescription": "መለዋወጫዎችን እና የክምችት ደረጃዎችን ይከታተሉ"
   },
   "notifications": {
@@ -194,12 +196,26 @@
     "approve": "ቀበል",
     "reject": "ውድቅ",
     "revise": "አስተካክል",
+    "convertToInvoice": "ወደ ኢንቮይስ ቀይር",
+    "downloadPdf": "PDF አውርድ",
     "clientEmailPlaceholder": "client@example.com",
     "lineItemRequired": "ሁሉም የዝርዝር ዕቃዎች መግለጫ ሊኖራቸው ይገባል",
     "allStatusFilter": "ሁሉም",
     "jobCard": "የስራ ካርድ",
     "jobCardId": "የስራ ካርድ መለያ",
-    "jobCardIdPlaceholder": "የስራ ካርድ መለያ ያስገቡ"
+    "jobCardIdPlaceholder": "የስራ ካርድ መለያ ያስገቡ",
+    "selectJobCard": "የስራ ካርድ ይምረጡ...",
+    "repairedParts": "የተጠገኑ ክፍሎች",
+    "replacedParts": "የተተኩ ክፍሎች",
+    "addLabor": "የተጠገነ ክፍል ጨምር",
+    "addPart": "የተተካ ክፍል ጨምር",
+    "noRepairedParts": "የተጠገኑ ክፍሎች የሉም",
+    "noReplacedParts": "የተተኩ ክፍሎች የሉም",
+    "damagedItems": "ከፍተሻ የተገኙ የተበላሹ ክፍሎች",
+    "addToLineItems": "ጨምር",
+    "fromInventory": "ከክምችት",
+    "searchInventory": "ክምችት ፈልግ...",
+    "noInventory": "ምንም ዕቃ አልተገኘም"
   },
   "inventory": {
     "title": "ክምችት",

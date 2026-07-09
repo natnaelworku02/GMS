@@ -4,7 +4,7 @@ from datetime import datetime
 from pydantic import BaseModel
 
 from app.hr.schemas import EmployeeResponse
-from app.job_cards.models import ConditionState, JobStatus, PartName
+from app.job_cards.models import ConditionState, JobStatus
 
 
 # --- Owner ---
@@ -60,7 +60,7 @@ class VehicleResponse(BaseModel):
 
 # --- Vehicle Condition ---
 class VehicleConditionInput(BaseModel):
-    part_name: PartName
+    part_name: str
     condition_state: ConditionState
 
 

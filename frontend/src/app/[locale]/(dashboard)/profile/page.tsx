@@ -1,9 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useAppSelector } from "@/lib/hooks";
 import { useGetMeQuery, useUpdateUserMutation, useResetPasswordMutation } from "@/features/auth/api";
+import { profileUpdateSchema, type ProfileUpdateFormData } from "@/lib/formSchemas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,18 +31,29 @@ export default function ProfilePage() {
 
   const [tab, setTab] = useState<"details" | "password">("details");
 
-  const [fullName, setFullName] = useState(user?.full_name || "");
-  const [phone, setPhone] = useState(user?.phone || "");
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isDirty },
+  } = useForm<ProfileUpdateFormData>({
+    resolver: zodResolver(profileUpdateSchema),
+    defaultValues: { full_name: user?.full_name || "" },
+  });
+
+  useEffect(() => {
+    if (user?.full_name) reset({ full_name: user.full_name });
+  }, [user?.full_name, reset]);
 
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPwd, setShowPwd] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  const handleUpdateProfile = async () => {
-    if (!user?.id || !fullName.trim()) return;
+  const handleUpdateProfile = async (data: ProfileUpdateFormData) => {
+    if (!user?.id) return;
     try {
-      await update({ id: user.id, body: { full_name: fullName.trim() } }).unwrap();
+      await update({ id: user.id, body: { full_name: data.full_name.trim() } }).unwrap();
       toast.success(t("profileUpdated"));
     } catch {
       toast.error(tc("error"));
@@ -133,7 +147,7 @@ export default function ProfilePage() {
           </div>
 
           {/* Form */}
-          <div className="space-y-5 p-6">
+          <form onSubmit={handleSubmit(handleUpdateProfile)} className="space-y-5 p-6">
             <div>
               <h3 className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 {t("personalInfo")}
@@ -143,12 +157,13 @@ export default function ProfilePage() {
 
             <div className="space-y-2">
               <Label htmlFor="pf-name">{t("fullName")}</Label>
-              <Input id="pf-name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+              <Input id="pf-name" {...register("full_name")} />
+              {errors.full_name && <p className="text-sm text-destructive">{errors.full_name.message}</p>}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="pf-phone">{t("phone")}</Label>
-              <Input id="pf-phone" value={phone} disabled className="bg-muted/50 text-muted-foreground" />
+              <Input id="pf-phone" value={user?.phone || ""} disabled className="bg-muted/50 text-muted-foreground" />
               <p className="text-xs text-muted-foreground">Phone number cannot be changed.</p>
             </div>
 
@@ -172,13 +187,13 @@ export default function ProfilePage() {
             </div>
 
             <div className="flex justify-end border-t pt-5">
-              <Button onClick={handleUpdateProfile} disabled={updating || !fullName.trim()}>
+              <Button type="submit" disabled={updating || !isDirty}>
                 {updating && <Loader2 className="h-4 w-4 animate-spin" />}
                 <Save size={15} />
                 {t("saveChanges")}
               </Button>
             </div>
-          </div>
+          </form>
         </div>
       )}
 

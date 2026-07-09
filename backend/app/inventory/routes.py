@@ -1,10 +1,11 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.models import User
 from app.core.audit import create_audit_log
+from app.core.pagination import PaginatedResponse
 from app.core.rbac import RequirePermission
 from app.db import get_db
 from app.inventory import schemas, service
@@ -23,12 +24,15 @@ async def create_location(
     return await service.create_location(db, body.name)
 
 
-@locations_router.get("/", response_model=list[schemas.StoreLocationResponse])
+@locations_router.get("/", response_model=PaginatedResponse[schemas.StoreLocationResponse])
 async def list_locations(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
+    search: str | None = Query(default=None),
     _user=Depends(RequirePermission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    return await service.list_locations(db)
+    return await service.list_locations(db, page, page_size, search)
 
 
 @items_router.post("/", response_model=schemas.InventoryItemResponse, status_code=201)
@@ -43,12 +47,16 @@ async def create_item(
     return item
 
 
-@items_router.get("/", response_model=list[schemas.InventoryItemResponse])
+@items_router.get("/", response_model=PaginatedResponse[schemas.InventoryItemResponse])
 async def list_items(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
+    search: str | None = Query(default=None),
+    vehicle_type: str | None = Query(default=None),
     _user=Depends(RequirePermission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    return await service.list_items(db)
+    return await service.list_items(db, page, page_size, search, vehicle_type)
 
 
 @items_router.get("/{item_id}", response_model=schemas.InventoryItemResponse)

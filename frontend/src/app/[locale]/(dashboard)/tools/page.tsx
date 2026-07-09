@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useGetToolsQuery, useCreateToolMutation } from "@/features/tools/api";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable, type Column } from "@/components/shared/DataTable";
@@ -19,44 +21,43 @@ import {
 } from "@/components/ui/dialog";
 import { Plus, ClipboardList, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { toolSchema, type ToolFormData } from "@/lib/formSchemas";
 import type { Tool } from "@/features/tools/types";
 
 export default function ToolsPage() {
   const t = useTranslations("tools");
   const tc = useTranslations("common");
   const router = useRouter();
+  const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
-  const { data: tools = [], isLoading } = useGetToolsQuery();
+  const { data: toolsResp, isLoading } = useGetToolsQuery({ page, page_size: 20, search: search || undefined });
+  const tools = toolsResp?.items ?? [];
+  const total = toolsResp?.total ?? 0;
+  const totalPages = toolsResp?.total_pages ?? 0;
 
   const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [specs, setSpecs] = useState("");
-  const [qty, setQty] = useState(1);
   const [create, { isLoading: creating }] = useCreateToolMutation();
 
-  const filtered = useMemo(() => {
-    if (!search) return tools;
-    const q = search.toLowerCase();
-    return tools.filter(
-      (t) =>
-        t.name.toLowerCase().includes(q) ||
-        t.specifications?.toLowerCase().includes(q),
-    );
-  }, [tools, search]);
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<ToolFormData>({
+    resolver: zodResolver(toolSchema),
+    defaultValues: { specifications: "", total_quantity: 1 },
+  });
 
-  const handleCreate = async () => {
-    if (!name.trim()) return;
+  const onCreate = async (data: ToolFormData) => {
     try {
       await create({
-        name: name.trim(),
-        specifications: specs.trim() || undefined,
-        total_quantity: qty,
+        name: data.name.trim(),
+        specifications: data.specifications?.trim() || undefined,
+        total_quantity: data.total_quantity,
       }).unwrap();
       toast.success(tc("save"));
       setOpen(false);
-      setName("");
-      setSpecs("");
-      setQty(1);
+      reset({ specifications: "", total_quantity: 1 });
     } catch {
       toast.error(tc("error"));
     }
@@ -99,7 +100,7 @@ export default function ToolsPage() {
     <div className="mx-auto max-w-6xl">
       <PageHeader
         title={t("title")}
-        description={`${tools.length} tool${tools.length !== 1 ? "s" : ""}`}
+        description={`${total} tool${total !== 1 ? "s" : ""}`}
         action={
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={() => router.push("/tools/checkouts")}>
@@ -117,37 +118,50 @@ export default function ToolsPage() {
       <div className="mt-6">
         <DataTable<Tool>
           columns={columns}
-          data={filtered}
+          data={tools}
           isLoading={isLoading}
           emptyMessage={t("noTools")}
           searchPlaceholder={t("name") + "..."}
           searchValue={search}
-          onSearch={setSearch}
+          onSearch={(v) => { setSearch(v); setPage(1); }}
           onRowClick={(tool) => router.push(`/tools/${tool.id}`)}
         />
+        {totalPages > 1 && (
+          <div className="mt-4 flex items-center justify-center gap-2">
+            <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+              {tc("previous")}
+            </Button>
+            <span className="text-sm text-muted-foreground">Page {page} of {totalPages}</span>
+            <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+              {tc("next")}
+            </Button>
+          </div>
+        )}
       </div>
 
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={(v) => { if (!v) { reset({ specifications: "", total_quantity: 1 }); } setOpen(v); }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t("create")}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={(e) => { e.preventDefault(); handleCreate(); }} className="space-y-4">
+          <form onSubmit={handleSubmit(onCreate)} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="tool-name">{t("name")}</Label>
-              <Input id="tool-name" value={name} onChange={(e) => setName(e.target.value)} />
+              <Input id="tool-name" {...register("name")} />
+              {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="tool-specs">{t("specifications")}</Label>
-              <Textarea id="tool-specs" rows={2} value={specs} onChange={(e) => setSpecs(e.target.value)} />
+              <Textarea id="tool-specs" rows={2} {...register("specifications")} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="tool-qty">{t("totalQuantity")}</Label>
-              <Input id="tool-qty" type="number" min={1} value={qty} onChange={(e) => setQty(Number(e.target.value))} />
+              <Input id="tool-qty" type="number" min={1} {...register("total_quantity", { valueAsNumber: true })} />
+              {errors.total_quantity && <p className="text-xs text-destructive">{errors.total_quantity.message}</p>}
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <Button type="button" variant="outline" onClick={() => setOpen(false)}>{tc("cancel")}</Button>
-              <Button type="submit" disabled={creating || !name.trim()}>
+              <Button type="button" variant="outline" onClick={() => { reset({ specifications: "", total_quantity: 1 }); setOpen(false); }}>{tc("cancel")}</Button>
+              <Button type="submit" disabled={creating}>
                 {creating && <Loader2 className="h-4 w-4 animate-spin" />}
                 {creating ? tc("loading") : t("create")}
               </Button>

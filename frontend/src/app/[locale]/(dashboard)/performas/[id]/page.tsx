@@ -9,12 +9,14 @@ import {
   useUpdatePerformaStatusMutation,
   useRevisePerformaMutation,
 } from "@/features/performas/api";
+import { useGetInvoiceByPerformaQuery, useCreateInvoiceFromPerformaMutation } from "@/features/invoices/api";
+import { useAppSelector } from "@/lib/hooks";
 import { PerformaLineItems } from "@/features/performas/components/PerformaLineItems";
 import { PerformaSummary } from "@/features/performas/components/PerformaSummary";
 import { PerformaStatusBadge } from "@/features/performas/components/PerformaStatusBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Loader2, Send, ThumbsUp, ThumbsDown, RotateCcw } from "lucide-react";
+import { ArrowLeft, Loader2, Send, ThumbsUp, ThumbsDown, RotateCcw, FileText, Download } from "lucide-react";
 import { toast } from "sonner";
 
 export default function PerformaDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -27,6 +29,9 @@ export default function PerformaDetailPage({ params }: { params: Promise<{ id: s
   const [send, { isLoading: sending }] = useSendPerformaMutation();
   const [updateStatus, { isLoading: updating }] = useUpdatePerformaStatusMutation();
   const [revise, { isLoading: revising }] = useRevisePerformaMutation();
+  const [createInvoice, { isLoading: creatingInvoice }] = useCreateInvoiceFromPerformaMutation();
+  const { data: existingInvoice } = useGetInvoiceByPerformaQuery(id, { skip: performa?.status !== "approved" });
+  const accessToken = useAppSelector((s) => s.auth.accessToken);
 
   const [clientEmail, setClientEmail] = useState("");
 
@@ -50,6 +55,31 @@ export default function PerformaDetailPage({ params }: { params: Promise<{ id: s
   const handleReject = async () => {
     try {
       await updateStatus({ id, status: "rejected" }).unwrap();
+    } catch {
+      toast.error(tc("error"));
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/performas/${id}/pdf`, {
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+      });
+      if (!res.ok) throw new Error();
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+    } catch {
+      toast.error(tc("error"));
+    }
+  };
+
+  const handleConvertToInvoice = async () => {
+    try {
+      const invoice = await createInvoice({ performa_id: id }).unwrap();
+      toast.success("Invoice created");
+      router.push(`/invoices/${invoice.id}`);
     } catch {
       toast.error(tc("error"));
     }
@@ -146,11 +176,19 @@ export default function PerformaDetailPage({ params }: { params: Promise<{ id: s
         />
       </div>
 
-      {/* Actions */}
-      <div className="rounded-xl border bg-card p-6 shadow-sm space-y-4">
-        <h2 className="text-sm font-semibold">{tc("actions")}</h2>
+        {/* Actions */}
+        <div className="rounded-xl border bg-card p-6 shadow-sm space-y-4">
+          <h2 className="text-sm font-semibold">{tc("actions")}</h2>
 
-        {/* Send */}
+          {/* Download PDF */}
+          <div>
+            <Button variant="outline" onClick={handleDownloadPdf}>
+              <Download className="mr-1 h-4 w-4" />
+              {t("downloadPdf") || "Download PDF"}
+            </Button>
+          </div>
+
+          {/* Send */}
         {performa.status === "draft" && (
           <div className="flex items-center gap-2">
             <Input
@@ -181,8 +219,31 @@ export default function PerformaDetailPage({ params }: { params: Promise<{ id: s
           </div>
         )}
 
-        {/* Revise */}
-        {(performa.status === "approved" || performa.status === "rejected") && (
+        {/* Convert to Invoice (only when approved) */}
+        {performa.status === "approved" && (
+          <div className="flex gap-2">
+            {existingInvoice ? (
+              <Button variant="default" onClick={() => router.push(`/invoices/${existingInvoice.id}`)}>
+                <FileText className="mr-1 h-4 w-4" />
+                View Invoice ({existingInvoice.invoice_number})
+              </Button>
+            ) : (
+              <Button onClick={handleConvertToInvoice} disabled={creatingInvoice}>
+                {creatingInvoice && <Loader2 className="h-4 w-4 animate-spin" />}
+                <FileText className="mr-1 h-4 w-4" />
+                {t("convertToInvoice") || "Convert to Invoice"}
+              </Button>
+            )}
+            <Button variant="outline" onClick={handleRevise} disabled={revising}>
+              {revising && <Loader2 className="h-4 w-4 animate-spin" />}
+              <RotateCcw className="mr-1 h-4 w-4" />
+              {t("revise")}
+            </Button>
+          </div>
+        )}
+
+        {/* Revise only (when rejected) */}
+        {performa.status === "rejected" && (
           <Button variant="outline" onClick={handleRevise} disabled={revising}>
             {revising && <Loader2 className="h-4 w-4 animate-spin" />}
             <RotateCcw className="mr-1 h-4 w-4" />

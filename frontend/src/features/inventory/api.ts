@@ -1,4 +1,5 @@
 import { api } from "@/lib/api";
+import type { PaginatedResponse } from "@/types/api";
 import type {
   InventoryItem,
   InventoryItemCreateDTO,
@@ -10,8 +11,10 @@ import type {
 export const inventoryApi = api.injectEndpoints({
   endpoints: (build) => ({
     // --- Locations ---
-    getInventoryLocations: build.query<InventoryLocation[], void>({
-      query: () => "/inventory/locations/",
+    getInventoryLocations: build.query<PaginatedResponse<InventoryLocation>, {
+      page?: number; page_size?: number; search?: string;
+    } | void>({
+      query: (params) => ({ url: "/inventory/locations/", params: params || undefined }),
       providesTags: ["InventoryLocations"],
     }),
     createInventoryLocation: build.mutation<InventoryLocation, { name: string }>({
@@ -20,8 +23,10 @@ export const inventoryApi = api.injectEndpoints({
     }),
 
     // --- Items ---
-    getInventoryItems: build.query<InventoryItem[], void>({
-      query: () => "/inventory/items/",
+    getInventoryItems: build.query<PaginatedResponse<InventoryItem>, {
+      page?: number; page_size?: number; search?: string; vehicle_type?: string;
+    } | void>({
+      query: (params) => ({ url: "/inventory/items/", params: params || undefined }),
       providesTags: ["InventoryItems"],
     }),
     getInventoryItem: build.query<InventoryItem, string>({

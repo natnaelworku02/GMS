@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useMemo, useState } from "react";
+import { use, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import {
@@ -23,16 +23,14 @@ export default function ToolDetailPage({ params }: { params: Promise<{ id: strin
   const t = useTranslations("tools");
   const router = useRouter();
   const { data: tool, isLoading } = useGetToolQuery(id);
-  const { data: checkouts = [] } = useGetToolCheckoutsQuery({ job_card_id: undefined });
-  const { data: employees = [] } = useGetEmployeesQuery();
-  const { data: jobCards = [] } = useGetJobCardsQuery();
+  const { data: checkoutsResp } = useGetToolCheckoutsQuery({ page: 1, page_size: 100, tool_id: id });
+  const toolCheckouts = checkoutsResp?.items ?? [];
+  const { data: employeesResp } = useGetEmployeesQuery({ page: 1, page_size: 100 });
+  const employees = employeesResp?.items ?? [];
+  const { data: jobCardsResp } = useGetJobCardsQuery({ page: 1, page_size: 100 });
+  const jobCards = jobCardsResp?.items ?? [];
   const [returnTool, { isLoading: isReturning }] = useReturnToolMutation();
   const [confirmReturn, setConfirmReturn] = useState<{ id: string; employeeName: string } | null>(null);
-
-  const toolCheckouts = useMemo(
-    () => checkouts.filter((c) => c.tool_id === id),
-    [checkouts, id],
-  );
 
   const employeeName = (employeeId: string) =>
     employees.find((e) => e.id === employeeId)?.name || employeeId;

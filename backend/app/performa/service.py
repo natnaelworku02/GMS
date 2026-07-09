@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.auth.service import get_setting
+from app.core.pagination import paginate_query
 from app.performa.models import Performa, PerformaLineItem
 
 
@@ -59,12 +60,16 @@ async def get_performa(db: AsyncSession, performa_id: uuid.UUID) -> Performa | N
     return result.scalar_one_or_none()
 
 
-async def list_performas(db: AsyncSession, job_card_id: uuid.UUID | None = None) -> list[Performa]:
+async def list_performas(db: AsyncSession, page: int = 1, page_size: int = 20, search: str | None = None, job_card_id: uuid.UUID | None = None, status: str | None = None):
     query = select(Performa).options(selectinload(Performa.line_items)).order_by(Performa.created_at.desc())
+    if search:
+        query = query.where(Performa.client_email.ilike(f"%{search}%"))
     if job_card_id:
         query = query.where(Performa.job_card_id == job_card_id)
-    result = await db.execute(query)
-    return list(result.scalars().all())
+    if status:
+        query = query.where(Performa.status == status)
+    items, total, page, page_size, total_pages = await paginate_query(db, query, page, page_size)
+    return {"items": items, "total": total, "page": page, "page_size": page_size, "total_pages": total_pages}
 
 
 async def update_status(db: AsyncSession, performa: Performa, status: str) -> Performa:

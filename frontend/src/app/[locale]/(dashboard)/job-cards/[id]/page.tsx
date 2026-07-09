@@ -24,16 +24,20 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
   const tc = useTranslations("common");
   const router = useRouter();
   const { data: jobCard, isLoading } = useGetJobCardQuery(id);
-  const { data: users = [] } = useGetUsersQuery();
+  const { data: usersResp } = useGetUsersQuery({ page: 1, page_size: 100 });
+  const users = usersResp?.items ?? [];
   const { data: owner } = useGetOwnerQuery(jobCard?.owner_id || "", { skip: !jobCard?.owner_id });
   const { data: vehicle } = useGetVehicleQuery(jobCard?.vehicle_id || "", { skip: !jobCard?.vehicle_id });
-  const { data: employees = [] } = useGetEmployeesQuery({ active_only: "true" });
-  const { data: unreturnedCheckouts = [] } = useGetToolCheckoutsQuery(
-    { job_card_id: id, unreturned_only: true },
+  const { data: employeesResp } = useGetEmployeesQuery({ page: 1, page_size: 100, active_only: true });
+  const employees = employeesResp?.items ?? [];
+  const { data: unreturnedCheckoutsResp } = useGetToolCheckoutsQuery(
+    { page: 1, page_size: 100, job_card_id: id, unreturned_only: true },
   );
-  const { data: linkedPerformas = [] } = useGetPerformasQuery(
-    { job_card_id: id },
+  const unreturnedCheckouts = unreturnedCheckoutsResp?.items ?? [];
+  const { data: linkedPerformasResp } = useGetPerformasQuery(
+    { page: 1, page_size: 100, job_card_id: id },
   );
+  const linkedPerformas = linkedPerformasResp?.items ?? [];
   const [updateStatus, { isLoading: isTransitioning }] = useUpdateJobCardStatusMutation();
   const [confirmStatus, setConfirmStatus] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);

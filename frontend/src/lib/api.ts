@@ -20,6 +20,7 @@ export const api = createApi({
     "Employees",
     "Notifications",
     "AuditLogs",
+    "Invoices",
   ],
   baseQuery: fetchBaseQuery({
     baseUrl: process.env.NEXT_PUBLIC_API_URL,

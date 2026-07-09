@@ -1,10 +1,11 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.models import User
 from app.core.audit import create_audit_log
+from app.core.pagination import PaginatedResponse
 from app.core.rbac import RequirePermission
 from app.db import get_db
 from app.tools import schemas, service
@@ -25,12 +26,15 @@ async def create_tool(
     return {**tool.__dict__, "available_quantity": tool.total_quantity - checked_out}
 
 
-@router.get("/", response_model=list[schemas.ToolResponse])
+@router.get("/", response_model=PaginatedResponse[schemas.ToolResponse])
 async def list_tools(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
+    search: str | None = Query(default=None),
     _user=Depends(RequirePermission("tools", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    return await service.list_tools(db)
+    return await service.list_tools(db, page, page_size, search)
 
 
 @router.get("/{tool_id}", response_model=schemas.ToolResponse)
@@ -93,11 +97,16 @@ async def return_tool(
     return checkout
 
 
-@router.get("/checkouts", response_model=list[schemas.CheckoutResponse])
+@router.get("/checkouts", response_model=PaginatedResponse[schemas.CheckoutResponse])
 async def list_checkouts(
-    job_card_id: uuid.UUID | None = None,
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
+    search: str | None = Query(default=None),
+    job_card_id: uuid.UUID | None = Query(default=None),
     unreturned_only: bool = False,
+    employee_id: uuid.UUID | None = Query(default=None),
+    tool_id: uuid.UUID | None = Query(default=None),
     _user=Depends(RequirePermission("tools", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    return await service.list_checkouts(db, job_card_id, unreturned_only)
+    return await service.list_checkouts(db, page, page_size, search, job_card_id, unreturned_only, employee_id, tool_id)

@@ -1,10 +1,11 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.models import User
 from app.core.audit import create_audit_log
+from app.core.pagination import PaginatedResponse
 from app.core.rbac import RequirePermission
 from app.db import get_db
 from app.hr import schemas, service
@@ -24,13 +25,16 @@ async def create_employee(
     return emp
 
 
-@router.get("/", response_model=list[schemas.EmployeeResponse])
+@router.get("/", response_model=PaginatedResponse[schemas.EmployeeResponse])
 async def list_employees(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
+    search: str | None = Query(default=None),
     active_only: bool = False,
     _user=Depends(RequirePermission("hr", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    return await service.list_employees(db, active_only)
+    return await service.list_employees(db, page, page_size, search, active_only)
 
 
 @router.get("/{employee_id}", response_model=schemas.EmployeeResponse)

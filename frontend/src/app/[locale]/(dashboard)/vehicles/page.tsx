@@ -16,22 +16,18 @@ export default function VehiclesPage() {
   const t = useTranslations("vehicles");
   const tc = useTranslations("common");
   const router = useRouter();
+  const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
-  const { data: vehicles = [], isLoading } = useGetVehiclesQuery();
-  const { data: owners = [] } = useGetOwnersQuery();
+  const { data: vehiclesResp, isLoading } = useGetVehiclesQuery({ page, page_size: 20, search: search || undefined });
+  const { data: ownersResp } = useGetOwnersQuery({ page: 1, page_size: 100 });
+  const vehicles = vehiclesResp?.items ?? [];
+  const owners = ownersResp?.items ?? [];
+  const total = vehiclesResp?.total ?? 0;
+  const totalPages = vehiclesResp?.total_pages ?? 0;
 
   const getOwnerName = (ownerId: string) =>
     owners.find((o) => o.id === ownerId)?.name || "—";
-
-  const filtered = search
-    ? vehicles.filter(
-        (v) =>
-          v.plate_number.toLowerCase().includes(search.toLowerCase()) ||
-          v.model.toLowerCase().includes(search.toLowerCase()) ||
-          getOwnerName(v.owner_id).toLowerCase().includes(search.toLowerCase()),
-      )
-    : vehicles;
 
   const columns: Column<Vehicle>[] = [
     {
@@ -78,7 +74,7 @@ export default function VehiclesPage() {
     <div className="mx-auto max-w-6xl">
       <PageHeader
         title={t("title")}
-        description={`${vehicles.length} vehicle${vehicles.length !== 1 ? "s" : ""}`}
+        description={`${total} vehicle${total !== 1 ? "s" : ""}`}
         action={
           <Can permission="job_cards.create">
             <Button onClick={() => setOpen(true)}>
@@ -91,13 +87,24 @@ export default function VehiclesPage() {
       <div className="mt-6">
         <DataTable<Vehicle>
           columns={columns}
-          data={filtered}
+          data={vehicles}
           isLoading={isLoading}
           emptyMessage={t("noVehicles")}
           searchPlaceholder={t("searchPlaceholder")}
           searchValue={search}
-          onSearch={setSearch}
+          onSearch={(v) => { setSearch(v); setPage(1); }}
         />
+        {totalPages > 1 && (
+          <div className="mt-4 flex items-center justify-center gap-2">
+            <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+              {tc("previous")}
+            </Button>
+            <span className="text-sm text-muted-foreground">Page {page} of {totalPages}</span>
+            <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+              {tc("next")}
+            </Button>
+          </div>
+        )}
       </div>
 
       <CreateVehicleModal open={open} onOpenChange={setOpen} />

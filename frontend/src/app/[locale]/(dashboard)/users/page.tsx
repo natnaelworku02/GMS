@@ -15,18 +15,15 @@ export default function UsersPage() {
   const t = useTranslations("users");
   const tc = useTranslations("common");
   const router = useRouter();
+  const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
-  const { data: users = [], isLoading } = useGetUsersQuery();
-  const { data: roles = [] } = useGetRolesQuery();
+  const { data: usersResp, isLoading } = useGetUsersQuery({ page, page_size: 20, search: search || undefined });
+  const { data: rolesResp } = useGetRolesQuery({ page: 1, page_size: 100 });
+  const users = usersResp?.items ?? [];
+  const roles = rolesResp?.items ?? [];
+  const total = usersResp?.total ?? 0;
+  const totalPages = usersResp?.total_pages ?? 0;
   const roleMap = Object.fromEntries(roles.map((r) => [r.id, r.name]));
-
-  const filtered = search
-    ? users.filter(
-        (u) =>
-          u.full_name.toLowerCase().includes(search.toLowerCase()) ||
-          u.phone.includes(search),
-      )
-    : users;
 
   const columns: Column<User>[] = [
     {
@@ -104,7 +101,7 @@ export default function UsersPage() {
     <div className="mx-auto max-w-6xl">
       <PageHeader
         title={t("title")}
-        description={`${users.length} user${users.length !== 1 ? "s" : ""}`}
+        description={`${total} user${total !== 1 ? "s" : ""}`}
         action={
           <Can permission="users.create">
             <Button onClick={() => router.push("/users/new")}>
@@ -118,13 +115,24 @@ export default function UsersPage() {
       <div className="mt-6">
         <DataTable<User>
           columns={columns}
-          data={filtered}
+          data={users}
           isLoading={isLoading}
           emptyMessage={t("noUsers")}
           searchPlaceholder={t("fullName") + "..."}
           searchValue={search}
-          onSearch={setSearch}
+          onSearch={(v) => { setSearch(v); setPage(1); }}
         />
+        {totalPages > 1 && (
+          <div className="mt-4 flex items-center justify-center gap-2">
+            <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+              {tc("previous")}
+            </Button>
+            <span className="text-sm text-muted-foreground">Page {page} of {totalPages}</span>
+            <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+              {tc("next")}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

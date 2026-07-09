@@ -1,10 +1,12 @@
 import uuid
+from datetime import date
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.models import User
 from app.core.audit import create_audit_log
+from app.core.pagination import PaginatedResponse
 from app.core.rbac import RequirePermission
 from app.db import get_db
 from app.job_cards import schemas, service
@@ -25,12 +27,15 @@ async def create_owner(
     return await service.create_owner(db, body.name, body.phone)
 
 
-@owners_router.get("/", response_model=list[schemas.OwnerResponse])
+@owners_router.get("/", response_model=PaginatedResponse[schemas.OwnerResponse])
 async def list_owners(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
+    search: str | None = Query(default=None),
     _user=Depends(RequirePermission("job_cards", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    return await service.list_owners(db)
+    return await service.list_owners(db, page, page_size, search)
 
 
 @owners_router.get("/{owner_id}", response_model=schemas.OwnerResponse)
@@ -69,13 +74,16 @@ async def create_vehicle(
     return await service.create_vehicle(db, **body.model_dump())
 
 
-@vehicles_router.get("/", response_model=list[schemas.VehicleResponse])
+@vehicles_router.get("/", response_model=PaginatedResponse[schemas.VehicleResponse])
 async def list_vehicles(
-    owner_id: uuid.UUID | None = None,
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
+    search: str | None = Query(default=None),
+    owner_id: uuid.UUID | None = Query(default=None),
     _user=Depends(RequirePermission("job_cards", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    return await service.list_vehicles(db, owner_id)
+    return await service.list_vehicles(db, page, page_size, search, owner_id)
 
 
 @vehicles_router.get("/{vehicle_id}", response_model=schemas.VehicleResponse)
@@ -118,13 +126,20 @@ async def create_job_card(
     return jc
 
 
-@job_cards_router.get("/", response_model=list[schemas.JobCardResponse])
+@job_cards_router.get("/", response_model=PaginatedResponse[schemas.JobCardResponse])
 async def list_job_cards(
-    status: str | None = None,
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
+    search: str | None = Query(default=None),
+    status: str | None = Query(default=None),
+    owner_id: uuid.UUID | None = Query(default=None),
+    vehicle_id: uuid.UUID | None = Query(default=None),
+    date_from: date | None = Query(default=None),
+    date_to: date | None = Query(default=None),
     _user=Depends(RequirePermission("job_cards", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    return await service.list_job_cards(db, status)
+    return await service.list_job_cards(db, page, page_size, search, status, owner_id, vehicle_id, date_from, date_to)
 
 
 @job_cards_router.get("/{job_card_id}", response_model=schemas.JobCardResponse)

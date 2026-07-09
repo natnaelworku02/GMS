@@ -1,11 +1,16 @@
 import uuid
 from datetime import datetime, timezone
+from decimal import Decimal
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.pdf import render_pdf
 
 from app.auth.models import User
 from app.core.audit import create_audit_log
+from app.core.pagination import PaginatedResponse
 from app.core.rbac import RequirePermission
 from app.db import get_db
 from app.performa import schemas, service
@@ -30,13 +35,17 @@ async def create_performa(
     return performa
 
 
-@router.get("/", response_model=list[schemas.PerformaResponse])
+@router.get("/", response_model=PaginatedResponse[schemas.PerformaResponse])
 async def list_performas(
-    job_card_id: uuid.UUID | None = None,
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
+    search: str | None = Query(default=None),
+    job_card_id: uuid.UUID | None = Query(default=None),
+    status: str | None = Query(default=None),
     _user=Depends(RequirePermission("performa", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    return await service.list_performas(db, job_card_id)
+    return await service.list_performas(db, page, page_size, search, job_card_id, status)
 
 
 @router.get("/{performa_id}", response_model=schemas.PerformaResponse)
@@ -95,7 +104,7 @@ async def send_performa(
 @router.post("/{performa_id}/revise", response_model=schemas.PerformaResponse, status_code=201)
 async def revise_performa(
     performa_id: uuid.UUID,
-    body: schemas.PerformaCreate,
+    body: schemas.PerformaRevise,
     current_user: User = Depends(RequirePermission("performa", "create")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -108,3 +117,46 @@ async def revise_performa(
                            details={"original_id": str(performa_id)})
     await db.commit()
     return revised
+
+
+@router.get("/{performa_id}/pdf")
+async def download_performa_pdf(
+    performa_id: uuid.UUID,
+    _user=Depends(RequirePermission("performa", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    performa = await service.get_performa(db, performa_id)
+    if not performa:
+        raise HTTPException(status_code=404, detail="Performa not found")
+
+    fmt = lambda n: f"{Decimal(str(n)):,.2f}"
+
+    items = []
+    for li in performa.line_items:
+        items.append({
+            "type": li.type,
+            "description": li.description,
+            "quantity": li.quantity,
+            "unit_price": fmt(li.unit_price),
+            "total_price": fmt(li.total_price),
+        })
+
+    pdf_bytes = render_pdf(
+        "performa_pdf.html",
+        invoice_number=None,
+        version=performa.version,
+        status=performa.status,
+        created_at=performa.created_at.strftime("%Y-%m-%d %H:%M"),
+        client_email=performa.client_email,
+        subtotal=fmt(performa.subtotal),
+        vat_rate=fmt(performa.vat_rate),
+        vat_amount=fmt(performa.vat_amount),
+        grand_total=fmt(performa.grand_total),
+        line_items=items,
+    )
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"inline; filename=performa-{performa_id}.pdf"},
+    )

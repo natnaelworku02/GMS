@@ -2,9 +2,10 @@ import uuid
 from datetime import datetime, timezone
 
 from fastapi import HTTPException
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.pagination import paginate_query
 from app.tools.models import Tool, ToolCheckout
 
 
@@ -31,21 +32,23 @@ async def get_checked_out_quantity(db: AsyncSession, tool_id: uuid.UUID) -> int:
     return result.scalar()
 
 
-async def list_tools(db: AsyncSession) -> list[dict]:
-    result = await db.execute(select(Tool).order_by(Tool.name))
-    tools = list(result.scalars().all())
+async def list_tools(db: AsyncSession, page: int = 1, page_size: int = 20, search: str | None = None):
+    query = select(Tool).order_by(Tool.name)
+    if search:
+        query = query.where(or_(Tool.name.ilike(f"%{search}%"), Tool.specifications.ilike(f"%{search}%")))
+    items, total, page, page_size, total_pages = await paginate_query(db, query, page, page_size)
     tool_dicts = []
-    for tool in tools:
+    for tool in items:
         checked_out = await get_checked_out_quantity(db, tool.id)
         tool_dicts.append({
-            "id": tool.id,
+            "id": str(tool.id),
             "name": tool.name,
             "specifications": tool.specifications,
             "total_quantity": tool.total_quantity,
             "available_quantity": tool.total_quantity - checked_out,
-            "created_at": tool.created_at,
+            "created_at": tool.created_at.isoformat() if tool.created_at else None,
         })
-    return tool_dicts
+    return {"items": tool_dicts, "total": total, "page": page, "page_size": page_size, "total_pages": total_pages}
 
 
 async def update_tool(db: AsyncSession, tool: Tool, **kwargs) -> Tool:
@@ -100,11 +103,26 @@ async def return_tool(db: AsyncSession, checkout_id: uuid.UUID) -> ToolCheckout:
     return checkout
 
 
-async def list_checkouts(db: AsyncSession, job_card_id: uuid.UUID | None = None, unreturned_only: bool = False) -> list[ToolCheckout]:
+async def list_checkouts(
+    db: AsyncSession,
+    page: int = 1,
+    page_size: int = 20,
+    search: str | None = None,
+    job_card_id: uuid.UUID | None = None,
+    unreturned_only: bool = False,
+    employee_id: uuid.UUID | None = None,
+    tool_id: uuid.UUID | None = None,
+):
     query = select(ToolCheckout).order_by(ToolCheckout.checked_out_at.desc())
+    if search:
+        query = query.where(ToolCheckout.tool_id.cast(str).ilike(f"%{search}%"))
     if job_card_id:
         query = query.where(ToolCheckout.job_card_id == job_card_id)
     if unreturned_only:
         query = query.where(ToolCheckout.checked_in_at.is_(None))
-    result = await db.execute(query)
-    return list(result.scalars().all())
+    if employee_id:
+        query = query.where(ToolCheckout.employee_id == employee_id)
+    if tool_id:
+        query = query.where(ToolCheckout.tool_id == tool_id)
+    items, total, page, page_size, total_pages = await paginate_query(db, query, page, page_size)
+    return {"items": items, "total": total, "page": page, "page_size": page_size, "total_pages": total_pages}
