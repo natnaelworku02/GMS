@@ -98,6 +98,17 @@ async def update_user(
     return updated
 
 
+@router.delete("/users/{user_id}", status_code=204)
+async def delete_user(
+    user_id: uuid.UUID,
+    current_user: User = Depends(RequirePermission("users", "delete")),
+    db: AsyncSession = Depends(get_db),
+):
+    await service.delete_user(db, user_id)
+    await create_audit_log(db, current_user.id, "user.delete", "user", user_id)
+    await db.commit()
+
+
 @router.patch("/users/{user_id}/password")
 async def reset_password(
     user_id: uuid.UUID,
@@ -149,6 +160,17 @@ async def get_role(
     if not role:
         raise HTTPException(status_code=404, detail="Role not found")
     return role
+
+
+@roles_router.delete("/{role_id}", status_code=204)
+async def delete_role(
+    role_id: uuid.UUID,
+    current_user: User = Depends(RequirePermission("users", "delete")),
+    db: AsyncSession = Depends(get_db),
+):
+    await service.delete_role(db, role_id)
+    await create_audit_log(db, current_user.id, "role.delete", "role", role_id)
+    await db.commit()
 
 
 @roles_router.put("/{role_id}/permissions", response_model=schemas.RoleResponse)

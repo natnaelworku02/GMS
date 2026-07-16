@@ -49,6 +49,17 @@ async def get_employee(
     return emp
 
 
+@router.delete("/{employee_id}", status_code=204)
+async def delete_employee(
+    employee_id: uuid.UUID,
+    current_user: User = Depends(RequirePermission("hr", "delete")),
+    db: AsyncSession = Depends(get_db),
+):
+    await service.delete_employee(db, employee_id)
+    await create_audit_log(db, current_user.id, "employee.delete", "employee", employee_id)
+    await db.commit()
+
+
 @router.patch("/{employee_id}", response_model=schemas.EmployeeResponse)
 async def update_employee(
     employee_id: uuid.UUID,

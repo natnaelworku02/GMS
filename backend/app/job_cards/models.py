@@ -103,6 +103,7 @@ class JobCard(Base):
     owner: Mapped["Owner"] = relationship()
     mechanics: Mapped[list[Employee]] = relationship("Employee", secondary=job_card_mechanics)
     conditions: Mapped[list["VehicleCondition"]] = relationship(back_populates="job_card", cascade="all, delete-orphan")
+    inventory_usage: Mapped[list["JobCardInventoryUsage"]] = relationship(back_populates="job_card", cascade="all, delete-orphan")
 
 
 class VehicleCondition(Base):
@@ -118,3 +119,16 @@ class VehicleCondition(Base):
     __table_args__ = (
         UniqueConstraint("job_card_id", "part_name", name="uq_jobcard_part"),
     )
+
+
+class JobCardInventoryUsage(Base):
+    __tablename__ = "job_card_inventory_usage"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    job_card_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("job_cards.id"), nullable=False)
+    item_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False)
+    store_location_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False)
+    quantity: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+    job_card: Mapped["JobCard"] = relationship(back_populates="inventory_usage")

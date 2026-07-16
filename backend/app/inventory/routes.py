@@ -1,6 +1,7 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.models import User
@@ -9,6 +10,7 @@ from app.core.pagination import PaginatedResponse
 from app.core.rbac import RequirePermission
 from app.db import get_db
 from app.inventory import schemas, service
+from app.inventory.models import StoreLocation
 
 locations_router = APIRouter(prefix="/inventory/locations", tags=["inventory"])
 items_router = APIRouter(prefix="/inventory/items", tags=["inventory"])
@@ -22,6 +24,35 @@ async def create_location(
     db: AsyncSession = Depends(get_db),
 ):
     return await service.create_location(db, body.name)
+
+
+@locations_router.delete("/{location_id}", status_code=204)
+async def delete_location(
+    location_id: uuid.UUID,
+    current_user: User = Depends(RequirePermission("inventory", "delete")),
+    db: AsyncSession = Depends(get_db),
+):
+    await service.delete_location(db, location_id)
+    await create_audit_log(db, current_user.id, "location.delete", "store_location", location_id)
+    await db.commit()
+
+
+@locations_router.patch("/{location_id}", response_model=schemas.StoreLocationResponse)
+async def update_location(
+    location_id: uuid.UUID,
+    body: schemas.StoreLocationUpdate,
+    current_user: User = Depends(RequirePermission("inventory", "update")),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(StoreLocation).where(StoreLocation.id == location_id))
+    location = result.scalar_one_or_none()
+    if not location:
+        raise HTTPException(status_code=404, detail="Location not found")
+    updated = await service.update_location(db, location, body.name)
+    await create_audit_log(db, current_user.id, "location.update", "store_location", location_id,
+                           details={"new_name": body.name})
+    await db.commit()
+    return updated
 
 
 @locations_router.get("/", response_model=PaginatedResponse[schemas.StoreLocationResponse])
@@ -71,6 +102,17 @@ async def get_item(
     return item
 
 
+@items_router.delete("/{item_id}", status_code=204)
+async def delete_item(
+    item_id: uuid.UUID,
+    current_user: User = Depends(RequirePermission("inventory", "delete")),
+    db: AsyncSession = Depends(get_db),
+):
+    await service.delete_item(db, item_id)
+    await create_audit_log(db, current_user.id, "inventory.delete", "inventory_item", item_id)
+    await db.commit()
+
+
 @items_router.patch("/{item_id}", response_model=schemas.InventoryItemResponse)
 async def update_item(
     item_id: uuid.UUID,
@@ -96,5 +138,21 @@ async def set_stock(
     entry = await service.set_stock(db, body.item_id, body.store_location_id, body.quantity)
     await create_audit_log(db, current_user.id, "stock.set", "inventory_item", body.item_id,
                            details={"store": str(body.store_location_id), "quantity": body.quantity})
+    await db.commit()
+    return entry
+
+
+@stock_router.post("/adjust", response_model=schemas.StockEntryResponse)
+async def adjust_stock(
+    body: schemas.StockAdjust,
+    current_user: User = Depends(RequirePermission("inventory", "update")),
+    db: AsyncSession = Depends(get_db),
+):
+    try:
+        entry = await service.adjust_stock(db, body.item_id, body.store_location_id, body.delta)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    await create_audit_log(db, current_user.id, "stock.adjust", "inventory_item", body.item_id,
+                           details={"store": str(body.store_location_id), "delta": body.delta})
     await db.commit()
     return entry

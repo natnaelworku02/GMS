@@ -3,12 +3,14 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
-import { useGetVehiclesQuery, useGetOwnersQuery } from "@/features/jobCards/api";
+import { useGetVehiclesQuery, useGetOwnersQuery, useDeleteVehicleMutation } from "@/features/jobCards/api";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable, type Column } from "@/components/shared/DataTable";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Can } from "@/features/auth/components/Can";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import type { Vehicle } from "@/features/jobCards/types";
 import CreateVehicleModal from "@/features/jobCards/components/CreateVehicleModal";
 
@@ -25,6 +27,21 @@ export default function VehiclesPage() {
   const owners = ownersResp?.items ?? [];
   const total = vehiclesResp?.total ?? 0;
   const totalPages = vehiclesResp?.total_pages ?? 0;
+
+  const [deleteTarget, setDeleteTarget] = useState<Vehicle | null>(null);
+  const [deleteVehicle, { isLoading: deleting }] = useDeleteVehicleMutation();
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteVehicle(deleteTarget.id).unwrap();
+      toast.success("Vehicle deleted");
+      setDeleteTarget(null);
+    } catch (error) {
+      const msg = (error as any)?.data?.detail || "Failed to delete vehicle";
+      toast.error(msg);
+    }
+  };
 
   const getOwnerName = (ownerId: string) =>
     owners.find((o) => o.id === ownerId)?.name || "—";
@@ -68,6 +85,25 @@ export default function VehiclesPage() {
       header: t("chassisNumber"),
       render: (v) => <span className="font-mono text-xs text-muted-foreground">{v.chassis_number}</span>,
     },
+    {
+      key: "actions",
+      header: "",
+      render: (v) => (
+        <Can permission="job_cards.delete">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={(e: React.MouseEvent) => {
+              e.stopPropagation();
+              setDeleteTarget(v);
+            }}
+          >
+            <Trash2 size={14} className="text-destructive" />
+          </Button>
+        </Can>
+      ),
+      className: "w-12 text-right",
+    },
   ];
 
   return (
@@ -108,6 +144,17 @@ export default function VehiclesPage() {
       </div>
 
       <CreateVehicleModal open={open} onOpenChange={setOpen} />
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(v) => { if (!v) setDeleteTarget(null); }}
+        title="Delete Vehicle"
+        description={`Are you sure you want to delete ${deleteTarget?.model} (${deleteTarget?.plate_number})? This action cannot be undone.`}
+        confirmLabel={deleting ? "Deleting..." : "Delete"}
+        onConfirm={handleDelete}
+        variant="destructive"
+        disableConfirm={deleting}
+      />
     </div>
   );
 }

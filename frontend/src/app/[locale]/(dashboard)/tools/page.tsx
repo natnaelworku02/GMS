@@ -5,9 +5,10 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useGetToolsQuery, useCreateToolMutation } from "@/features/tools/api";
+import { useGetToolsQuery, useCreateToolMutation, useDeleteToolMutation } from "@/features/tools/api";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable, type Column } from "@/components/shared/DataTable";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, ClipboardList, Loader2 } from "lucide-react";
+import { Plus, ClipboardList, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { toolSchema, type ToolFormData } from "@/lib/formSchemas";
 import type { Tool } from "@/features/tools/types";
@@ -37,6 +38,20 @@ export default function ToolsPage() {
 
   const [open, setOpen] = useState(false);
   const [create, { isLoading: creating }] = useCreateToolMutation();
+  const [deleteTarget, setDeleteTarget] = useState<Tool | null>(null);
+  const [deleteTool, { isLoading: deleting }] = useDeleteToolMutation();
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteTool(deleteTarget.id).unwrap();
+      toast.success("Tool deleted");
+      setDeleteTarget(null);
+    } catch (error) {
+      const msg = (error as any)?.data?.detail || "Failed to delete tool";
+      toast.error(msg);
+    }
+  };
 
   const {
     register,
@@ -93,6 +108,23 @@ export default function ToolsPage() {
         </Badge>
       ),
       sortable: true,
+    },
+    {
+      key: "actions",
+      header: "",
+      render: (tool) => (
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={(e: React.MouseEvent) => {
+            e.stopPropagation();
+            setDeleteTarget(tool);
+          }}
+        >
+          <Trash2 size={14} className="text-destructive" />
+        </Button>
+      ),
+      className: "w-12 text-right",
     },
   ];
 
@@ -169,6 +201,17 @@ export default function ToolsPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(v) => { if (!v) setDeleteTarget(null); }}
+        title="Delete Tool"
+        description={`Are you sure you want to delete ${deleteTarget?.name}? This action cannot be undone.`}
+        confirmLabel={deleting ? "Deleting..." : "Delete"}
+        onConfirm={handleDelete}
+        variant="destructive"
+        disableConfirm={deleting}
+      />
     </div>
   );
 }

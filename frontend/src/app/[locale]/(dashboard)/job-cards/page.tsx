@@ -3,13 +3,15 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
-import { useGetJobCardsQuery, useGetVehiclesQuery, useGetOwnersQuery } from "@/features/jobCards/api";
+import { useGetJobCardsQuery, useGetVehiclesQuery, useGetOwnersQuery, useDeleteJobCardMutation } from "@/features/jobCards/api";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable, type Column } from "@/components/shared/DataTable";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Can } from "@/features/auth/components/Can";
 import { Button } from "@/components/ui/button";
-import { Plus, Eye } from "lucide-react";
+import { Plus, Eye, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { JOB_STATUS_LABELS } from "@/lib/constants";
 import type { JobCard, Vehicle, Owner } from "@/features/jobCards/types";
 
@@ -42,6 +44,20 @@ export default function JobCardsPage() {
   const owners = ownersResp?.items ?? [];
   const vehicleMap = Object.fromEntries(vehicles.map((v) => [v.id, v]));
   const ownerMap = Object.fromEntries(owners.map((o) => [o.id, o]));
+  const [deleteTarget, setDeleteTarget] = useState<JobCard | null>(null);
+  const [deleteJobCard, { isLoading: deleting }] = useDeleteJobCardMutation();
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteJobCard(deleteTarget.id).unwrap();
+      toast.success("Job card deleted");
+      setDeleteTarget(null);
+    } catch (error) {
+      const msg = (error as any)?.data?.detail || "Failed to delete job card";
+      toast.error(msg);
+    }
+  };
 
   const columns: Column<JobCard>[] = [
     {
@@ -88,18 +104,30 @@ export default function JobCardsPage() {
       key: "actions",
       header: "",
       render: (jc) => (
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          onClick={(e: React.MouseEvent) => {
-            e.stopPropagation();
-            router.push(`/job-cards/${jc.id}`);
-          }}
-        >
-          <Eye size={14} />
-        </Button>
+        <div className="flex items-center justify-end gap-1">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={(e: React.MouseEvent) => {
+              e.stopPropagation();
+              router.push(`/job-cards/${jc.id}`);
+            }}
+          >
+            <Eye size={14} />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={(e: React.MouseEvent) => {
+              e.stopPropagation();
+              setDeleteTarget(jc);
+            }}
+          >
+            <Trash2 size={14} className="text-destructive" />
+          </Button>
+        </div>
       ),
-      className: "w-12 text-right",
+      className: "w-20 text-right",
     },
   ];
 
@@ -157,6 +185,17 @@ export default function JobCardsPage() {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(v) => { if (!v) setDeleteTarget(null); }}
+        title="Delete Job Card"
+        description="Are you sure you want to delete this job card? This action cannot be undone."
+        confirmLabel={deleting ? "Deleting..." : "Delete"}
+        onConfirm={handleDelete}
+        variant="destructive"
+        disableConfirm={deleting}
+      />
     </div>
   );
 }

@@ -37,37 +37,7 @@ async def list_tools(
     return await service.list_tools(db, page, page_size, search)
 
 
-@router.get("/{tool_id}", response_model=schemas.ToolResponse)
-async def get_tool(
-    tool_id: uuid.UUID,
-    _user=Depends(RequirePermission("tools", "read")),
-    db: AsyncSession = Depends(get_db),
-):
-    tool = await service.get_tool(db, tool_id)
-    if not tool:
-        raise HTTPException(status_code=404, detail="Tool not found")
-    checked_out = await service.get_checked_out_quantity(db, tool.id)
-    return {**tool.__dict__, "available_quantity": tool.total_quantity - checked_out}
-
-
-@router.patch("/{tool_id}", response_model=schemas.ToolResponse)
-async def update_tool(
-    tool_id: uuid.UUID,
-    body: schemas.ToolUpdate,
-    current_user: User = Depends(RequirePermission("tools", "update")),
-    db: AsyncSession = Depends(get_db),
-):
-    tool = await service.get_tool(db, tool_id)
-    if not tool:
-        raise HTTPException(status_code=404, detail="Tool not found")
-    updated = await service.update_tool(db, tool, **body.model_dump(exclude_unset=True))
-    await create_audit_log(db, current_user.id, "tool.update", "tool", tool.id)
-    await db.commit()
-    checked_out = await service.get_checked_out_quantity(db, tool.id)
-    return {**updated.__dict__, "available_quantity": updated.total_quantity - checked_out}
-
-
-# --- Checkouts ---
+# --- Checkouts (must be before /{tool_id}) ---
 
 @router.post("/checkouts", response_model=schemas.CheckoutResponse, status_code=201)
 async def checkout_tool(
@@ -110,3 +80,44 @@ async def list_checkouts(
     db: AsyncSession = Depends(get_db),
 ):
     return await service.list_checkouts(db, page, page_size, search, job_card_id, unreturned_only, employee_id, tool_id)
+
+
+@router.get("/{tool_id}", response_model=schemas.ToolResponse)
+async def get_tool(
+    tool_id: uuid.UUID,
+    _user=Depends(RequirePermission("tools", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    tool = await service.get_tool(db, tool_id)
+    if not tool:
+        raise HTTPException(status_code=404, detail="Tool not found")
+    checked_out = await service.get_checked_out_quantity(db, tool.id)
+    return {**tool.__dict__, "available_quantity": tool.total_quantity - checked_out}
+
+
+@router.delete("/{tool_id}", status_code=204)
+async def delete_tool(
+    tool_id: uuid.UUID,
+    current_user: User = Depends(RequirePermission("tools", "delete")),
+    db: AsyncSession = Depends(get_db),
+):
+    await service.delete_tool(db, tool_id)
+    await create_audit_log(db, current_user.id, "tool.delete", "tool", tool_id)
+    await db.commit()
+
+
+@router.patch("/{tool_id}", response_model=schemas.ToolResponse)
+async def update_tool(
+    tool_id: uuid.UUID,
+    body: schemas.ToolUpdate,
+    current_user: User = Depends(RequirePermission("tools", "update")),
+    db: AsyncSession = Depends(get_db),
+):
+    tool = await service.get_tool(db, tool_id)
+    if not tool:
+        raise HTTPException(status_code=404, detail="Tool not found")
+    updated = await service.update_tool(db, tool, **body.model_dump(exclude_unset=True))
+    await create_audit_log(db, current_user.id, "tool.update", "tool", tool.id)
+    await db.commit()
+    checked_out = await service.get_checked_out_quantity(db, tool.id)
+    return {**updated.__dict__, "available_quantity": updated.total_quantity - checked_out}

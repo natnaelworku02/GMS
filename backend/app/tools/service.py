@@ -51,6 +51,17 @@ async def list_tools(db: AsyncSession, page: int = 1, page_size: int = 20, searc
     return {"items": tool_dicts, "total": total, "page": page, "page_size": page_size, "total_pages": total_pages}
 
 
+async def delete_tool(db: AsyncSession, tool_id: uuid.UUID):
+    checked_out = await get_checked_out_quantity(db, tool_id)
+    if checked_out > 0:
+        raise HTTPException(status_code=409, detail="Cannot delete tool: it has unreturned checkouts")
+    tool = await get_tool(db, tool_id)
+    if not tool:
+        raise HTTPException(status_code=404, detail="Tool not found")
+    await db.delete(tool)
+    await db.commit()
+
+
 async def update_tool(db: AsyncSession, tool: Tool, **kwargs) -> Tool:
     for key, value in kwargs.items():
         if value is not None:

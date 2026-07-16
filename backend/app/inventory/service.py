@@ -1,5 +1,6 @@
 import uuid
 
+from fastapi import HTTPException
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -56,6 +57,60 @@ async def update_item(db: AsyncSession, item: InventoryItem, **kwargs) -> Invent
             setattr(item, key, value)
     await db.commit()
     return await get_item(db, item.id)
+
+
+async def delete_location(db: AsyncSession, location_id: uuid.UUID):
+    result = await db.execute(select(StockEntry).where(StockEntry.store_location_id == location_id).limit(1))
+    if result.scalar_one_or_none():
+        raise HTTPException(status_code=409, detail="Cannot delete location: stock entries reference it")
+    loc = await db.execute(select(StoreLocation).where(StoreLocation.id == location_id))
+    loc = loc.scalar_one_or_none()
+    if not loc:
+        raise HTTPException(status_code=404, detail="Location not found")
+    await db.delete(loc)
+    await db.commit()
+
+
+async def delete_item(db: AsyncSession, item_id: uuid.UUID):
+    from app.job_cards.models import JobCardInventoryUsage
+    result = await db.execute(select(JobCardInventoryUsage).where(JobCardInventoryUsage.item_id == item_id).limit(1))
+    if result.scalar_one_or_none():
+        raise HTTPException(status_code=409, detail="Cannot delete item: referenced in job card inventory usage")
+    item = await get_item(db, item_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found")
+    await db.delete(item)
+    await db.commit()
+
+
+async def update_location(db: AsyncSession, location: StoreLocation, name: str) -> StoreLocation:
+    location.name = name
+    await db.commit()
+    await db.refresh(location)
+    return location
+
+
+async def adjust_stock(db: AsyncSession, item_id: uuid.UUID, store_location_id: uuid.UUID, delta: int) -> StockEntry:
+    result = await db.execute(
+        select(StockEntry).where(
+            StockEntry.item_id == item_id,
+            StockEntry.store_location_id == store_location_id,
+        )
+    )
+    entry = result.scalar_one_or_none()
+    if entry:
+        new_qty = entry.quantity + delta
+        if new_qty < 0:
+            raise ValueError("Insufficient stock")
+        entry.quantity = new_qty
+    else:
+        if delta < 0:
+            raise ValueError("Insufficient stock")
+        entry = StockEntry(item_id=item_id, store_location_id=store_location_id, quantity=delta)
+        db.add(entry)
+    await db.commit()
+    await db.refresh(entry)
+    return entry
 
 
 async def set_stock(db: AsyncSession, item_id: uuid.UUID, store_location_id: uuid.UUID, quantity: int) -> StockEntry:

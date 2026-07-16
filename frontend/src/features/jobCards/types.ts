@@ -63,6 +63,21 @@ export interface JobCard {
   updated_at: string;
   conditions: VehicleCondition[];
   mechanics: Employee[];
+  inventory_usage: InventoryUsage[];
+}
+
+export interface InventoryUsage {
+  id: string;
+  item_id: string;
+  store_location_id: string;
+  quantity: number;
+  created_at: string;
+}
+
+export interface InventoryUsageCreateDTO {
+  item_id: string;
+  store_location_id: string;
+  quantity: number;
 }
 
 export interface JobCardCreateDTO {

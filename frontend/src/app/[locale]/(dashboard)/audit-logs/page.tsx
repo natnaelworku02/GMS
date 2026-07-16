@@ -67,7 +67,7 @@ export default function AuditLogsPage() {
       header: t("details"),
       render: (l) => (
         <span className="max-w-[200px] truncate text-sm text-muted-foreground">
-          {l.details || "—"}
+          {typeof l.details === "object" && l.details !== null ? JSON.stringify(l.details) : l.details || "—"}
         </span>
       ),
     },

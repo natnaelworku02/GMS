@@ -18,6 +18,10 @@ export const toolsApi = api.injectEndpoints({
       query: (body) => ({ url: "/tools/", method: "POST", body }),
       invalidatesTags: ["Tools"],
     }),
+    deleteTool: build.mutation<void, string>({
+      query: (id) => ({ url: `/tools/${id}`, method: "DELETE" }),
+      invalidatesTags: ["Tools"],
+    }),
     updateTool: build.mutation<Tool, { id: string; body: ToolUpdateDTO }>({
       query: ({ id, body }) => ({ url: `/tools/${id}`, method: "PATCH", body }),
       invalidatesTags: ["Tools"],
@@ -44,6 +48,6 @@ export const toolsApi = api.injectEndpoints({
 });
 
 export const {
-  useGetToolsQuery, useGetToolQuery, useCreateToolMutation, useUpdateToolMutation,
+  useGetToolsQuery, useGetToolQuery, useCreateToolMutation, useUpdateToolMutation, useDeleteToolMutation,
   useCheckoutToolMutation, useReturnToolMutation, useGetToolCheckoutsQuery,
 } = toolsApi;

@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class LineItemCreate(BaseModel):
@@ -28,7 +28,7 @@ class LineItemResponse(BaseModel):
 class PerformaCreate(BaseModel):
     job_card_id: uuid.UUID
     client_email: str | None = None
-    line_items: list[LineItemCreate]
+    line_items: list[LineItemCreate] = Field(min_length=1)
 
 
 class PerformaResponse(BaseModel):
@@ -53,7 +53,7 @@ class PerformaStatusUpdate(BaseModel):
 
 
 class PerformaRevise(BaseModel):
-    line_items: list[LineItemCreate]
+    line_items: list[LineItemCreate] = Field(min_length=1)
 
 
 class PerformaSendRequest(BaseModel):

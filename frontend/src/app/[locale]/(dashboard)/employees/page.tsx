@@ -5,9 +5,10 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useGetEmployeesQuery, useCreateEmployeeMutation } from "@/features/jobCards/api";
+import { useGetEmployeesQuery, useCreateEmployeeMutation, useDeleteEmployeeMutation } from "@/features/jobCards/api";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable, type Column } from "@/components/shared/DataTable";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Can } from "@/features/auth/components/Can";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { employeeCreateSchema, type EmployeeCreateFormData } from "@/lib/formSchemas";
 import type { Employee } from "@/features/jobCards/types";
@@ -36,6 +37,20 @@ export default function EmployeesPage() {
 
   const [open, setOpen] = useState(false);
   const [create, { isLoading: creating }] = useCreateEmployeeMutation();
+  const [deleteTarget, setDeleteTarget] = useState<Employee | null>(null);
+  const [deleteEmployee, { isLoading: deleting }] = useDeleteEmployeeMutation();
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteEmployee(deleteTarget.id).unwrap();
+      toast.success("Employee deleted");
+      setDeleteTarget(null);
+    } catch (error) {
+      const msg = (error as any)?.data?.detail || "Failed to delete employee";
+      toast.error(msg);
+    }
+  };
 
   const {
     register,
@@ -101,20 +116,34 @@ export default function EmployeesPage() {
       key: "actions",
       header: "",
       render: (e) => (
-        <Can permission="hr.update">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={(ev: React.MouseEvent) => {
-              ev.stopPropagation();
-              router.push(`/employees/${e.id}`);
-            }}
-          >
-            <Pencil size={14} />
-          </Button>
-        </Can>
+        <div className="flex items-center justify-end gap-1">
+          <Can permission="hr.update">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={(ev: React.MouseEvent) => {
+                ev.stopPropagation();
+                router.push(`/employees/${e.id}`);
+              }}
+            >
+              <Pencil size={14} />
+            </Button>
+          </Can>
+          <Can permission="hr.delete">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={(ev: React.MouseEvent) => {
+                ev.stopPropagation();
+                setDeleteTarget(e);
+              }}
+            >
+              <Trash2 size={14} className="text-destructive" />
+            </Button>
+          </Can>
+        </div>
       ),
-      className: "w-12 text-right",
+      className: "w-20 text-right",
     },
   ];
 
@@ -186,6 +215,17 @@ export default function EmployeesPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(v) => { if (!v) setDeleteTarget(null); }}
+        title="Delete Employee"
+        description={`Are you sure you want to delete ${deleteTarget?.name}? This action cannot be undone.`}
+        confirmLabel={deleting ? "Deleting..." : "Delete"}
+        onConfirm={handleDelete}
+        variant="destructive"
+        disableConfirm={deleting}
+      />
     </div>
   );
 }

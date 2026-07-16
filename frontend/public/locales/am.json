@@ -27,6 +27,8 @@
     "cannotUndo": "ይህ እርምጃ መቀልበስ አይቻልም።",
     "createdAt": "የተፈጠረበት",
     "updated": "በተሳካ ሁኔታ ተዘምኗል",
+    "previous": "ቀዳሚ",
+    "next": "ቀጣይ",
     "logout": "ውጣ"
   },
   "auth": {
@@ -233,6 +235,7 @@
     "location": "ቦታ",
     "quantity": "ብዛት",
     "lowStock": "ክምችቱ አነስተኛ ነው",
+    "searchPlaceholder": "ክምችት ይፈልጉ...",
     "noItems": "ምንም የክምችት ዕቃዎች አልተገኙም",
     "noLocations": "ምንም ቦታዎች አልተገኙም",
     "allVehicleTypes": "ሁሉም የተሽከርካሪ አይነቶች",
@@ -256,6 +259,8 @@
     "jobCard": "የሥራ ካርድ",
     "employee": "ሰራተኛ",
     "noTools": "ምንም መሳሪያዎች አልተገኙም",
+    "unreturnedTools": "ያልተመለሱ መሳሪያዎች",
+    "searchPlaceholder": "ቼክአውቶችን ይፈልጉ...",
     "noCheckouts": "ምንም የወጡ መሳሪያዎች የሉም"
   },
   "hr": {
@@ -337,6 +342,7 @@
     "module_settings": "ቅንብሮች",
     "typeHeader": "አይነት",
     "superAdmin": "ሱፐር አድሚን",
+    "search": "ሚናዎችን ይፈልጉ...",
     "noRoles": "ምንም ሚናዎች አልተገኙም",
     "namePlaceholder": "ለምሳሌ ከፍተኛ መካኒክ",
     "creating": "በመፍጠር ላይ..."
@@ -347,6 +353,7 @@
     "value": "እሴት",
     "update": "አልቅ",
     "updatedAt": "የተሻሻለበት",
+    "searchPlaceholder": "ቅንብሮችን ይፈልጉ...",
     "noSettings": "ምንም ቅንብሮች አልተገኙም",
     "count": "{count} ቅንብር{count, plural, one {} other {ች}}"
   },
@@ -358,6 +365,7 @@
     "user": "ተጠቃሚ",
     "details": "ዝርዝሮች",
     "createdAt": "ቀን",
+    "searchPlaceholder": "የኦዲት መዝገቦችን ይፈልጉ...",
     "noLogs": "ምንም የኦዲት መዝገቦች አልተገኙም",
     "allTypes": "ሁሉም አይነቶች",
     "count": "{count} መዝገብ{count, plural, one {} other {ች}}"

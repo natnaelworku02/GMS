@@ -34,3 +34,9 @@ export interface StockAdjustDTO {
   store_location_id: string;
   quantity: number;
 }
+
+export interface StockDeltaDTO {
+  item_id: string;
+  store_location_id: string;
+  delta: number;
+}

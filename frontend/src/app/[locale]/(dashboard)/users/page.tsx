@@ -3,18 +3,22 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
-import { useGetUsersQuery, useGetRolesQuery } from "@/features/auth/api";
+import { useGetUsersQuery, useGetRolesQuery, useDeleteUserMutation } from "@/features/auth/api";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable, type Column } from "@/components/shared/DataTable";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Can } from "@/features/auth/components/Can";
 import { Button } from "@/components/ui/button";
-import { Plus, Pencil } from "lucide-react";
+import { Plus, Pencil, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { useAppSelector } from "@/lib/hooks";
 import type { User } from "@/features/auth/types";
 
 export default function UsersPage() {
   const t = useTranslations("users");
   const tc = useTranslations("common");
   const router = useRouter();
+  const { isSuperAdmin } = useAppSelector((s) => s.auth);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const { data: usersResp, isLoading } = useGetUsersQuery({ page, page_size: 20, search: search || undefined });
@@ -24,6 +28,20 @@ export default function UsersPage() {
   const total = usersResp?.total ?? 0;
   const totalPages = usersResp?.total_pages ?? 0;
   const roleMap = Object.fromEntries(roles.map((r) => [r.id, r.name]));
+  const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
+  const [deleteUser, { isLoading: deleting }] = useDeleteUserMutation();
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteUser(deleteTarget.id).unwrap();
+      toast.success("User deleted");
+      setDeleteTarget(null);
+    } catch (error) {
+      const msg = (error as any)?.data?.detail || "Failed to delete user";
+      toast.error(msg);
+    }
+  };
 
   const columns: Column<User>[] = [
     {
@@ -80,20 +98,34 @@ export default function UsersPage() {
       key: "actions",
       header: "",
       render: (u) => (
-        <Can permission="users.update">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={(e: React.MouseEvent) => {
-              e.stopPropagation();
-              router.push(`/users/${u.id}`);
-            }}
-          >
-            <Pencil size={14} />
-          </Button>
-        </Can>
+        <div className="flex items-center justify-end gap-1">
+          {isSuperAdmin && (
+            <>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={(e: React.MouseEvent) => {
+                  e.stopPropagation();
+                  router.push(`/users/${u.id}`);
+                }}
+              >
+                <Pencil size={14} />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={(e: React.MouseEvent) => {
+                  e.stopPropagation();
+                  setDeleteTarget(u);
+                }}
+              >
+                <Trash2 size={14} className="text-destructive" />
+              </Button>
+            </>
+          )}
+        </div>
       ),
-      className: "w-12 text-right",
+      className: "w-20 text-right",
     },
   ];
 
@@ -134,6 +166,17 @@ export default function UsersPage() {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(v) => { if (!v) setDeleteTarget(null); }}
+        title="Delete User"
+        description={`Are you sure you want to delete ${deleteTarget?.full_name}? This action cannot be undone.`}
+        confirmLabel={deleting ? "Deleting..." : "Delete"}
+        onConfirm={handleDelete}
+        variant="destructive"
+        disableConfirm={deleting}
+      />
     </div>
   );
 }

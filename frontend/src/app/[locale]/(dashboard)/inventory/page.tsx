@@ -5,9 +5,10 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useGetInventoryItemsQuery, useCreateInventoryItemMutation } from "@/features/inventory/api";
+import { useGetInventoryItemsQuery, useCreateInventoryItemMutation, useDeleteInventoryItemMutation } from "@/features/inventory/api";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable, type Column } from "@/components/shared/DataTable";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, MapPin, Pencil, X, Loader2 } from "lucide-react";
+import { Plus, MapPin, Pencil, Trash2, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { inventoryItemSchema, type InventoryItemFormData } from "@/lib/formSchemas";
 import type { InventoryItem } from "@/features/inventory/types";
@@ -45,6 +46,20 @@ export default function InventoryPage() {
   const [open, setOpen] = useState(false);
   const [typeInput, setTypeInput] = useState("");
   const [create, { isLoading: creating }] = useCreateInventoryItemMutation();
+  const [deleteTarget, setDeleteTarget] = useState<InventoryItem | null>(null);
+  const [deleteItem, { isLoading: deleting }] = useDeleteInventoryItemMutation();
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteItem(deleteTarget.id).unwrap();
+      toast.success("Item deleted");
+      setDeleteTarget(null);
+    } catch (error) {
+      const msg = (error as any)?.data?.detail || "Failed to delete item";
+      toast.error(msg);
+    }
+  };
 
   const {
     register,
@@ -159,18 +174,30 @@ export default function InventoryPage() {
       key: "actions",
       header: "",
       render: (item) => (
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          onClick={(e: React.MouseEvent) => {
-            e.stopPropagation();
-            router.push(`/inventory/${item.id}`);
-          }}
-        >
-          <Pencil size={14} />
-        </Button>
+        <div className="flex items-center justify-end gap-1">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={(e: React.MouseEvent) => {
+              e.stopPropagation();
+              router.push(`/inventory/${item.id}`);
+            }}
+          >
+            <Pencil size={14} />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={(e: React.MouseEvent) => {
+              e.stopPropagation();
+              setDeleteTarget(item);
+            }}
+          >
+            <Trash2 size={14} className="text-destructive" />
+          </Button>
+        </div>
       ),
-      className: "w-12 text-right",
+      className: "w-20 text-right",
     },
   ];
 
@@ -303,6 +330,17 @@ export default function InventoryPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(v) => { if (!v) setDeleteTarget(null); }}
+        title="Delete Item"
+        description={`Are you sure you want to delete ${deleteTarget?.part_name}? This action cannot be undone.`}
+        confirmLabel={deleting ? "Deleting..." : "Delete"}
+        onConfirm={handleDelete}
+        variant="destructive"
+        disableConfirm={deleting}
+      />
     </div>
   );
 }

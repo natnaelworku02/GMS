@@ -50,6 +50,17 @@ async def get_owner(
     return owner
 
 
+@owners_router.delete("/{owner_id}", status_code=204)
+async def delete_owner(
+    owner_id: uuid.UUID,
+    current_user: User = Depends(RequirePermission("job_cards", "delete")),
+    db: AsyncSession = Depends(get_db),
+):
+    await service.delete_owner(db, owner_id)
+    await create_audit_log(db, current_user.id, "owner.delete", "owner", owner_id)
+    await db.commit()
+
+
 @owners_router.patch("/{owner_id}", response_model=schemas.OwnerResponse)
 async def update_owner(
     owner_id: uuid.UUID,
@@ -96,6 +107,17 @@ async def get_vehicle(
     if not vehicle:
         raise HTTPException(status_code=404, detail="Vehicle not found")
     return vehicle
+
+
+@vehicles_router.delete("/{vehicle_id}", status_code=204)
+async def delete_vehicle(
+    vehicle_id: uuid.UUID,
+    current_user: User = Depends(RequirePermission("job_cards", "delete")),
+    db: AsyncSession = Depends(get_db),
+):
+    await service.delete_vehicle(db, vehicle_id)
+    await create_audit_log(db, current_user.id, "vehicle.delete", "vehicle", vehicle_id)
+    await db.commit()
 
 
 # --- Job Cards ---
@@ -154,6 +176,17 @@ async def get_job_card(
     return jc
 
 
+@job_cards_router.delete("/{job_card_id}", status_code=204)
+async def delete_job_card(
+    job_card_id: uuid.UUID,
+    current_user: User = Depends(RequirePermission("job_cards", "delete")),
+    db: AsyncSession = Depends(get_db),
+):
+    await service.delete_job_card(db, job_card_id)
+    await create_audit_log(db, current_user.id, "job_card.delete", "job_card", job_card_id)
+    await db.commit()
+
+
 @job_cards_router.patch("/{job_card_id}", response_model=schemas.JobCardResponse)
 async def update_job_card(
     job_card_id: uuid.UUID,
@@ -168,6 +201,23 @@ async def update_job_card(
     await create_audit_log(db, current_user.id, "job_card.update", "job_card", jc.id)
     await db.commit()
     return updated
+
+
+@job_cards_router.post("/{job_card_id}/inventory-usage", response_model=schemas.InventoryUsageResponse, status_code=201)
+async def use_inventory(
+    job_card_id: uuid.UUID,
+    body: schemas.InventoryUsageCreate,
+    current_user: User = Depends(RequirePermission("inventory", "update")),
+    db: AsyncSession = Depends(get_db),
+):
+    jc = await service.get_job_card(db, job_card_id)
+    if not jc:
+        raise HTTPException(status_code=404, detail="Job card not found")
+    usage = await service.use_inventory(db, job_card_id, body.item_id, body.store_location_id, body.quantity)
+    await create_audit_log(db, current_user.id, "inventory.consume", "job_card", job_card_id,
+                           details={"item_id": str(body.item_id), "quantity": body.quantity})
+    await db.commit()
+    return usage
 
 
 @job_cards_router.patch("/{job_card_id}/status", response_model=schemas.JobCardResponse)

@@ -1,4 +1,4 @@
-import { Toaster } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
 import { StoreProvider } from "@/lib/store-provider";
 import { ThemeProvider } from "./ThemeProvider";
 import { AuthInit } from "@/features/auth/components/AuthInit";

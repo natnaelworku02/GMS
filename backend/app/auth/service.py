@@ -1,5 +1,6 @@
 import uuid
 
+from fastapi import HTTPException
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -70,11 +71,23 @@ async def reset_password(db: AsyncSession, user: User, new_password: str) -> Use
     return user
 
 
+async def delete_user(db: AsyncSession, user_id: uuid.UUID):
+    from app.job_cards.models import JobCard
+    result = await db.execute(select(JobCard).where(JobCard.created_by == user_id).limit(1))
+    if result.scalar_one_or_none():
+        raise HTTPException(status_code=409, detail="Cannot delete user: user created job cards")
+    user = await get_user(db, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    await db.delete(user)
+    await db.commit()
+
+
 async def create_role(db: AsyncSession, name: str, is_superadmin: bool = False) -> Role:
     role = Role(name=name, is_superadmin=is_superadmin)
     db.add(role)
     await db.commit()
-    await db.refresh(role)
+    await db.refresh(role, ["permissions"])
     return role
 
 
@@ -93,17 +106,29 @@ async def list_roles(db: AsyncSession, page: int = 1, page_size: int = 20, searc
     return {"items": items, "total": total, "page": page, "page_size": page_size, "total_pages": total_pages}
 
 
+async def delete_role(db: AsyncSession, role_id: uuid.UUID):
+    result = await db.execute(select(User).where(User.role_id == role_id).limit(1))
+    if result.scalar_one_or_none():
+        raise HTTPException(status_code=409, detail="Cannot delete role: users are assigned to it")
+    role = await get_role(db, role_id)
+    if not role:
+        raise HTTPException(status_code=404, detail="Role not found")
+    await db.delete(role)
+    await db.commit()
+
+
 async def set_role_permissions(db: AsyncSession, role_id: uuid.UUID, permissions: list[dict]) -> Role:
     role = await get_role(db, role_id)
     if not role:
         return None
-    for perm in role.permissions:
-        await db.delete(perm)
+    from sqlalchemy import delete as sa_delete
+    await db.execute(sa_delete(RolePermission).where(RolePermission.role_id == role_id))
     for perm_data in permissions:
         perm = RolePermission(role_id=role_id, **perm_data)
         db.add(perm)
     await db.commit()
-    return await get_role(db, role_id)
+    await db.refresh(role, ["permissions"])
+    return role
 
 
 async def check_permission(db: AsyncSession, role_id: uuid.UUID, module: str, action: str) -> bool:

@@ -27,6 +27,8 @@
     "cannotUndo": "This action cannot be undone.",
     "createdAt": "Created",
     "updated": "Updated successfully",
+    "previous": "Previous",
+    "next": "Next",
     "logout": "Logout"
   },
   "auth": {
@@ -233,6 +235,7 @@
     "location": "Location",
     "quantity": "Quantity",
     "lowStock": "Low Stock",
+    "searchPlaceholder": "Search inventory...",
     "noItems": "No inventory items found",
     "noLocations": "No locations found",
     "allVehicleTypes": "All vehicle types",
@@ -256,6 +259,8 @@
     "jobCard": "Job Card",
     "employee": "Employee",
     "noTools": "No tools found",
+    "unreturnedTools": "Unreturned tools",
+    "searchPlaceholder": "Search checkouts...",
     "noCheckouts": "No checkouts found"
   },
   "hr": {
@@ -340,6 +345,7 @@
     "module_settings": "Settings",
     "typeHeader": "Type",
     "superAdmin": "Super Admin",
+    "search": "Search roles...",
     "noRoles": "No roles found",
     "namePlaceholder": "e.g. Senior Mechanic",
     "creating": "Creating..."
@@ -350,6 +356,7 @@
     "value": "Value",
     "update": "Update",
     "updatedAt": "Last Updated",
+    "searchPlaceholder": "Search settings...",
     "noSettings": "No settings found",
     "count": "{count} setting{count, plural, one {} other {s}}"
   },
@@ -361,6 +368,7 @@
     "user": "User",
     "details": "Details",
     "createdAt": "Date",
+    "searchPlaceholder": "Search audit logs...",
     "noLogs": "No audit logs found",
     "allTypes": "All types",
     "count": "{count} log{count, plural, one {} other {s}}"

@@ -5,7 +5,7 @@ import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useGetInventoryItemQuery, useGetInventoryLocationsQuery, useAdjustStockMutation } from "@/features/inventory/api";
+import { useGetInventoryItemQuery, useGetInventoryLocationsQuery, useAdjustStockMutation, useAdjustStockDeltaMutation } from "@/features/inventory/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,9 +25,10 @@ export default function InventoryItemDetailPage({ params }: { params: Promise<{ 
   const t = useTranslations("inventory");
   const router = useRouter();
   const { data: item, isLoading } = useGetInventoryItemQuery(id);
-  const { data: locationsResp } = useGetInventoryLocationsQuery({ page: 1, page_size: 100 });
+  const { data: locationsResp } = useGetInventoryLocationsQuery({ page: 1, page_size: 1000 });
   const locations = locationsResp?.items ?? [];
   const [adjustStock, { isLoading: isAdjusting }] = useAdjustStockMutation();
+  const [adjustStockDelta, { isLoading: isDeltaAdjusting }] = useAdjustStockDeltaMutation();
 
   const [confirmStock, setConfirmStock] = useState(false);
   const [pendingData, setPendingData] = useState<StockAdjustFormData | null>(null);
@@ -50,7 +51,19 @@ export default function InventoryItemDetailPage({ params }: { params: Promise<{ 
     entries.reduce((sum, se) => sum + se.quantity, 0);
 
   const locationName = (locId: string) =>
-    locations.find((l) => l.id === locId)?.name || locId;
+    locations.find((l) => l.id === locId)?.name || "Unknown (" + locId.slice(0, 8) + ")";
+
+  const currentQuantityAtLocation = (locId: string) =>
+    item?.stock_entries.find((se) => se.store_location_id === locId)?.quantity ?? 0;
+
+  const handleDeltaAdjust = async (locId: string, delta: number) => {
+    try {
+      await adjustStockDelta({ item_id: id, store_location_id: locId, delta }).unwrap();
+      toast.success(`Stock ${delta >= 0 ? "+" : ""}${delta}`);
+    } catch {
+      toast.error("Failed to adjust stock");
+    }
+  };
 
   const handleAdjust = (data: StockAdjustFormData) => {
     setPendingData(data);
@@ -171,45 +184,63 @@ export default function InventoryItemDetailPage({ params }: { params: Promise<{ 
         </div>
 
         {/* Stock Adjustment */}
-        <form onSubmit={handleSubmit(handleAdjust)} className="rounded-xl border bg-card p-6 shadow-sm space-y-4">
+        <div className="rounded-xl border bg-card p-6 shadow-sm space-y-4">
           <h2 className="text-sm font-semibold">Adjust Stock</h2>
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="loc" className="text-xs">{t("location")}</Label>
-              <Select value={selectedLocation || null} onValueChange={(v) => setValue("store_location_id", v || "", { shouldValidate: true })}>
-                <SelectTrigger id="loc" className="h-9">
-                  <SelectValue placeholder="Select..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {locations.map((l) => (
-                    <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.store_location_id && <p className="text-xs text-destructive">{errors.store_location_id.message}</p>}
+          <form onSubmit={handleSubmit(handleAdjust)}>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="loc" className="text-xs">{t("location")}</Label>
+                <Select value={selectedLocation || null} onValueChange={(v) => setValue("store_location_id", v || "", { shouldValidate: true })}>
+                  <SelectTrigger id="loc" className="h-9">
+                    <SelectValue placeholder="Select..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {locations.map((l) => (
+                      <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.store_location_id && <p className="text-xs text-destructive">{errors.store_location_id.message}</p>}
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="qty" className="text-xs">{t("quantity")}</Label>
+                <Input
+                  id="qty"
+                  type="number"
+                  min={0}
+                  {...register("quantity", { valueAsNumber: true })}
+                />
+                {errors.quantity && <p className="text-xs text-destructive">{errors.quantity.message}</p>}
+              </div>
+              <div className="flex items-end">
+                <Button
+                  type="submit"
+                  disabled={isAdjusting}
+                  className="w-full"
+                >
+                  {isAdjusting && <Loader2 className="h-4 w-4 animate-spin" />}
+                  Set Stock
+                </Button>
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="qty" className="text-xs">{t("quantity")}</Label>
-              <Input
-                id="qty"
-                type="number"
-                min={0}
-                {...register("quantity", { valueAsNumber: true })}
-              />
-              {errors.quantity && <p className="text-xs text-destructive">{errors.quantity.message}</p>}
+          </form>
+
+          {selectedLocation && (
+            <div className="border-t pt-4">
+              <p className="text-xs text-muted-foreground mb-2">
+                Quick adjust — Current: <span className="font-medium">{currentQuantityAtLocation(selectedLocation)}</span> at {locationName(selectedLocation)}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" onClick={() => handleDeltaAdjust(selectedLocation, -10)} disabled={isDeltaAdjusting}>-10</Button>
+                <Button variant="outline" size="sm" onClick={() => handleDeltaAdjust(selectedLocation, -5)} disabled={isDeltaAdjusting}>-5</Button>
+                <Button variant="outline" size="sm" onClick={() => handleDeltaAdjust(selectedLocation, -1)} disabled={isDeltaAdjusting}>-1</Button>
+                <Button variant="outline" size="sm" onClick={() => handleDeltaAdjust(selectedLocation, 1)} disabled={isDeltaAdjusting}>+1</Button>
+                <Button variant="outline" size="sm" onClick={() => handleDeltaAdjust(selectedLocation, 5)} disabled={isDeltaAdjusting}>+5</Button>
+                <Button variant="outline" size="sm" onClick={() => handleDeltaAdjust(selectedLocation, 10)} disabled={isDeltaAdjusting}>+10</Button>
+              </div>
             </div>
-            <div className="flex items-end">
-              <Button
-                type="submit"
-                disabled={isAdjusting}
-                className="w-full"
-              >
-                {isAdjusting && <Loader2 className="h-4 w-4 animate-spin" />}
-                Set Stock
-              </Button>
-            </div>
-          </div>
-        </form>
+          )}
+        </div>
       </div>
 
       <ConfirmDialog

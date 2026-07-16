@@ -5,9 +5,10 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useGetOwnersQuery, useGetVehiclesQuery, useCreateOwnerMutation } from "@/features/jobCards/api";
+import { useGetOwnersQuery, useGetVehiclesQuery, useCreateOwnerMutation, useDeleteOwnerMutation } from "@/features/jobCards/api";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable, type Column } from "@/components/shared/DataTable";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Can } from "@/features/auth/components/Can";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { ownerSchema, type OwnerFormData } from "@/lib/formSchemas";
 import type { Owner } from "@/features/jobCards/types";
@@ -38,6 +39,20 @@ export default function OwnersPage() {
 
   const [open, setOpen] = useState(false);
   const [create, { isLoading: creating }] = useCreateOwnerMutation();
+  const [deleteTarget, setDeleteTarget] = useState<Owner | null>(null);
+  const [deleteOwner, { isLoading: deleting }] = useDeleteOwnerMutation();
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteOwner(deleteTarget.id).unwrap();
+      toast.success("Owner deleted");
+      setDeleteTarget(null);
+    } catch (error) {
+      const msg = (error as any)?.data?.detail || "Failed to delete owner";
+      toast.error(msg);
+    }
+  };
 
   const {
     register,
@@ -102,20 +117,34 @@ export default function OwnersPage() {
       key: "actions",
       header: "",
       render: (o) => (
-        <Can permission="job_cards.update">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={(e: React.MouseEvent) => {
-              e.stopPropagation();
-              router.push(`/owners/${o.id}`);
-            }}
-          >
-            <Pencil size={14} />
-          </Button>
-        </Can>
+        <div className="flex items-center justify-end gap-1">
+          <Can permission="job_cards.update">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={(e: React.MouseEvent) => {
+                e.stopPropagation();
+                router.push(`/owners/${o.id}`);
+              }}
+            >
+              <Pencil size={14} />
+            </Button>
+          </Can>
+          <Can permission="job_cards.delete">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={(e: React.MouseEvent) => {
+                e.stopPropagation();
+                setDeleteTarget(o);
+              }}
+            >
+              <Trash2 size={14} className="text-destructive" />
+            </Button>
+          </Can>
+        </div>
       ),
-      className: "w-12 text-right",
+      className: "w-20 text-right",
     },
   ];
 
@@ -182,6 +211,17 @@ export default function OwnersPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(v) => { if (!v) setDeleteTarget(null); }}
+        title="Delete Owner"
+        description={`Are you sure you want to delete ${deleteTarget?.name}? This action cannot be undone.`}
+        confirmLabel={deleting ? "Deleting..." : "Delete"}
+        onConfirm={handleDelete}
+        variant="destructive"
+        disableConfirm={deleting}
+      />
     </div>
   );
 }

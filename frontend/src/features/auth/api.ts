@@ -83,6 +83,14 @@ export const authApi = api.injectEndpoints({
       }),
       invalidatesTags: ["Roles"],
     }),
+    deleteUser: build.mutation<void, string>({
+      query: (id) => ({ url: `/auth/users/${id}`, method: "DELETE" }),
+      invalidatesTags: ["Users"],
+    }),
+    deleteRole: build.mutation<void, string>({
+      query: (id) => ({ url: `/roles/${id}`, method: "DELETE" }),
+      invalidatesTags: ["Roles"],
+    }),
     updatePermissions: build.mutation<
       Role,
       { id: string; permissions: PermissionSet[] }
@@ -112,4 +120,6 @@ export const {
   useGetRolesQuery,
   useCreateRoleMutation,
   useUpdatePermissionsMutation,
+  useDeleteUserMutation,
+  useDeleteRoleMutation,
 } = authApi;
