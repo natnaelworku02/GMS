@@ -46,8 +46,10 @@ export default function StartJobPage() {
   const router = useRouter();
   const [createJobCard, { isLoading: isCreatingJobCard }] = useCreateJobCardMutation();
   const [createPerforma, { isLoading: isCreatingPerforma }] = useCreatePerformaMutation();
-  const { data: owners = [] } = useGetOwnersQuery();
-  const { data: vehicles = [] } = useGetVehiclesQuery();
+  const { data: ownersResp } = useGetOwnersQuery({ page: 1, page_size: 100 });
+  const owners = ownersResp?.items ?? [];
+  const { data: vehiclesResp } = useGetVehiclesQuery({ page: 1, page_size: 100 });
+  const vehicles = vehiclesResp?.items ?? [];
   const [createOwner, { isLoading: creatingOwner }] = useCreateOwnerMutation();
   const [createVehicle, { isLoading: creatingVehicle }] = useCreateVehicleMutation();
 
@@ -61,10 +63,12 @@ export default function StartJobPage() {
     setValue,
     watch,
     setError,
+    trigger,
     formState: { errors },
   } = useForm<JobCardCreateFormData>({
     resolver: zodResolver(jobCardCreateSchema),
     defaultValues: {
+      mileage_km: 0,
       private_paint: false,
       private_mechanic: false,
       insurance_provider: "",
@@ -155,7 +159,7 @@ export default function StartJobPage() {
       const jc = await createJobCard({
         vehicle_id: data.vehicle_id,
         owner_id: data.owner_id,
-        mileage_km: data.mileage_km,
+        mileage_km: data.mileage_km ?? 0,
         private_paint: data.private_paint,
         private_mechanic: data.private_mechanic,
         insurance_provider: data.insurance_provider || null,
@@ -190,13 +194,16 @@ export default function StartJobPage() {
     }
   }, [createdJobCardId, lineItems, createPerforma, clientEmail, router, t]);
 
-  const canGoNext = () => {
-    if (step === 0) return !!ownerId;
-    if (step === 1) return !!vehicleId;
-    return true;
-  };
+  const canGoNext = () => true;
 
-  const handleNext = () => {
+  const handleNext = async () => {
+    let valid = true;
+    if (step === 0) {
+      valid = await trigger("owner_id");
+    } else if (step === 1) {
+      valid = await trigger(["vehicle_id", "mileage_km", "description"]);
+    }
+    if (!valid) return;
     if (step >= CONDITION_STEP_START && step < CONDITION_STEP_START + PART_SECTIONS.length - 1) {
       setCwStep(cwStep + 1);
     }
@@ -231,37 +238,48 @@ export default function StartJobPage() {
       {/* Step indicator */}
       {!isPerformaStep && (
         <>
-          <div className="mb-8 flex items-center justify-center gap-0.5">
-            {STEPS.slice(0, -1).map((s, i) => (
-              <div key={i} className="flex items-center gap-0.5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (i < step) {
-                      if (i >= CONDITION_STEP_START && i < CONDITION_STEP_START + PART_SECTIONS.length) {
-                        setCwStep(i - CONDITION_STEP_START);
+          <div className="mb-8 overflow-x-auto">
+            <div className="flex items-center gap-1 min-w-max">
+              {STEPS.slice(0, -1).map((s, i) => (
+                <div key={i} className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (i < step) {
+                        if (i >= CONDITION_STEP_START && i < CONDITION_STEP_START + PART_SECTIONS.length) {
+                          setCwStep(i - CONDITION_STEP_START);
+                        }
+                        setStep(i);
                       }
-                      setStep(i);
-                    }
-                  }}
-                  disabled={i > step}
-                  className={cn(
-                    "flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-semibold transition-all shrink-0",
-                    i === step
-                      ? "bg-indigo-500 text-white shadow-sm ring-2 ring-indigo-500/30"
-                      : i < step
-                        ? "bg-emerald-500 text-white"
-                        : "bg-muted text-muted-foreground",
+                    }}
+                    disabled={i > step}
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all",
+                      i === step
+                        ? "bg-indigo-500 text-white shadow-sm"
+                        : i < step
+                          ? "bg-emerald-500/15 text-emerald-600"
+                          : "bg-muted text-muted-foreground",
+                    )}
+                  >
+                    <span className={cn(
+                      "flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold",
+                      i === step
+                        ? "bg-white/20 text-white"
+                        : i < step
+                          ? "bg-emerald-500 text-white"
+                          : "bg-muted-foreground/20 text-muted-foreground",
+                    )}>
+                      {i < step ? <Check size={10} /> : i + 1}
+                    </span>
+                    <span className="hidden sm:inline whitespace-nowrap">{s.label}</span>
+                  </button>
+                  {i < STEPS.length - 2 && (
+                    <div className={cn("h-0.5 w-4 rounded-full", i < step ? "bg-emerald-400" : "bg-muted")} />
                   )}
-                  title={s.label}
-                >
-                  {i < step ? <Check size={10} /> : i + 1}
-                </button>
-                {i < totalSteps - 2 && (
-                  <div className={cn("h-px w-3 rounded-full", i < step ? "bg-emerald-400" : "bg-muted")} />
-                )}
-              </div>
-            ))}
+                </div>
+              ))}
+            </div>
           </div>
           <div className="mb-6 h-1.5 w-full rounded-full bg-muted overflow-hidden">
             <div
@@ -301,13 +319,11 @@ export default function StartJobPage() {
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="space-y-1.5">
                     <Label className="text-xs">{t("name")}</Label>
-                    <input value={newOwnerName} onChange={(e) => setNewOwnerName(e.target.value)}
-                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm" />
+                    <Input value={newOwnerName} onChange={(e) => setNewOwnerName(e.target.value)} />
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">{t("phone")}</Label>
-                    <input value={newOwnerPhone} onChange={(e) => setNewOwnerPhone(e.target.value)}
-                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm" />
+                    <Input value={newOwnerPhone} onChange={(e) => setNewOwnerPhone(e.target.value)} />
                   </div>
                 </div>
                 <div className="flex gap-2 pt-1">
@@ -354,28 +370,23 @@ export default function StartJobPage() {
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="space-y-1.5">
                     <Label className="text-xs">{t("model")}</Label>
-                    <input value={newVehicleModel} onChange={(e) => setNewVehicleModel(e.target.value)}
-                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm" />
+                    <Input value={newVehicleModel} onChange={(e) => setNewVehicleModel(e.target.value)} />
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">{t("type")}</Label>
-                    <input value={newVehicleType} onChange={(e) => setNewVehicleType(e.target.value)}
-                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm" />
+                    <Input value={newVehicleType} onChange={(e) => setNewVehicleType(e.target.value)} />
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">{t("plateNumber")}</Label>
-                    <input value={newVehiclePlate} onChange={(e) => setNewVehiclePlate(e.target.value)}
-                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 font-mono text-sm" />
+                    <Input value={newVehiclePlate} onChange={(e) => setNewVehiclePlate(e.target.value)} className="font-mono" />
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">{t("engineNumber")}</Label>
-                    <input value={newVehicleEngine} onChange={(e) => setNewVehicleEngine(e.target.value)}
-                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 font-mono text-sm" />
+                    <Input value={newVehicleEngine} onChange={(e) => setNewVehicleEngine(e.target.value)} className="font-mono" />
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">{t("chassisNumber")}</Label>
-                    <input value={newVehicleChassis} onChange={(e) => setNewVehicleChassis(e.target.value)}
-                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 font-mono text-sm" />
+                    <Input value={newVehicleChassis} onChange={(e) => setNewVehicleChassis(e.target.value)} className="font-mono" />
                   </div>
                 </div>
                 <div className="flex gap-2 pt-1">
@@ -401,14 +412,12 @@ export default function StartJobPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label htmlFor="mileage">{t("mileage")}</Label>
-                <input id="mileage" type="number" {...register("mileage_km", { valueAsNumber: true })}
-                  className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+                <Input id="mileage" type="number" {...register("mileage_km", { valueAsNumber: true })} />
                 {errors.mileage_km && <p className="text-sm text-destructive">{errors.mileage_km.message}</p>}
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="ins">{t("insuranceProvider")}</Label>
-                <input id="ins" {...register("insurance_provider")}
-                  className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+                <Input id="ins" {...register("insurance_provider")} />
               </div>
             </div>
 
@@ -475,6 +484,17 @@ export default function StartJobPage() {
           <div className="rounded-xl border bg-card p-6 shadow-sm space-y-5">
             <h2 className="text-sm font-semibold">{t("step", { step: step + 1 })} — {t("review")}</h2>
             <p className="text-xs text-muted-foreground">{t("reviewDescription")}</p>
+
+            {Object.keys(errors).length > 0 && (
+              <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 space-y-1">
+                <p className="text-xs font-medium text-destructive">Please fix the following errors:</p>
+                <ul className="list-disc list-inside text-xs text-destructive/80 space-y-0.5">
+                  {Object.entries(errors).map(([key, err]) => (
+                    <li key={key}>{(err as { message?: string })?.message || key}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {ownerId && (() => {
               const owner = owners.find((o) => o.id === ownerId);

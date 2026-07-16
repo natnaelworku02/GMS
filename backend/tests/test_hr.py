@@ -36,7 +36,8 @@ async def test_list_employees(client: AsyncClient, admin_setup):
     }, headers=admin_setup["headers"])
     resp = await client.get("/api/v1/hr/employees", headers=admin_setup["headers"])
     assert resp.status_code == 200
-    assert len(resp.json()) >= 1
+    data = resp.json()
+    assert len(data["items"]) >= 1
 
 
 @pytest.mark.asyncio

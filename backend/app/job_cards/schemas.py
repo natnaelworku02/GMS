@@ -4,7 +4,7 @@ from datetime import datetime
 from pydantic import BaseModel
 
 from app.hr.schemas import EmployeeResponse
-from app.job_cards.models import ConditionState, JobStatus, PartName
+from app.job_cards.models import ConditionState, JobStatus
 
 
 # --- Owner ---
@@ -60,7 +60,7 @@ class VehicleResponse(BaseModel):
 
 # --- Vehicle Condition ---
 class VehicleConditionInput(BaseModel):
-    part_name: PartName
+    part_name: str
     condition_state: ConditionState
 
 
@@ -101,6 +101,22 @@ class StatusUpdate(BaseModel):
     status: JobStatus
 
 
+class InventoryUsageResponse(BaseModel):
+    id: uuid.UUID
+    item_id: uuid.UUID
+    store_location_id: uuid.UUID
+    quantity: int
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class InventoryUsageCreate(BaseModel):
+    item_id: uuid.UUID
+    store_location_id: uuid.UUID
+    quantity: int
+
+
 class JobCardResponse(BaseModel):
     id: uuid.UUID
     vehicle_id: uuid.UUID
@@ -118,5 +134,6 @@ class JobCardResponse(BaseModel):
     updated_at: datetime
     conditions: list[VehicleConditionResponse] = []
     mechanics: list[EmployeeResponse] = []
+    inventory_usage: list[InventoryUsageResponse] = []
 
     model_config = {"from_attributes": True}

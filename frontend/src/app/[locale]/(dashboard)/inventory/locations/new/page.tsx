@@ -14,6 +14,7 @@ import { toast } from "sonner";
 
 export default function NewInventoryLocationPage() {
   const t = useTranslations("inventory");
+  const tc = useTranslations("common");
   const router = useRouter();
   const [create, { isLoading }] = useCreateInventoryLocationMutation();
   const {
@@ -28,10 +29,10 @@ export default function NewInventoryLocationPage() {
   const onSubmit = async (data: InventoryLocationFormData) => {
     try {
       await create({ name: data.name }).unwrap();
-      toast.success("Location created successfully");
+      toast.success(t("createLocation"));
       router.push("/inventory/locations");
     } catch {
-      toast.error("Failed to create location");
+      toast.error(tc("error"));
     }
   };
 
@@ -39,11 +40,11 @@ export default function NewInventoryLocationPage() {
     <div className="mx-auto max-w-xl">
       <Button variant="ghost" onClick={() => router.push("/inventory/locations")} className="mb-6">
         <ArrowLeft size={15} />
-        Back to Locations
+        {tc("back")}
       </Button>
       <h1 className="mb-6 text-2xl font-semibold tracking-tight">{t("createLocation")}</h1>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="rounded-xl border bg-card p-6 shadow-sm space-y-5">
+      <form id="location-form" onSubmit={handleSubmit(onSubmit)} className="rounded-xl border bg-card p-6 shadow-sm space-y-5">
         <div className="space-y-2">
           <Label htmlFor="name">{t("location")}</Label>
           <Input id="name" {...register("name")} />
@@ -51,9 +52,17 @@ export default function NewInventoryLocationPage() {
         </div>
         <Button type="submit" disabled={isLoading}>
           {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-          {isLoading ? "Creating..." : t("createLocation")}
+          {t("createLocation")}
         </Button>
       </form>
+
+      {/* Mobile sticky bar */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/80 backdrop-blur-lg p-4 sm:hidden">
+        <Button type="submit" className="w-full" disabled={isLoading} form="location-form">
+          {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+          {t("createLocation")}
+        </Button>
+      </div>
     </div>
   );
 }

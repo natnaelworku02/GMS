@@ -15,7 +15,16 @@ import type { Setting } from "@/features/settings/types";
 export default function SettingsPage() {
   const t = useTranslations("settings");
   const tc = useTranslations("common");
+  const [searchQuery, setSearchQuery] = useState("");
   const { data: settings = [], isLoading } = useGetSettingsQuery();
+
+  const filteredSettings = searchQuery
+    ? settings.filter(
+        (s) =>
+          s.key.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          s.value.toLowerCase().includes(searchQuery.toLowerCase()),
+      )
+    : settings;
   const [updateSetting, { isLoading: isUpdating }] = useUpdateSettingMutation();
   const [editing, setEditing] = useState<Setting | null>(null);
   const [editValue, setEditValue] = useState("");
@@ -85,9 +94,12 @@ export default function SettingsPage() {
       <div className="mt-6">
         <DataTable<Setting>
           columns={columns}
-          data={settings}
+          data={filteredSettings}
           isLoading={isLoading}
           emptyMessage={t("noSettings")}
+          searchValue={searchQuery}
+          onSearch={setSearchQuery}
+          searchPlaceholder={t("searchPlaceholder") || tc("search")}
         />
       </div>
 

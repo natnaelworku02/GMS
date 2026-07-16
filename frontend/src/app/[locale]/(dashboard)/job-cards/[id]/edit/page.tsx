@@ -62,20 +62,33 @@ export default function EditJobCardPage({ params }: { params: Promise<{ id: stri
           requested_materials: data.requested_materials || null,
         },
       }).unwrap();
-      toast.success("Job card updated successfully");
+      toast.success(t("edit"));
       router.push(`/job-cards/${id}`);
     } catch {
-      toast.error("Failed to update job card");
+      toast.error(tc("error"));
     }
   };
 
-  if (loading) return <div className="p-8 text-center text-muted-foreground">Loading...</div>;
+  if (loading) return (
+    <div className="flex items-center justify-center py-20">
+      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+    </div>
+  );
+  if (!jobCard) return (
+    <div className="flex flex-col items-center justify-center gap-3 py-20">
+      <p className="text-sm text-muted-foreground">{t("notFound")}</p>
+      <Button variant="ghost" onClick={() => router.back()}>
+        <ArrowLeft size={15} />
+        {tc("back")}
+      </Button>
+    </div>
+  );
 
   return (
     <div className="mx-auto max-w-2xl pb-24">
       <Button variant="ghost" onClick={() => router.push(`/job-cards/${id}`)} className="mb-6">
         <ArrowLeft size={15} />
-        Back to Job Card
+        {tc("back")}
       </Button>
       <h1 className="mb-6 text-2xl font-semibold tracking-tight">{t("edit")}</h1>
 
@@ -124,16 +137,16 @@ export default function EditJobCardPage({ params }: { params: Promise<{ id: stri
         <div className="hidden md:block">
           <Button type="submit" disabled={updating}>
             {updating && <Loader2 className="h-4 w-4 animate-spin" />}
-            {updating ? "Saving..." : tc("save")}
+            {tc("save")}
           </Button>
         </div>
 
         <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:hidden">
           <div className="flex items-center justify-between px-4 py-3">
-            <span className="text-sm text-muted-foreground">Edit job card</span>
+            <span className="text-sm text-muted-foreground">{t("edit")}</span>
             <Button type="submit" disabled={updating} className="min-w-32">
               {updating && <Loader2 className="h-4 w-4 animate-spin" />}
-              {updating ? "Saving..." : tc("save")}
+              {tc("save")}
             </Button>
           </div>
         </div>

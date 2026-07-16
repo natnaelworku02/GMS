@@ -1,49 +1,86 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, use } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { useGetInventoryItemQuery, useGetInventoryLocationsQuery, useAdjustStockMutation } from "@/features/inventory/api";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useGetInventoryItemQuery, useGetInventoryLocationsQuery, useAdjustStockMutation, useAdjustStockDeltaMutation } from "@/features/inventory/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ArrowLeft, Loader2, Package } from "lucide-react";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { toast } from "sonner";
+import { stockAdjustSchema } from "@/lib/formSchemas";
+import { z } from "zod";
+type StockAdjustFormData = z.input<typeof stockAdjustSchema>;
 import type { StockEntry } from "@/features/inventory/types";
 
 export default function InventoryItemDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const [id, setId] = useState("");
-  useEffect(() => { params.then((p) => setId(p.id)); }, [params]);
+  const { id } = use(params);
 
   const t = useTranslations("inventory");
   const router = useRouter();
-  const { data: item, isLoading } = useGetInventoryItemQuery(id, { skip: !id });
-  const { data: locations = [] } = useGetInventoryLocationsQuery();
+  const { data: item, isLoading } = useGetInventoryItemQuery(id);
+  const { data: locationsResp } = useGetInventoryLocationsQuery({ page: 1, page_size: 1000 });
+  const locations = locationsResp?.items ?? [];
   const [adjustStock, { isLoading: isAdjusting }] = useAdjustStockMutation();
+  const [adjustStockDelta, { isLoading: isDeltaAdjusting }] = useAdjustStockDeltaMutation();
 
-  const [selectedLocation, setSelectedLocation] = useState("");
-  const [adjustQty, setAdjustQty] = useState(0);
+  const [confirmStock, setConfirmStock] = useState(false);
+  const [pendingData, setPendingData] = useState<StockAdjustFormData | null>(null);
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    formState: { errors },
+  } = useForm<StockAdjustFormData>({
+    resolver: zodResolver(stockAdjustSchema),
+    defaultValues: { store_location_id: "", quantity: 0 },
+  });
+
+  const selectedLocation = watch("store_location_id") ?? "";
 
   const totalStock = (entries: StockEntry[]) =>
     entries.reduce((sum, se) => sum + se.quantity, 0);
 
   const locationName = (locId: string) =>
-    locations.find((l) => l.id === locId)?.name || locId;
+    locations.find((l) => l.id === locId)?.name || "Unknown (" + locId.slice(0, 8) + ")";
 
-  const handleAdjust = async () => {
-    if (!selectedLocation) {
-      toast.error(t("selectLocation"));
-      return;
+  const currentQuantityAtLocation = (locId: string) =>
+    item?.stock_entries.find((se) => se.store_location_id === locId)?.quantity ?? 0;
+
+  const handleDeltaAdjust = async (locId: string, delta: number) => {
+    try {
+      await adjustStockDelta({ item_id: id, store_location_id: locId, delta }).unwrap();
+      toast.success(`Stock ${delta >= 0 ? "+" : ""}${delta}`);
+    } catch {
+      toast.error("Failed to adjust stock");
     }
+  };
+
+  const handleAdjust = (data: StockAdjustFormData) => {
+    setPendingData(data);
+    setConfirmStock(true);
+  };
+
+  const confirmAdjustStock = async () => {
+    if (!pendingData) return;
     try {
       await adjustStock({
         item_id: id,
-        store_location_id: selectedLocation,
-        quantity: adjustQty,
+        store_location_id: pendingData.store_location_id,
+        quantity: pendingData.quantity,
       }).unwrap();
-      setSelectedLocation("");
-      setAdjustQty(0);
+      reset({ store_location_id: "", quantity: 0 });
+      setConfirmStock(false);
+      setPendingData(null);
     } catch {
       toast.error("Failed to adjust stock");
     }
@@ -130,7 +167,10 @@ export default function InventoryItemDetailPage({ params }: { params: Promise<{ 
         <div className="rounded-xl border bg-card p-6 shadow-sm space-y-4">
           <h2 className="text-sm font-semibold">{t("currentStock")} — by Location</h2>
           {item.stock_entries.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No stock entries</p>
+            <div className="flex flex-col items-center gap-2 py-8 text-center">
+              <Package className="h-8 w-8 text-muted-foreground/40" />
+              <p className="text-sm text-muted-foreground">No stock entries</p>
+            </div>
           ) : (
             <div className="divide-y divide-border">
               {item.stock_entries.map((se) => (
@@ -146,45 +186,71 @@ export default function InventoryItemDetailPage({ params }: { params: Promise<{ 
         {/* Stock Adjustment */}
         <div className="rounded-xl border bg-card p-6 shadow-sm space-y-4">
           <h2 className="text-sm font-semibold">Adjust Stock</h2>
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="loc" className="text-xs">{t("location")}</Label>
-              <select
-                id="loc"
-                value={selectedLocation}
-                onChange={(e) => setSelectedLocation(e.target.value)}
-                className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-              >
-                <option value="">Select...</option>
-                {locations.map((l) => (
-                  <option key={l.id} value={l.id}>{l.name}</option>
-                ))}
-              </select>
+          <form onSubmit={handleSubmit(handleAdjust)}>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="loc" className="text-xs">{t("location")}</Label>
+                <Select value={selectedLocation || null} onValueChange={(v) => setValue("store_location_id", v || "", { shouldValidate: true })}>
+                  <SelectTrigger id="loc" className="h-9">
+                    <SelectValue placeholder="Select..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {locations.map((l) => (
+                      <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.store_location_id && <p className="text-xs text-destructive">{errors.store_location_id.message}</p>}
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="qty" className="text-xs">{t("quantity")}</Label>
+                <Input
+                  id="qty"
+                  type="number"
+                  min={0}
+                  {...register("quantity", { valueAsNumber: true })}
+                />
+                {errors.quantity && <p className="text-xs text-destructive">{errors.quantity.message}</p>}
+              </div>
+              <div className="flex items-end">
+                <Button
+                  type="submit"
+                  disabled={isAdjusting}
+                  className="w-full"
+                >
+                  {isAdjusting && <Loader2 className="h-4 w-4 animate-spin" />}
+                  Set Stock
+                </Button>
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="qty" className="text-xs">{t("quantity")}</Label>
-              <Input
-                id="qty"
-                type="number"
-                min={0}
-                value={adjustQty}
-                onChange={(e) => setAdjustQty(parseInt(e.target.value) || 0)}
-              />
+          </form>
+
+          {selectedLocation && (
+            <div className="border-t pt-4">
+              <p className="text-xs text-muted-foreground mb-2">
+                Quick adjust — Current: <span className="font-medium">{currentQuantityAtLocation(selectedLocation)}</span> at {locationName(selectedLocation)}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" onClick={() => handleDeltaAdjust(selectedLocation, -10)} disabled={isDeltaAdjusting}>-10</Button>
+                <Button variant="outline" size="sm" onClick={() => handleDeltaAdjust(selectedLocation, -5)} disabled={isDeltaAdjusting}>-5</Button>
+                <Button variant="outline" size="sm" onClick={() => handleDeltaAdjust(selectedLocation, -1)} disabled={isDeltaAdjusting}>-1</Button>
+                <Button variant="outline" size="sm" onClick={() => handleDeltaAdjust(selectedLocation, 1)} disabled={isDeltaAdjusting}>+1</Button>
+                <Button variant="outline" size="sm" onClick={() => handleDeltaAdjust(selectedLocation, 5)} disabled={isDeltaAdjusting}>+5</Button>
+                <Button variant="outline" size="sm" onClick={() => handleDeltaAdjust(selectedLocation, 10)} disabled={isDeltaAdjusting}>+10</Button>
+              </div>
             </div>
-            <div className="flex items-end">
-              <Button
-                type="button"
-                onClick={handleAdjust}
-                disabled={isAdjusting || !selectedLocation}
-                className="w-full"
-              >
-                {isAdjusting && <Loader2 className="h-4 w-4 animate-spin" />}
-                Set Stock
-              </Button>
-            </div>
-          </div>
+          )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmStock}
+        onOpenChange={setConfirmStock}
+        title="Set Stock"
+        description={`Set stock at location ${locationName(pendingData?.store_location_id ?? "")} to ${pendingData?.quantity ?? 0}?`}
+        confirmLabel="Set"
+        onConfirm={confirmAdjustStock}
+      />
     </div>
   );
 }

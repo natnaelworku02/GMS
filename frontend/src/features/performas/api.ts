@@ -1,9 +1,13 @@
 import { api } from "@/lib/api";
+import type { PaginatedResponse } from "@/types/api";
 import type { Performa, PerformaCreateDTO } from "./types";
 
 export const performasApi = api.injectEndpoints({
   endpoints: (build) => ({
-    getPerformas: build.query<Performa[], { job_card_id?: string } | void>({
+    getPerformas: build.query<PaginatedResponse<Performa>, {
+      page?: number; page_size?: number; search?: string;
+      job_card_id?: string; status?: string;
+    } | void>({
       query: (params) => ({ url: "/performas/", params: params || undefined }),
       providesTags: ["Performas"],
     }),

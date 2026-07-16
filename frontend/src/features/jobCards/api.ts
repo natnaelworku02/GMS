@@ -1,8 +1,11 @@
 import { api } from "@/lib/api";
+import type { PaginatedResponse } from "@/types/api";
 import type {
   Employee,
   EmployeeCreateDTO,
   EmployeeUpdateDTO,
+  InventoryUsage,
+  InventoryUsageCreateDTO,
   JobCard,
   JobCardCreateDTO,
   JobCardUpdateDTO,
@@ -16,8 +19,8 @@ import type {
 export const jobCardsApi = api.injectEndpoints({
   endpoints: (build) => ({
     // --- Owners ---
-    getOwners: build.query<Owner[], void>({
-      query: () => "/owners/",
+    getOwners: build.query<PaginatedResponse<Owner>, { page?: number; page_size?: number; search?: string } | void>({
+      query: (params) => ({ url: "/owners/", params: params || undefined }),
       providesTags: ["Owners"],
     }),
     getOwner: build.query<Owner, string>({
@@ -28,13 +31,19 @@ export const jobCardsApi = api.injectEndpoints({
       query: (body) => ({ url: "/owners/", method: "POST", body }),
       invalidatesTags: ["Owners"],
     }),
+    deleteOwner: build.mutation<void, string>({
+      query: (id) => ({ url: `/owners/${id}`, method: "DELETE" }),
+      invalidatesTags: ["Owners"],
+    }),
     updateOwner: build.mutation<Owner, { id: string; body: OwnerUpdateDTO }>({
       query: ({ id, body }) => ({ url: `/owners/${id}`, method: "PATCH", body }),
       invalidatesTags: ["Owners"],
     }),
 
     // --- Vehicles ---
-    getVehicles: build.query<Vehicle[], Record<string, string> | void>({
+    getVehicles: build.query<PaginatedResponse<Vehicle>, {
+      page?: number; page_size?: number; search?: string; owner_id?: string;
+    } | void>({
       query: (params) => ({ url: "/vehicles/", params: params || undefined }),
       providesTags: ["Vehicles"],
     }),
@@ -42,13 +51,20 @@ export const jobCardsApi = api.injectEndpoints({
       query: (id) => `/vehicles/${id}`,
       providesTags: (_r, _e, id) => [{ type: "Vehicles", id }],
     }),
+    deleteVehicle: build.mutation<void, string>({
+      query: (id) => ({ url: `/vehicles/${id}`, method: "DELETE" }),
+      invalidatesTags: ["Vehicles"],
+    }),
     createVehicle: build.mutation<Vehicle, VehicleCreateDTO>({
       query: (body) => ({ url: "/vehicles/", method: "POST", body }),
       invalidatesTags: ["Vehicles"],
     }),
 
     // --- Job Cards ---
-    getJobCards: build.query<JobCard[], Record<string, string> | void>({
+    getJobCards: build.query<PaginatedResponse<JobCard>, {
+      page?: number; page_size?: number; search?: string; status?: string;
+      owner_id?: string; vehicle_id?: string; date_from?: string; date_to?: string;
+    } | void>({
       query: (params) => ({ url: "/job-cards/", params: params || undefined }),
       providesTags: ["JobCards"],
     }),
@@ -60,9 +76,21 @@ export const jobCardsApi = api.injectEndpoints({
       query: (body) => ({ url: "/job-cards/", method: "POST", body }),
       invalidatesTags: ["JobCards"],
     }),
+    deleteJobCard: build.mutation<void, string>({
+      query: (id) => ({ url: `/job-cards/${id}`, method: "DELETE" }),
+      invalidatesTags: ["JobCards"],
+    }),
     updateJobCard: build.mutation<JobCard, { id: string; body: JobCardUpdateDTO }>({
       query: ({ id, body }) => ({ url: `/job-cards/${id}`, method: "PATCH", body }),
       invalidatesTags: ["JobCards"],
+    }),
+    useInventory: build.mutation<InventoryUsage, { job_card_id: string; body: InventoryUsageCreateDTO }>({
+      query: ({ job_card_id, body }) => ({
+        url: `/job-cards/${job_card_id}/inventory-usage`,
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["JobCards", "InventoryItems"],
     }),
     updateJobCardStatus: build.mutation<JobCard, { id: string; status: string }>({
       query: ({ id, status }) => ({
@@ -74,7 +102,9 @@ export const jobCardsApi = api.injectEndpoints({
     }),
 
     // --- Employees ---
-    getEmployees: build.query<Employee[], Record<string, string> | void>({
+    getEmployees: build.query<PaginatedResponse<Employee>, {
+      page?: number; page_size?: number; search?: string; active_only?: boolean;
+    } | void>({
       query: (params) => ({ url: "/hr/employees/", params: params || undefined }),
       providesTags: ["Employees"],
     }),
@@ -84,6 +114,10 @@ export const jobCardsApi = api.injectEndpoints({
     }),
     createEmployee: build.mutation<Employee, EmployeeCreateDTO>({
       query: (body) => ({ url: "/hr/employees/", method: "POST", body }),
+      invalidatesTags: ["Employees"],
+    }),
+    deleteEmployee: build.mutation<void, string>({
+      query: (id) => ({ url: `/hr/employees/${id}`, method: "DELETE" }),
       invalidatesTags: ["Employees"],
     }),
     updateEmployee: build.mutation<Employee, { id: string; body: EmployeeUpdateDTO }>({
@@ -98,16 +132,21 @@ export const {
   useGetOwnerQuery,
   useCreateOwnerMutation,
   useUpdateOwnerMutation,
+  useDeleteOwnerMutation,
   useGetVehiclesQuery,
   useGetVehicleQuery,
   useCreateVehicleMutation,
+  useDeleteVehicleMutation,
   useGetJobCardsQuery,
   useGetJobCardQuery,
   useCreateJobCardMutation,
   useUpdateJobCardMutation,
+  useDeleteJobCardMutation,
   useUpdateJobCardStatusMutation,
+  useUseInventoryMutation,
   useGetEmployeesQuery,
   useGetEmployeeQuery,
   useCreateEmployeeMutation,
   useUpdateEmployeeMutation,
+  useDeleteEmployeeMutation,
 } = jobCardsApi;

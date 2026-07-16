@@ -26,6 +26,9 @@
     "notFound": "{entity} አልተገኘም",
     "cannotUndo": "ይህ እርምጃ መቀልበስ አይቻልም።",
     "createdAt": "የተፈጠረበት",
+    "updated": "በተሳካ ሁኔታ ተዘምኗል",
+    "previous": "ቀዳሚ",
+    "next": "ቀጣይ",
     "logout": "ውጣ"
   },
   "auth": {
@@ -43,7 +46,8 @@
     "passwordRequired": "የይለፍ ቃል ያስፈልጋል",
     "phonePlaceholder": "+251912345678",
     "passwordPlaceholder": "••••••••",
-    "signingIn": "በመግባት ላይ..."
+    "signingIn": "በመግባት ላይ...",
+    "profile": "ፕሮፋይል"
   },
   "nav": {
     "dashboard": "ዳሽቦርድ",
@@ -52,16 +56,19 @@
     "vehicles": "ተሽከርካሪዎች",
     "employees": "ሰራተኞች",
     "performas": "ፐርፎርማዎች",
+    "invoices": "ኢንቮይሶች",
     "inventory": "ክምችት",
     "tools": "መሳሪያዎች",
     "users": "ተጠቃሚዎች",
     "roles": "ሚናዎች",
     "settings": "ቅንብሮች",
     "auditLogs": "የኦዲት መዝገቦች",
+    "profile": "ፕሮፋይል",
     "startJob": "ሥራ ጀምር",
     "notifications": "ማሳወቂያዎች",
     "jobCardsDescription": "የጥገና ሥራ ካርዶችን ይፍጠሩ እና ያስተዳድሩ",
     "performasDescription": "ፐርፎርማ ኢንቮይሶችን ያመንጩ እና ይላኩ",
+    "invoicesDescription": "ከተፈቀዱ ፐርፎርማዎች ኢንቮይሶችን ይመልከቱ",
     "inventoryDescription": "መለዋወጫዎችን እና የክምችት ደረጃዎችን ይከታተሉ"
   },
   "notifications": {
@@ -191,9 +198,26 @@
     "approve": "ቀበል",
     "reject": "ውድቅ",
     "revise": "አስተካክል",
+    "convertToInvoice": "ወደ ኢንቮይስ ቀይር",
+    "downloadPdf": "PDF አውርድ",
     "clientEmailPlaceholder": "client@example.com",
     "lineItemRequired": "ሁሉም የዝርዝር ዕቃዎች መግለጫ ሊኖራቸው ይገባል",
-    "allStatusFilter": "ሁሉም"
+    "allStatusFilter": "ሁሉም",
+    "jobCard": "የስራ ካርድ",
+    "jobCardId": "የስራ ካርድ መለያ",
+    "jobCardIdPlaceholder": "የስራ ካርድ መለያ ያስገቡ",
+    "selectJobCard": "የስራ ካርድ ይምረጡ...",
+    "repairedParts": "የተጠገኑ ክፍሎች",
+    "replacedParts": "የተተኩ ክፍሎች",
+    "addLabor": "የተጠገነ ክፍል ጨምር",
+    "addPart": "የተተካ ክፍል ጨምር",
+    "noRepairedParts": "የተጠገኑ ክፍሎች የሉም",
+    "noReplacedParts": "የተተኩ ክፍሎች የሉም",
+    "damagedItems": "ከፍተሻ የተገኙ የተበላሹ ክፍሎች",
+    "addToLineItems": "ጨምር",
+    "fromInventory": "ከክምችት",
+    "searchInventory": "ክምችት ፈልግ...",
+    "noInventory": "ምንም ዕቃ አልተገኘም"
   },
   "inventory": {
     "title": "ክምችት",
@@ -211,6 +235,7 @@
     "location": "ቦታ",
     "quantity": "ብዛት",
     "lowStock": "ክምችቱ አነስተኛ ነው",
+    "searchPlaceholder": "ክምችት ይፈልጉ...",
     "noItems": "ምንም የክምችት ዕቃዎች አልተገኙም",
     "noLocations": "ምንም ቦታዎች አልተገኙም",
     "allVehicleTypes": "ሁሉም የተሽከርካሪ አይነቶች",
@@ -234,6 +259,8 @@
     "jobCard": "የሥራ ካርድ",
     "employee": "ሰራተኛ",
     "noTools": "ምንም መሳሪያዎች አልተገኙም",
+    "unreturnedTools": "ያልተመለሱ መሳሪያዎች",
+    "searchPlaceholder": "ቼክአውቶችን ይፈልጉ...",
     "noCheckouts": "ምንም የወጡ መሳሪያዎች የሉም"
   },
   "hr": {
@@ -296,7 +323,7 @@
   },
   "roles": {
     "title": "ሚናዎች",
-    "create": "አዲስ ሚና",
+    "newRole": "አዲስ ሚና",
     "edit": "ሚና አስተካክል",
     "name": "የሚና ስም",
     "isSuperAdmin": "ሱፐር አድሚን",
@@ -306,8 +333,16 @@
     "read": "አንብብ",
     "update": "አስተካክል",
     "delete": "ሰርዝ",
+    "module_job_cards": "የስራ ካርዶች",
+    "module_performa": "ፐርፎርማ",
+    "module_inventory": "እቃዎች",
+    "module_tools": "መሳሪያዎች",
+    "module_employees": "ሰራተኞች",
+    "module_users": "ተጠቃሚዎች",
+    "module_settings": "ቅንብሮች",
     "typeHeader": "አይነት",
     "superAdmin": "ሱፐር አድሚን",
+    "search": "ሚናዎችን ይፈልጉ...",
     "noRoles": "ምንም ሚናዎች አልተገኙም",
     "namePlaceholder": "ለምሳሌ ከፍተኛ መካኒክ",
     "creating": "በመፍጠር ላይ..."
@@ -318,6 +353,7 @@
     "value": "እሴት",
     "update": "አልቅ",
     "updatedAt": "የተሻሻለበት",
+    "searchPlaceholder": "ቅንብሮችን ይፈልጉ...",
     "noSettings": "ምንም ቅንብሮች አልተገኙም",
     "count": "{count} ቅንብር{count, plural, one {} other {ች}}"
   },
@@ -329,6 +365,7 @@
     "user": "ተጠቃሚ",
     "details": "ዝርዝሮች",
     "createdAt": "ቀን",
+    "searchPlaceholder": "የኦዲት መዝገቦችን ይፈልጉ...",
     "noLogs": "ምንም የኦዲት መዝገቦች አልተገኙም",
     "allTypes": "ሁሉም አይነቶች",
     "count": "{count} መዝገብ{count, plural, one {} other {ች}}"
@@ -401,6 +438,26 @@
     "stepStaffLabel": "ሰራተኞች",
     "stepReviewLabel": "ግምገማ",
     "stepPerformaLabel": "ፐርፎርማ"
+  },
+  "profile": {
+    "title": "የእኔ ፕሮፋይል",
+    "detailsTab": "ዝርዝሮች",
+    "passwordTab": "የይለፍ ቃል",
+    "personalInfo": "የግል መረጃ",
+    "fullName": "ሙሉ ስም",
+    "phone": "ስልክ ቁጥር",
+    "role": "ሚና",
+    "memberSince": "ከ{date} ጀምሮ",
+    "changePassword": "የይለፍ ቃል ይቀይሩ",
+    "newPassword": "አዲስ የይለፍ ቃል",
+    "confirmPassword": "የይለፍ ቃል ያረጋግጡ",
+    "updatePassword": "የይለፍ ቃል ያዘምኑ",
+    "passwordsDontMatch": "የይለፍ ቃላት አይዛመዱም",
+    "passwordUpdated": "የይለፍ ቃል በተሳካ ሁኔታ ተዘምኗል",
+    "profileUpdated": "ፕሮፋይል በተሳካ ሁኔታ ተዘምኗል",
+    "saveChanges": "ለውጦችን ያስቀምጡ",
+    "passwordLengthError": "የይለፍ ቃል ቢያንስ 8 ቁምፊዎች መሆን አለበት",
+    "profileLink": "ፕሮፋይል"
   },
   "offline": {
     "banner": "ከመስመር ውጭ ነዎት — ሲመለሱ ለውጦቹ ይመሳሰላሉ",

@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -8,6 +8,7 @@ from app.auth import schemas, service
 from app.auth.models import SystemSetting, User
 from app.core.audit import create_audit_log
 from app.core.deps import get_current_user
+from app.core.pagination import PaginatedResponse
 from app.core.rbac import RequirePermission
 from app.core.security import decode_token
 from app.db import get_db
@@ -57,12 +58,16 @@ async def create_user(
     return user
 
 
-@router.get("/users", response_model=list[schemas.UserResponse])
+@router.get("/users", response_model=PaginatedResponse[schemas.UserResponse])
 async def list_users(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
+    search: str | None = Query(default=None),
+    is_active: bool | None = Query(default=None),
     _user=Depends(RequirePermission("users", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    return await service.list_users(db)
+    return await service.list_users(db, page, page_size, search, is_active)
 
 
 @router.get("/users/{user_id}", response_model=schemas.UserResponse)
@@ -91,6 +96,17 @@ async def update_user(
     await create_audit_log(db, current_user.id, "user.update", "user", user.id)
     await db.commit()
     return updated
+
+
+@router.delete("/users/{user_id}", status_code=204)
+async def delete_user(
+    user_id: uuid.UUID,
+    current_user: User = Depends(RequirePermission("users", "delete")),
+    db: AsyncSession = Depends(get_db),
+):
+    await service.delete_user(db, user_id)
+    await create_audit_log(db, current_user.id, "user.delete", "user", user_id)
+    await db.commit()
 
 
 @router.patch("/users/{user_id}/password")
@@ -123,12 +139,15 @@ async def create_role(
     return role
 
 
-@roles_router.get("/", response_model=list[schemas.RoleResponse])
+@roles_router.get("/", response_model=PaginatedResponse[schemas.RoleResponse])
 async def list_roles(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
+    search: str | None = Query(default=None),
     _user=Depends(RequirePermission("users", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    return await service.list_roles(db)
+    return await service.list_roles(db, page, page_size, search)
 
 
 @roles_router.get("/{role_id}", response_model=schemas.RoleResponse)
@@ -141,6 +160,17 @@ async def get_role(
     if not role:
         raise HTTPException(status_code=404, detail="Role not found")
     return role
+
+
+@roles_router.delete("/{role_id}", status_code=204)
+async def delete_role(
+    role_id: uuid.UUID,
+    current_user: User = Depends(RequirePermission("users", "delete")),
+    db: AsyncSession = Depends(get_db),
+):
+    await service.delete_role(db, role_id)
+    await create_audit_log(db, current_user.id, "role.delete", "role", role_id)
+    await db.commit()
 
 
 @roles_router.put("/{role_id}/permissions", response_model=schemas.RoleResponse)

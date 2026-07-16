@@ -1,20 +1,42 @@
 "use client";
 
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
-import { useGetRolesQuery } from "@/features/auth/api";
+import { useGetRolesQuery, useDeleteRoleMutation } from "@/features/auth/api";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable, type Column } from "@/components/shared/DataTable";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Can } from "@/features/auth/components/Can";
 import { Button } from "@/components/ui/button";
-import { Plus, Pencil } from "lucide-react";
+import { Plus, Pencil, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import type { Role } from "@/features/auth/types";
 
 export default function RolesPage() {
   const t = useTranslations("roles");
   const tc = useTranslations("common");
   const router = useRouter();
-  const { data: roles = [], isLoading } = useGetRolesQuery();
+  const [page, setPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const { data: rolesResp, isLoading } = useGetRolesQuery({ page, page_size: 20, search: searchQuery || undefined });
+  const roles = rolesResp?.items ?? [];
+  const total = rolesResp?.total ?? 0;
+  const totalPages = rolesResp?.total_pages ?? 0;
+  const [deleteTarget, setDeleteTarget] = useState<Role | null>(null);
+  const [deleteRole, { isLoading: deleting }] = useDeleteRoleMutation();
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteRole(deleteTarget.id).unwrap();
+      toast.success("Role deleted");
+      setDeleteTarget(null);
+    } catch (error) {
+      const msg = (error as any)?.data?.detail || "Failed to delete role";
+      toast.error(msg);
+    }
+  };
 
   const columns: Column<Role>[] = [
     {
@@ -51,20 +73,34 @@ export default function RolesPage() {
       key: "actions",
       header: "",
       render: (r) => (
-        <Can permission="users.update">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={(e: React.MouseEvent) => {
-              e.stopPropagation();
-              router.push(`/roles/${r.id}`);
-            }}
-          >
-            <Pencil size={14} />
-          </Button>
-        </Can>
+        <div className="flex items-center justify-end gap-1">
+          <Can permission="users.update">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={(e: React.MouseEvent) => {
+                e.stopPropagation();
+                router.push(`/roles/${r.id}`);
+              }}
+            >
+              <Pencil size={14} />
+            </Button>
+          </Can>
+          <Can permission="users.delete">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={(e: React.MouseEvent) => {
+                e.stopPropagation();
+                setDeleteTarget(r);
+              }}
+            >
+              <Trash2 size={14} className="text-destructive" />
+            </Button>
+          </Can>
+        </div>
       ),
-      className: "w-12 text-right",
+      className: "w-20 text-right",
     },
   ];
 
@@ -72,7 +108,7 @@ export default function RolesPage() {
     <div className="mx-auto max-w-6xl">
       <PageHeader
         title={t("title")}
-        description={`${roles.length} role${roles.length !== 1 ? "s" : ""}`}
+        description={`${total} role${total !== 1 ? "s" : ""}`}
         action={
           <Can permission="users.create">
             <Button onClick={() => router.push("/roles/new")}>
@@ -89,8 +125,33 @@ export default function RolesPage() {
           data={roles}
           isLoading={isLoading}
           emptyMessage={t("noRoles")}
+          searchPlaceholder={t("search")}
+          searchValue={searchQuery}
+          onSearch={(v) => { setSearchQuery(v); setPage(1); }}
         />
+        {totalPages > 1 && (
+          <div className="mt-4 flex items-center justify-center gap-2">
+            <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+              {tc("previous")}
+            </Button>
+            <span className="text-sm text-muted-foreground">Page {page} of {totalPages}</span>
+            <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+              {tc("next")}
+            </Button>
+          </div>
+        )}
       </div>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(v) => { if (!v) setDeleteTarget(null); }}
+        title="Delete Role"
+        description={`Are you sure you want to delete ${deleteTarget?.name}? This action cannot be undone.`}
+        confirmLabel={deleting ? "Deleting..." : "Delete"}
+        onConfirm={handleDelete}
+        variant="destructive"
+        disableConfirm={deleting}
+      />
     </div>
   );
 }

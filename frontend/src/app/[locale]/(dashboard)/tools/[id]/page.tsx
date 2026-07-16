@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { use, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import {
@@ -12,29 +12,25 @@ import { useGetEmployeesQuery } from "@/features/jobCards/api";
 import { useGetJobCardsQuery } from "@/features/jobCards/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Loader2, Undo2 } from "lucide-react";
+import { ArrowLeft, History, Loader2, Undo2 } from "lucide-react";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { toast } from "sonner";
 import type { ToolCheckout } from "@/features/tools/types";
 
 export default function ToolDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const [id, setId] = useState("");
-  useEffect(() => { params.then((p) => setId(p.id)); }, [params]);
+  const { id } = use(params);
 
   const t = useTranslations("tools");
   const router = useRouter();
-  const { data: tool, isLoading } = useGetToolQuery(id, { skip: !id });
-  const { data: checkouts = [] } = useGetToolCheckoutsQuery(
-    id ? { job_card_id: undefined } : undefined,
-    { skip: !id },
-  );
-  const { data: employees = [] } = useGetEmployeesQuery();
-  const { data: jobCards = [] } = useGetJobCardsQuery();
+  const { data: tool, isLoading } = useGetToolQuery(id);
+  const { data: checkoutsResp } = useGetToolCheckoutsQuery({ page: 1, page_size: 100, tool_id: id });
+  const toolCheckouts = checkoutsResp?.items ?? [];
+  const { data: employeesResp } = useGetEmployeesQuery({ page: 1, page_size: 100 });
+  const employees = employeesResp?.items ?? [];
+  const { data: jobCardsResp } = useGetJobCardsQuery({ page: 1, page_size: 100 });
+  const jobCards = jobCardsResp?.items ?? [];
   const [returnTool, { isLoading: isReturning }] = useReturnToolMutation();
-
-  const toolCheckouts = useMemo(
-    () => checkouts.filter((c) => c.tool_id === id),
-    [checkouts, id],
-  );
+  const [confirmReturn, setConfirmReturn] = useState<{ id: string; employeeName: string } | null>(null);
 
   const employeeName = (employeeId: string) =>
     employees.find((e) => e.id === employeeId)?.name || employeeId;
@@ -44,12 +40,18 @@ export default function ToolDetailPage({ params }: { params: Promise<{ id: strin
       ? `#${jobCards.find((j) => j.id === jobCardId)!.id.slice(0, 8)}`
       : jobCardId;
 
-  const handleReturn = async (checkoutId: string) => {
+  const handleReturn = async () => {
+    if (!confirmReturn) return;
     try {
-      await returnTool(checkoutId).unwrap();
+      await returnTool(confirmReturn.id).unwrap();
+      setConfirmReturn(null);
     } catch {
       toast.error("Failed to return tool");
     }
+  };
+
+  const promptReturn = (checkoutId: string, empName: string) => {
+    setConfirmReturn({ id: checkoutId, employeeName: empName });
   };
 
   const activeCheckouts = toolCheckouts.filter((c) => !c.checked_in_at);
@@ -142,7 +144,7 @@ export default function ToolDetailPage({ params }: { params: Promise<{ id: strin
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleReturn(co.id)}
+                    onClick={() => promptReturn(co.id, employeeName(co.employee_id))}
                     disabled={isReturning}
                   >
                     {isReturning ? (
@@ -159,9 +161,14 @@ export default function ToolDetailPage({ params }: { params: Promise<{ id: strin
         </div>
 
         {/* Checkout History */}
-        {historyCheckouts.length > 0 && (
-          <div className="rounded-xl border bg-card p-6 shadow-sm space-y-4">
-            <h2 className="text-sm font-semibold">Checkout History</h2>
+        <div className="rounded-xl border bg-card p-6 shadow-sm space-y-4">
+          <h2 className="text-sm font-semibold">Checkout History</h2>
+          {historyCheckouts.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 py-8 text-center">
+              <History className="h-8 w-8 text-muted-foreground/40" />
+              <p className="text-sm text-muted-foreground">No checkout history</p>
+            </div>
+          ) : (
             <div className="divide-y divide-border">
               {historyCheckouts.map((co) => (
                 <div key={co.id} className="flex items-center justify-between py-2 text-sm">
@@ -175,9 +182,17 @@ export default function ToolDetailPage({ params }: { params: Promise<{ id: strin
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
+
+      <ConfirmDialog
+        open={!!confirmReturn}
+        onOpenChange={(open) => { if (!open) setConfirmReturn(null); }}
+        title={t("return")}
+        description={`Return tool checked out by ${confirmReturn?.employeeName}?`}
+        onConfirm={handleReturn}
+      />
     </div>
   );
 }

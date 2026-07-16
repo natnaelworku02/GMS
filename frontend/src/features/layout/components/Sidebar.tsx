@@ -34,10 +34,12 @@ const navItems = [
   { href: "/vehicles", labelKey: "vehicles", icon: Truck, permission: "job_cards.read", disabled: false },
   { href: "/employees", labelKey: "employees", icon: Briefcase, permission: "hr.read", disabled: false },
   { href: "/performas", labelKey: "performas", icon: Receipt, permission: "performa.read" },
+  { href: "/invoices", labelKey: "invoices", icon: Receipt, permission: "performa.read" },
   { href: "/inventory", labelKey: "inventory", icon: Package, permission: "inventory.read", disabled: false },
   { href: "/tools", labelKey: "tools", icon: Wrench, permission: "tools.read", disabled: false },
   { href: "/users", labelKey: "users", icon: Users, permission: "users.read", disabled: false },
   { href: "/roles", labelKey: "roles", icon: ShieldCheck, permission: "users.read", disabled: false },
+  { href: "/profile", labelKey: "profile", icon: UserCircle, permission: null },
   { href: "/settings", labelKey: "settings", icon: Settings, permission: "settings.read", disabled: false },
   { href: "/audit-logs", labelKey: "auditLogs", icon: History, permission: "settings.read", disabled: false },
 ];

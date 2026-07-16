@@ -26,6 +26,9 @@
     "notFound": "{entity} not found",
     "cannotUndo": "This action cannot be undone.",
     "createdAt": "Created",
+    "updated": "Updated successfully",
+    "previous": "Previous",
+    "next": "Next",
     "logout": "Logout"
   },
   "auth": {
@@ -43,7 +46,8 @@
     "passwordRequired": "Password is required",
     "phonePlaceholder": "+251912345678",
     "passwordPlaceholder": "••••••••",
-    "signingIn": "Signing in..."
+    "signingIn": "Signing in...",
+    "profile": "Profile"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -52,16 +56,19 @@
     "vehicles": "Vehicles",
     "employees": "Employees",
     "performas": "Performas",
+    "invoices": "Invoices",
     "inventory": "Inventory",
     "tools": "Tools",
     "users": "Users",
     "roles": "Roles",
     "settings": "Settings",
     "auditLogs": "Audit Logs",
+    "profile": "Profile",
     "startJob": "Start a Job",
     "notifications": "Notifications",
     "jobCardsDescription": "Create and manage repair job cards",
     "performasDescription": "Generate and send performa invoices",
+    "invoicesDescription": "View invoices from approved performas",
     "inventoryDescription": "Track parts and stock levels"
   },
   "notifications": {
@@ -191,9 +198,26 @@
     "approve": "Approve",
     "reject": "Reject",
     "revise": "Revise",
+    "convertToInvoice": "Convert to Invoice",
+    "downloadPdf": "Download PDF",
     "clientEmailPlaceholder": "client@example.com",
     "lineItemRequired": "All line items must have a description",
-    "allStatusFilter": "All"
+    "allStatusFilter": "All",
+    "jobCard": "Job Card",
+    "jobCardId": "Job Card ID",
+    "jobCardIdPlaceholder": "Enter job card ID",
+    "selectJobCard": "Select a job card...",
+    "repairedParts": "Repaired parts",
+    "replacedParts": "Replaced parts",
+    "addLabor": "Add repaired part",
+    "addPart": "Add replaced part",
+    "noRepairedParts": "No repaired parts",
+    "noReplacedParts": "No replaced parts",
+    "damagedItems": "Damaged items from inspection",
+    "addToLineItems": "Add",
+    "fromInventory": "From inventory",
+    "searchInventory": "Search inventory...",
+    "noInventory": "No items found"
   },
   "inventory": {
     "title": "Inventory",
@@ -211,6 +235,7 @@
     "location": "Location",
     "quantity": "Quantity",
     "lowStock": "Low Stock",
+    "searchPlaceholder": "Search inventory...",
     "noItems": "No inventory items found",
     "noLocations": "No locations found",
     "allVehicleTypes": "All vehicle types",
@@ -234,6 +259,8 @@
     "jobCard": "Job Card",
     "employee": "Employee",
     "noTools": "No tools found",
+    "unreturnedTools": "Unreturned tools",
+    "searchPlaceholder": "Search checkouts...",
     "noCheckouts": "No checkouts found"
   },
   "hr": {
@@ -286,6 +313,9 @@
     "role": "Role",
     "password": "Password",
     "isActive": "Active",
+    "isInactive": "Inactive",
+    "selectRole": "Select a role",
+    "phonePlaceholder": "+251912345678",
     "resetPassword": "Reset Password",
     "noUsers": "No users found",
     "notFound": "User not found",
@@ -296,7 +326,7 @@
   },
   "roles": {
     "title": "Roles",
-    "create": "New Role",
+    "newRole": "New Role",
     "edit": "Edit Role",
     "name": "Role Name",
     "isSuperAdmin": "Super Admin",
@@ -306,8 +336,16 @@
     "read": "Read",
     "update": "Update",
     "delete": "Delete",
+    "module_job_cards": "Job Cards",
+    "module_performa": "Performa",
+    "module_inventory": "Inventory",
+    "module_tools": "Tools",
+    "module_employees": "Employees",
+    "module_users": "Users",
+    "module_settings": "Settings",
     "typeHeader": "Type",
     "superAdmin": "Super Admin",
+    "search": "Search roles...",
     "noRoles": "No roles found",
     "namePlaceholder": "e.g. Senior Mechanic",
     "creating": "Creating..."
@@ -318,6 +356,7 @@
     "value": "Value",
     "update": "Update",
     "updatedAt": "Last Updated",
+    "searchPlaceholder": "Search settings...",
     "noSettings": "No settings found",
     "count": "{count} setting{count, plural, one {} other {s}}"
   },
@@ -329,6 +368,7 @@
     "user": "User",
     "details": "Details",
     "createdAt": "Date",
+    "searchPlaceholder": "Search audit logs...",
     "noLogs": "No audit logs found",
     "allTypes": "All types",
     "count": "{count} log{count, plural, one {} other {s}}"
@@ -401,6 +441,26 @@
     "stepStaffLabel": "Staff",
     "stepReviewLabel": "Review",
     "stepPerformaLabel": "Performa"
+  },
+  "profile": {
+    "title": "My Profile",
+    "detailsTab": "Details",
+    "passwordTab": "Password",
+    "personalInfo": "Personal Information",
+    "fullName": "Full Name",
+    "phone": "Phone",
+    "role": "Role",
+    "memberSince": "Member since {date}",
+    "changePassword": "Change Password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm Password",
+    "updatePassword": "Update Password",
+    "passwordsDontMatch": "Passwords do not match",
+    "passwordUpdated": "Password updated successfully",
+    "profileUpdated": "Profile updated successfully",
+    "saveChanges": "Save Changes",
+    "passwordLengthError": "Password must be at least 8 characters",
+    "profileLink": "Profile"
   },
   "offline": {
     "banner": "You're offline — changes will sync when reconnected",

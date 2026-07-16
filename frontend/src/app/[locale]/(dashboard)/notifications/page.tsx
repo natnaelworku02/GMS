@@ -6,7 +6,7 @@ import { useGetNotificationsQuery, useMarkNotificationReadMutation } from "@/fea
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CheckCheck, Loader2 } from "lucide-react";
+import { Bell, CheckCheck, Loader2 } from "lucide-react";
 
 export default function NotificationsPage() {
   const t = useTranslations("notifications");
@@ -36,6 +36,15 @@ export default function NotificationsPage() {
       />
 
       <div className="mb-4 flex items-center gap-2">
+        {notifications.some((n) => !n.is_read) && (
+          <Button variant="outline" size="sm" className="ml-auto">
+            <CheckCheck size={14} />
+            Mark all as read
+          </Button>
+        )}
+      </div>
+
+      <div className="mb-4 flex items-center gap-2">
         <button
           onClick={() => setShowUnreadOnly(true)}
           className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${
@@ -56,7 +65,10 @@ export default function NotificationsPage() {
 
       <div className="space-y-2">
         {notifications.length === 0 ? (
-          <p className="py-12 text-center text-sm text-muted-foreground">{t("empty")}</p>
+          <div className="flex flex-col items-center gap-2 py-12 text-center">
+            <Bell className="h-8 w-8 text-muted-foreground/40" />
+            <p className="text-sm text-muted-foreground">{t("empty")}</p>
+          </div>
         ) : (
           notifications.map((n) => (
             <div

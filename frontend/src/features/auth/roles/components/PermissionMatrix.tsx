@@ -3,6 +3,7 @@
 import { MODULES, ACTIONS } from "@/lib/constants";
 import type { PermissionSet } from "@/features/auth/types";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 type Props = {
   permissions: PermissionSet[];
@@ -11,6 +12,7 @@ type Props = {
 };
 
 export function PermissionMatrix({ permissions, onChange, disabled }: Props) {
+  const t = useTranslations("roles");
   function getPerm(module: string): PermissionSet | undefined {
     return permissions.find((p) => p.module === module);
   }
@@ -51,14 +53,14 @@ export function PermissionMatrix({ permissions, onChange, disabled }: Props) {
         <thead>
           <tr className="border-b bg-muted/30">
             <th className="sticky top-0 z-10 h-10 px-4 text-left text-xs font-medium text-muted-foreground backdrop-blur-sm bg-muted/30">
-              Module
+              {t("module")}
             </th>
             {ACTIONS.map((action) => (
               <th
                 key={action}
                 className="sticky top-0 z-10 h-10 w-14 px-2 text-center text-xs font-medium text-muted-foreground backdrop-blur-sm bg-muted/30"
               >
-                <span className="hidden sm:inline">{action.charAt(0).toUpperCase() + action.slice(1)}</span>
+                <span className="hidden sm:inline">{t(action)}</span>
                 <span className="sm:hidden">{actionLabels[action]}</span>
               </th>
             ))}
@@ -69,7 +71,7 @@ export function PermissionMatrix({ permissions, onChange, disabled }: Props) {
             const perm = getPerm(mod.key);
             return (
               <tr key={mod.key} className="border-b last:border-0 transition-colors hover:bg-muted/20">
-                <td className="px-4 py-3 text-sm capitalize">{mod.key.replace(/_/g, " ")}</td>
+                <td className="px-4 py-3 text-sm capitalize">{t("module_" + mod.key)}</td>
                 {ACTIONS.map((action) => {
                   const checked = perm ? perm[`can_${action}`] : false;
                   return (

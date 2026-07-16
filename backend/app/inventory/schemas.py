@@ -58,3 +58,13 @@ class StockUpdate(BaseModel):
     item_id: uuid.UUID
     store_location_id: uuid.UUID
     quantity: int
+
+
+class StockAdjust(BaseModel):
+    item_id: uuid.UUID
+    store_location_id: uuid.UUID
+    delta: int
+
+
+class StoreLocationUpdate(BaseModel):
+    name: str

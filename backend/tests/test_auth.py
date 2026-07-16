@@ -101,4 +101,7 @@ async def test_create_user(client: AsyncClient, auth_headers, seed_role):
 async def test_list_users(client: AsyncClient, auth_headers, seed_user):
     response = await client.get("/api/v1/auth/users", headers=auth_headers)
     assert response.status_code == 200
-    assert len(response.json()) >= 1
+    data = response.json()
+    assert len(data["items"]) >= 1
+    assert data["total"] >= 1
+    assert data["page"] == 1

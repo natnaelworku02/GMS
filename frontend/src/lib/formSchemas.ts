@@ -30,7 +30,7 @@ export const vehicleCreateSchema = z.object({
 export const jobCardCreateSchema = z.object({
   vehicle_id: z.string().min(1, "Vehicle is required"),
   owner_id: z.string().min(1, "Owner is required"),
-  mileage_km: z.number().int().positive("Mileage must be positive"),
+  mileage_km: z.number().int().min(0, "Mileage must be 0 or more").default(0),
   private_paint: z.boolean(),
   private_mechanic: z.boolean(),
   insurance_provider: z.string().optional(),
@@ -63,7 +63,7 @@ export const performaCreateSchema = z.object({
     .array(
       z.object({
         type: z.enum(["labor", "part"]),
-        description: z.string().min(1, "Description is required"),
+        description: z.string(),
         quantity: z.number().int().positive(),
         unit_price: z.number().min(0),
       }),
@@ -111,4 +111,9 @@ export type PerformaCreateFormData = z.input<typeof performaCreateSchema>;
 export type InventoryItemFormData = z.input<typeof inventoryItemSchema>;
 export type InventoryLocationFormData = z.input<typeof inventoryLocationSchema>;
 export type ToolFormData = z.input<typeof toolSchema>;
+export const profileUpdateSchema = z.object({
+  full_name: z.string().min(1, "Name is required"),
+});
+
 export type ToolCheckoutFormData = z.input<typeof toolCheckoutSchema>;
+export type ProfileUpdateFormData = z.input<typeof profileUpdateSchema>;
