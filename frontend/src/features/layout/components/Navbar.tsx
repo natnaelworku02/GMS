@@ -4,6 +4,7 @@ import { ThemeToggle } from "./ThemeToggle";
 import { LocaleSwitcher } from "./LocaleSwitcher";
 import { UserMenu } from "./UserMenu";
 import { NotificationBell } from "@/features/notifications/components/NotificationBell";
+import { SyncStatusBadge } from "@/components/SyncStatusBadge";
 import { Search, Menu } from "lucide-react";
 
 interface NavbarProps {
@@ -35,6 +36,7 @@ export function Navbar({ onToggleMenu }: NavbarProps) {
       <div className="ml-auto flex items-center gap-1">
         <LocaleSwitcher />
         <ThemeToggle />
+        <SyncStatusBadge />
         <NotificationBell />
         <UserMenu />
       </div>

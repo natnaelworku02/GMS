@@ -128,18 +128,11 @@ export default function RolesPage() {
           searchPlaceholder={t("search")}
           searchValue={searchQuery}
           onSearch={(v) => { setSearchQuery(v); setPage(1); }}
+          serverTotal={total}
+          serverPage={page}
+          serverPageSize={20}
+          onServerPageChange={setPage}
         />
-        {totalPages > 1 && (
-          <div className="mt-4 flex items-center justify-center gap-2">
-            <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
-              {tc("previous")}
-            </Button>
-            <span className="text-sm text-muted-foreground">Page {page} of {totalPages}</span>
-            <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
-              {tc("next")}
-            </Button>
-          </div>
-        )}
       </div>
 
       <ConfirmDialog

@@ -27,6 +27,10 @@ type DataTableProps<T> = {
   onRowClick?: (row: T) => void;
   actions?: React.ReactNode;
   pageSize?: number;
+  serverTotal?: number;
+  serverPage?: number;
+  serverPageSize?: number;
+  onServerPageChange?: (page: number) => void;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -42,10 +46,20 @@ export function DataTable<T = any>({
   onRowClick,
   actions,
   pageSize = 10,
+  serverTotal,
+  serverPage,
+  serverPageSize,
+  onServerPageChange,
 }: DataTableProps<T>) {
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
-  const [page, setPage] = useState(0);
+  const [clientPage, setClientPage] = useState(0);
+
+  const isServerPaged =
+    serverTotal !== undefined &&
+    serverPage !== undefined &&
+    serverPageSize !== undefined &&
+    onServerPageChange !== undefined;
 
   const sorted = useMemo(() => {
     const copy = [...data];
@@ -62,8 +76,10 @@ export function DataTable<T = any>({
     return copy;
   }, [data, sortKey, sortDir]);
 
-  const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
-  const paginated = sorted.slice(page * pageSize, (page + 1) * pageSize);
+  const clientTotalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
+  const displayData = isServerPaged
+    ? sorted
+    : sorted.slice(clientPage * pageSize, (clientPage + 1) * pageSize);
 
   function toggleSort(key: string) {
     if (sortKey === key) {
@@ -144,14 +160,14 @@ export function DataTable<T = any>({
                     ))}
                   </tr>
                 ))
-              ) : paginated.length === 0 ? (
+              ) : displayData.length === 0 ? (
                 <tr>
                   <td colSpan={columns.length} className="px-4 py-12">
                     <EmptyState message={emptyMessage || "No results"} />
                   </td>
                 </tr>
               ) : (
-                paginated.map((row, i) => (
+                displayData.map((row, i) => (
                   <tr
                     key={((row as Record<string, unknown>).id as string) || String(i)}
                     className={`border-b last:border-0 transition-all ${
@@ -175,42 +191,103 @@ export function DataTable<T = any>({
         </div>
       </div>
 
-      {!isLoading && sorted.length > pageSize && (
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>
-            Showing {page * pageSize + 1}–{Math.min((page + 1) * pageSize, sorted.length)} of {sorted.length}
-          </span>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setPage(Math.max(0, page - 1))}
-              disabled={page === 0}
-              className="inline-flex h-7 w-7 items-center justify-center rounded-md border bg-card transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-30"
-            >
-              ←
-            </button>
-            {Array.from({ length: totalPages }, (_, i) => (
-              <button
-                key={i}
-                onClick={() => setPage(i)}
-                className={`inline-flex h-7 w-7 items-center justify-center rounded-md text-xs transition-colors ${
-                  i === page
-                    ? "bg-primary text-primary-foreground font-medium"
-                    : "border bg-card hover:bg-muted"
-                }`}
-              >
-                {i + 1}
-              </button>
-            ))}
-            <button
-              onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
-              disabled={page >= totalPages - 1}
-              className="inline-flex h-7 w-7 items-center justify-center rounded-md border bg-card transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-30"
-            >
-              →
-            </button>
+      {!isLoading && (
+        isServerPaged && (serverTotal! > serverPageSize!) ? (
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>
+              Showing {(serverPage! - 1) * serverPageSize! + 1}–
+              {Math.min(serverPage! * serverPageSize!, serverTotal!)} of {serverTotal!}
+            </span>
+            <ServerPagination
+              page={serverPage!}
+              totalPages={Math.ceil(serverTotal! / serverPageSize!)}
+              onChange={onServerPageChange!}
+            />
           </div>
-        </div>
+        ) : !isServerPaged && sorted.length > pageSize ? (
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>
+              Showing {clientPage * pageSize + 1}–
+              {Math.min((clientPage + 1) * pageSize, sorted.length)} of {sorted.length}
+            </span>
+            <ClientPagination
+              page={clientPage}
+              totalPages={clientTotalPages}
+              onChange={setClientPage}
+            />
+          </div>
+        ) : null
       )}
     </div>
+  );
+}
+
+function ServerPagination({
+  page,
+  totalPages,
+  onChange,
+}: {
+  page: number;
+  totalPages: number;
+  onChange: (p: number) => void;
+}) {
+  return (
+    <div className="flex items-center gap-1">
+      <PageButton disabled={page <= 1} onClick={() => onChange(page - 1)}>←</PageButton>
+      {Array.from({ length: totalPages }, (_, i) => (
+        <PageButton key={i} active={i + 1 === page} onClick={() => onChange(i + 1)}>
+          {i + 1}
+        </PageButton>
+      ))}
+      <PageButton disabled={page >= totalPages} onClick={() => onChange(page + 1)}>→</PageButton>
+    </div>
+  );
+}
+
+function ClientPagination({
+  page,
+  totalPages,
+  onChange,
+}: {
+  page: number;
+  totalPages: number;
+  onChange: (p: number) => void;
+}) {
+  return (
+    <div className="flex items-center gap-1">
+      <PageButton disabled={page === 0} onClick={() => onChange(page - 1)}>←</PageButton>
+      {Array.from({ length: totalPages }, (_, i) => (
+        <PageButton key={i} active={i === page} onClick={() => onChange(i)}>
+          {i + 1}
+        </PageButton>
+      ))}
+      <PageButton disabled={page >= totalPages - 1} onClick={() => onChange(page + 1)}>→</PageButton>
+    </div>
+  );
+}
+
+function PageButton({
+  children,
+  active,
+  disabled,
+  onClick,
+}: {
+  children: React.ReactNode;
+  active?: boolean;
+  disabled?: boolean;
+  onClick?: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`inline-flex h-7 w-7 items-center justify-center rounded-md text-xs transition-colors ${
+        active
+          ? "bg-primary text-primary-foreground font-medium"
+          : "border bg-card hover:bg-muted"
+      } disabled:pointer-events-none disabled:opacity-30`}
+    >
+      {children}
+    </button>
   );
 }
