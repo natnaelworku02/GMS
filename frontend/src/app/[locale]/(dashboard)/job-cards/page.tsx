@@ -3,39 +3,61 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
-import { useGetJobCardsQuery } from "@/features/jobCards/api";
+import { useGetJobCardsQuery, useGetVehiclesQuery, useGetOwnersQuery, useDeleteJobCardMutation } from "@/features/jobCards/api";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable, type Column } from "@/components/shared/DataTable";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Can } from "@/features/auth/components/Can";
 import { Button } from "@/components/ui/button";
-import { Plus, Eye } from "lucide-react";
+import { Plus, Eye, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { JOB_STATUS_LABELS } from "@/lib/constants";
-import type { JobCard } from "@/features/jobCards/types";
+import type { JobCard, Vehicle, Owner } from "@/features/jobCards/types";
 
-const STATUS_OPTIONS = [
-  { value: "", label: "All Statuses" },
+const STATUS_OPTIONS = (t: (key: string) => string) => [
+  { value: "", label: t("allStatuses") },
   ...Object.entries(JOB_STATUS_LABELS).map(([value, label]) => ({ value, label })),
 ];
 
 export default function JobCardsPage() {
   const t = useTranslations("jobCards");
+  const tc = useTranslations("common");
   const router = useRouter();
+  const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
 
-  const { data: jobCards = [], isLoading } = useGetJobCardsQuery(
-    statusFilter ? { status: statusFilter } : undefined,
-  );
+  const { data: jobCardsResp, isLoading } = useGetJobCardsQuery({
+    page,
+    page_size: 20,
+    search: search || undefined,
+    status: statusFilter || undefined,
+  });
+  const jobCards = jobCardsResp?.items ?? [];
+  const total = jobCardsResp?.total ?? 0;
+  const totalPages = jobCardsResp?.total_pages ?? 0;
 
-  const filtered = search
-    ? jobCards.filter(
-        (jc) =>
-          jc.description.toLowerCase().includes(search.toLowerCase()) ||
-          jc.vehicle.plate_number.toLowerCase().includes(search.toLowerCase()) ||
-          jc.owner.name.toLowerCase().includes(search.toLowerCase()),
-      )
-    : jobCards;
+  const { data: vehiclesResp } = useGetVehiclesQuery({ page: 1, page_size: 100 });
+  const vehicles = vehiclesResp?.items ?? [];
+  const { data: ownersResp } = useGetOwnersQuery({ page: 1, page_size: 100 });
+  const owners = ownersResp?.items ?? [];
+  const vehicleMap = Object.fromEntries(vehicles.map((v) => [v.id, v]));
+  const ownerMap = Object.fromEntries(owners.map((o) => [o.id, o]));
+  const [deleteTarget, setDeleteTarget] = useState<JobCard | null>(null);
+  const [deleteJobCard, { isLoading: deleting }] = useDeleteJobCardMutation();
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteJobCard(deleteTarget.id).unwrap();
+      toast.success("Job card deleted");
+      setDeleteTarget(null);
+    } catch (error) {
+      const msg = (error as any)?.data?.detail || "Failed to delete job card";
+      toast.error(msg);
+    }
+  };
 
   const columns: Column<JobCard>[] = [
     {
@@ -43,15 +65,15 @@ export default function JobCardsPage() {
       header: t("vehicle"),
       render: (jc) => (
         <div>
-          <p className="font-medium">{jc.vehicle.model}</p>
-          <p className="font-mono text-xs text-muted-foreground">{jc.vehicle.plate_number}</p>
+          <p className="font-medium">{vehicleMap[jc.vehicle_id]?.model || "—"}</p>
+          <p className="font-mono text-xs text-muted-foreground">{vehicleMap[jc.vehicle_id]?.plate_number || "—"}</p>
         </div>
       ),
     },
     {
       key: "owner",
       header: t("owner"),
-      render: (jc) => <span className="text-sm text-muted-foreground">{jc.owner.name}</span>,
+      render: (jc) => <span className="text-sm text-muted-foreground">{ownerMap[jc.owner_id]?.name || "—"}</span>,
     },
     {
       key: "description",
@@ -70,7 +92,7 @@ export default function JobCardsPage() {
     },
     {
       key: "created_at",
-      header: "Created",
+      header: tc("createdAt"),
       render: (jc) => (
         <span className="text-muted-foreground">
           {new Date(jc.created_at).toLocaleDateString()}
@@ -82,18 +104,30 @@ export default function JobCardsPage() {
       key: "actions",
       header: "",
       render: (jc) => (
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          onClick={(e: React.MouseEvent) => {
-            e.stopPropagation();
-            router.push(`/job-cards/${jc.id}`);
-          }}
-        >
-          <Eye size={14} />
-        </Button>
+        <div className="flex items-center justify-end gap-1">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={(e: React.MouseEvent) => {
+              e.stopPropagation();
+              router.push(`/job-cards/${jc.id}`);
+            }}
+          >
+            <Eye size={14} />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={(e: React.MouseEvent) => {
+              e.stopPropagation();
+              setDeleteTarget(jc);
+            }}
+          >
+            <Trash2 size={14} className="text-destructive" />
+          </Button>
+        </div>
       ),
-      className: "w-12 text-right",
+      className: "w-20 text-right",
     },
   ];
 
@@ -101,7 +135,7 @@ export default function JobCardsPage() {
     <div className="mx-auto max-w-6xl">
       <PageHeader
         title={t("title")}
-        description={`${jobCards.length} card${jobCards.length !== 1 ? "s" : ""}`}
+        description={`${total} card${total !== 1 ? "s" : ""}`}
         action={
           <Can permission="job_cards.create">
             <Button onClick={() => router.push("/job-cards/new")}>
@@ -112,21 +146,21 @@ export default function JobCardsPage() {
         }
       />
 
-      <div className="mt-4 flex items-center gap-3">
+      <div className="mt-4 flex flex-wrap items-center gap-3">
         <div className="relative flex-1">
           <input
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search plates, names, descriptions..."
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            placeholder={t("searchPlaceholder")}
             className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           />
         </div>
         <select
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
+          onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
           className="h-10 rounded-lg border border-input bg-background px-3 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          {STATUS_OPTIONS.map((opt) => (
+          {STATUS_OPTIONS(t).map((opt) => (
             <option key={opt.value} value={opt.value}>{opt.label}</option>
           ))}
         </select>
@@ -135,11 +169,26 @@ export default function JobCardsPage() {
       <div className="mt-4">
         <DataTable<JobCard>
           columns={columns}
-          data={filtered}
+          data={jobCards}
           isLoading={isLoading}
-          emptyMessage="No job cards found"
+          emptyMessage={t("noJobCards")}
+          serverTotal={total}
+          serverPage={page}
+          serverPageSize={20}
+          onServerPageChange={setPage}
         />
       </div>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(v) => { if (!v) setDeleteTarget(null); }}
+        title="Delete Job Card"
+        description="Are you sure you want to delete this job card? This action cannot be undone."
+        confirmLabel={deleting ? "Deleting..." : "Delete"}
+        onConfirm={handleDelete}
+        variant="destructive"
+        disableConfirm={deleting}
+      />
     </div>
   );
 }

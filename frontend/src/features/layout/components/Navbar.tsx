@@ -3,7 +3,9 @@
 import { ThemeToggle } from "./ThemeToggle";
 import { LocaleSwitcher } from "./LocaleSwitcher";
 import { UserMenu } from "./UserMenu";
-import { Bell, Search, Menu } from "lucide-react";
+import { NotificationBell } from "@/features/notifications/components/NotificationBell";
+import { SyncStatusBadge } from "@/components/SyncStatusBadge";
+import { Search, Menu } from "lucide-react";
 
 interface NavbarProps {
   onToggleMenu?: () => void;
@@ -14,7 +16,7 @@ export function Navbar({ onToggleMenu }: NavbarProps) {
     <header className="flex h-14 items-center gap-3 border-b border-indigo-500/10 bg-card/80 backdrop-blur-sm px-4 md:px-6">
       <button
         onClick={onToggleMenu}
-        className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground md:hidden"
+        className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground lg:hidden"
       >
         <Menu size={18} />
       </button>
@@ -31,13 +33,11 @@ export function Navbar({ onToggleMenu }: NavbarProps) {
         </kbd>
       </div>
 
-      <div className="flex items-center gap-1">
-        <button className="relative inline-flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground">
-          <Bell size={16} />
-          <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-background animate-pulse" />
-        </button>
+      <div className="ml-auto flex items-center gap-1">
         <LocaleSwitcher />
         <ThemeToggle />
+        <SyncStatusBadge />
+        <NotificationBell />
         <UserMenu />
       </div>
     </header>

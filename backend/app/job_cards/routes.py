@@ -1,10 +1,12 @@
 import uuid
+from datetime import date
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.models import User
 from app.core.audit import create_audit_log
+from app.core.pagination import PaginatedResponse
 from app.core.rbac import RequirePermission
 from app.db import get_db
 from app.job_cards import schemas, service
@@ -25,12 +27,15 @@ async def create_owner(
     return await service.create_owner(db, body.name, body.phone)
 
 
-@owners_router.get("/", response_model=list[schemas.OwnerResponse])
+@owners_router.get("/", response_model=PaginatedResponse[schemas.OwnerResponse])
 async def list_owners(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
+    search: str | None = Query(default=None),
     _user=Depends(RequirePermission("job_cards", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    return await service.list_owners(db)
+    return await service.list_owners(db, page, page_size, search)
 
 
 @owners_router.get("/{owner_id}", response_model=schemas.OwnerResponse)
@@ -43,6 +48,17 @@ async def get_owner(
     if not owner:
         raise HTTPException(status_code=404, detail="Owner not found")
     return owner
+
+
+@owners_router.delete("/{owner_id}", status_code=204)
+async def delete_owner(
+    owner_id: uuid.UUID,
+    current_user: User = Depends(RequirePermission("job_cards", "delete")),
+    db: AsyncSession = Depends(get_db),
+):
+    await service.delete_owner(db, owner_id)
+    await create_audit_log(db, current_user.id, "owner.delete", "owner", owner_id)
+    await db.commit()
 
 
 @owners_router.patch("/{owner_id}", response_model=schemas.OwnerResponse)
@@ -69,13 +85,16 @@ async def create_vehicle(
     return await service.create_vehicle(db, **body.model_dump())
 
 
-@vehicles_router.get("/", response_model=list[schemas.VehicleResponse])
+@vehicles_router.get("/", response_model=PaginatedResponse[schemas.VehicleResponse])
 async def list_vehicles(
-    owner_id: uuid.UUID | None = None,
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
+    search: str | None = Query(default=None),
+    owner_id: uuid.UUID | None = Query(default=None),
     _user=Depends(RequirePermission("job_cards", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    return await service.list_vehicles(db, owner_id)
+    return await service.list_vehicles(db, page, page_size, search, owner_id)
 
 
 @vehicles_router.get("/{vehicle_id}", response_model=schemas.VehicleResponse)
@@ -88,6 +107,17 @@ async def get_vehicle(
     if not vehicle:
         raise HTTPException(status_code=404, detail="Vehicle not found")
     return vehicle
+
+
+@vehicles_router.delete("/{vehicle_id}", status_code=204)
+async def delete_vehicle(
+    vehicle_id: uuid.UUID,
+    current_user: User = Depends(RequirePermission("job_cards", "delete")),
+    db: AsyncSession = Depends(get_db),
+):
+    await service.delete_vehicle(db, vehicle_id)
+    await create_audit_log(db, current_user.id, "vehicle.delete", "vehicle", vehicle_id)
+    await db.commit()
 
 
 # --- Job Cards ---
@@ -118,13 +148,20 @@ async def create_job_card(
     return jc
 
 
-@job_cards_router.get("/", response_model=list[schemas.JobCardResponse])
+@job_cards_router.get("/", response_model=PaginatedResponse[schemas.JobCardResponse])
 async def list_job_cards(
-    status: str | None = None,
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
+    search: str | None = Query(default=None),
+    status: str | None = Query(default=None),
+    owner_id: uuid.UUID | None = Query(default=None),
+    vehicle_id: uuid.UUID | None = Query(default=None),
+    date_from: date | None = Query(default=None),
+    date_to: date | None = Query(default=None),
     _user=Depends(RequirePermission("job_cards", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    return await service.list_job_cards(db, status)
+    return await service.list_job_cards(db, page, page_size, search, status, owner_id, vehicle_id, date_from, date_to)
 
 
 @job_cards_router.get("/{job_card_id}", response_model=schemas.JobCardResponse)
@@ -137,6 +174,17 @@ async def get_job_card(
     if not jc:
         raise HTTPException(status_code=404, detail="Job card not found")
     return jc
+
+
+@job_cards_router.delete("/{job_card_id}", status_code=204)
+async def delete_job_card(
+    job_card_id: uuid.UUID,
+    current_user: User = Depends(RequirePermission("job_cards", "delete")),
+    db: AsyncSession = Depends(get_db),
+):
+    await service.delete_job_card(db, job_card_id)
+    await create_audit_log(db, current_user.id, "job_card.delete", "job_card", job_card_id)
+    await db.commit()
 
 
 @job_cards_router.patch("/{job_card_id}", response_model=schemas.JobCardResponse)
@@ -153,6 +201,23 @@ async def update_job_card(
     await create_audit_log(db, current_user.id, "job_card.update", "job_card", jc.id)
     await db.commit()
     return updated
+
+
+@job_cards_router.post("/{job_card_id}/inventory-usage", response_model=schemas.InventoryUsageResponse, status_code=201)
+async def use_inventory(
+    job_card_id: uuid.UUID,
+    body: schemas.InventoryUsageCreate,
+    current_user: User = Depends(RequirePermission("inventory", "update")),
+    db: AsyncSession = Depends(get_db),
+):
+    jc = await service.get_job_card(db, job_card_id)
+    if not jc:
+        raise HTTPException(status_code=404, detail="Job card not found")
+    usage = await service.use_inventory(db, job_card_id, body.item_id, body.store_location_id, body.quantity)
+    await create_audit_log(db, current_user.id, "inventory.consume", "job_card", job_card_id,
+                           details={"item_id": str(body.item_id), "quantity": body.quantity})
+    await db.commit()
+    return usage
 
 
 @job_cards_router.patch("/{job_card_id}/status", response_model=schemas.JobCardResponse)

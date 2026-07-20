@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, use } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
@@ -10,16 +10,18 @@ import { ownerSchema, type OwnerFormData } from "@/lib/formSchemas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Truck } from "lucide-react";
+import { toast } from "sonner";
 
 export default function EditOwnerPage({ params }: { params: Promise<{ id: string }> }) {
-  const [id, setId] = useState("");
-  useEffect(() => { params.then((p) => setId(p.id)); }, [params]);
+  const { id } = use(params);
 
   const t = useTranslations("owners");
+  const tc = useTranslations("common");
   const router = useRouter();
-  const { data: owner, isLoading: loading } = useGetOwnerQuery(id, { skip: !id });
-  const { data: vehicles = [] } = useGetVehiclesQuery();
+  const { data: owner, isLoading: loading } = useGetOwnerQuery(id);
+  const { data: vehiclesResp } = useGetVehiclesQuery({ page: 1, page_size: 100 });
+  const vehicles = vehiclesResp?.items ?? [];
   const [update, { isLoading: updating }] = useUpdateOwnerMutation();
   const {
     register,
@@ -51,19 +53,33 @@ export default function EditOwnerPage({ params }: { params: Promise<{ id: string
           phone: data.phone,
         },
       }).unwrap();
+      toast.success(tc("updated"));
       router.push("/owners");
     } catch {
-      setError("root", { message: "Failed to update owner" });
+      toast.error(tc("error"));
     }
   };
 
-  if (loading) return <div className="p-8 text-center text-muted-foreground">Loading...</div>;
+  if (loading) return (
+    <div className="flex items-center justify-center py-20">
+      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+    </div>
+  );
+  if (!owner) return (
+    <div className="flex flex-col items-center justify-center gap-3 py-20">
+      <p className="text-sm text-muted-foreground">{t("notFound") || "Not found"}</p>
+      <Button variant="ghost" onClick={() => router.back()}>
+        <ArrowLeft size={15} />
+        {tc("back")}
+      </Button>
+    </div>
+  );
 
   return (
     <div className="mx-auto max-w-2xl">
       <Button variant="ghost" onClick={() => router.push("/owners")} className="mb-6">
         <ArrowLeft size={15} />
-        Back to Owners
+        {tc("back")}
       </Button>
       <h1 className="mb-6 text-2xl font-semibold tracking-tight">{t("edit")}</h1>
 
@@ -78,17 +94,20 @@ export default function EditOwnerPage({ params }: { params: Promise<{ id: string
           <Input id="phone" {...register("phone")} />
           {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
         </div>
-        {errors.root && <p className="text-sm text-destructive">{errors.root.message}</p>}
         <Button type="submit" disabled={updating}>
           {updating && <Loader2 className="h-4 w-4 animate-spin" />}
-          {updating ? "Saving..." : t("save")}
+          {updating && <Loader2 className="h-4 w-4 animate-spin" />}
+          {tc("save")}
         </Button>
       </form>
 
       <div className="mt-8">
         <h2 className="mb-3 text-sm font-semibold">{t("vehicles")}</h2>
         {ownerVehicles.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t("noVehicles")}</p>
+          <div className="flex flex-col items-center gap-2 py-8 text-center">
+            <Truck className="h-8 w-8 text-muted-foreground/40" />
+            <p className="text-sm text-muted-foreground">{t("noVehicles")}</p>
+          </div>
         ) : (
           <div className="space-y-2">
             {ownerVehicles.map((v) => (

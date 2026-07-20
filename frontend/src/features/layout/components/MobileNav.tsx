@@ -20,6 +20,7 @@ import {
   UserCircle,
   Truck,
   Briefcase,
+  History,
 } from "lucide-react";
 
 const navItems = [
@@ -29,15 +30,18 @@ const navItems = [
   { href: "/vehicles", labelKey: "vehicles", icon: Truck, permission: "job_cards.read", disabled: false },
   { href: "/employees", labelKey: "employees", icon: Briefcase, permission: "hr.read", disabled: false },
   { href: "/performas", labelKey: "performas", icon: Receipt, permission: "performa.read" },
-  { href: "/inventory", labelKey: "inventory", icon: Package, permission: "inventory.read", disabled: true },
-  { href: "/tools", labelKey: "tools", icon: Wrench, permission: "tools.read", disabled: true },
+  { href: "/invoices", labelKey: "invoices", icon: Receipt, permission: "performa.read" },
+  { href: "/inventory", labelKey: "inventory", icon: Package, permission: "inventory.read", disabled: false },
+  { href: "/tools", labelKey: "tools", icon: Wrench, permission: "tools.read", disabled: false },
   { href: "/users", labelKey: "users", icon: Users, permission: "users.read", disabled: false },
   { href: "/roles", labelKey: "roles", icon: ShieldCheck, permission: "users.read", disabled: false },
-  { href: "/settings", labelKey: "settings", icon: Settings, permission: "settings.read", disabled: true },
+  { href: "/settings", labelKey: "settings", icon: Settings, permission: "settings.read", disabled: false },
+  { href: "/audit-logs", labelKey: "auditLogs", icon: History, permission: "settings.read", disabled: false },
 ];
 
 export function MobileNav({ open, onClose }: { open: boolean; onClose: () => void }) {
   const t = useTranslations("nav");
+  const tc = useTranslations("common");
   const pathname = usePathname();
   const { user } = useAppSelector((s) => s.auth);
   const dispatch = useAppDispatch();
@@ -59,7 +63,7 @@ export function MobileNav({ open, onClose }: { open: boolean; onClose: () => voi
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 md:hidden">
+    <div className="fixed inset-0 z-50 lg:hidden">
       <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <aside className="fixed left-0 top-0 flex h-full w-64 flex-col bg-gradient-to-b from-[#0f172a] to-[#1e293b] text-white shadow-xl">
         <div className="flex h-14 items-center justify-between border-b border-white/10 px-4">
@@ -95,7 +99,7 @@ export function MobileNav({ open, onClose }: { open: boolean; onClose: () => voi
                 )}
                 <Icon size={18} className="shrink-0" />
                 <span>{t(item.labelKey)}</span>
-                {item.disabled && <span className="ml-auto text-[10px] text-white/30">Soon</span>}
+                {item.disabled && <span className="ml-auto text-[10px] text-white/30">{tc("comingSoon")}</span>}
               </button>
             );
 
@@ -128,7 +132,7 @@ export function MobileNav({ open, onClose }: { open: boolean; onClose: () => voi
             className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-white/40 transition-colors hover:bg-white/5 hover:text-white/70"
           >
             <LogOut size={16} />
-            Logout
+            {tc("logout")}
           </button>
         </div>
       </aside>

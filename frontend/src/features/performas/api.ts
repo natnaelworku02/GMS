@@ -1,10 +1,14 @@
 import { api } from "@/lib/api";
+import type { PaginatedResponse } from "@/types/api";
 import type { Performa, PerformaCreateDTO } from "./types";
 
 export const performasApi = api.injectEndpoints({
   endpoints: (build) => ({
-    getPerformas: build.query<Performa[], { job_card_id?: string } | void>({
-      query: (params) => ({ url: "/performas", params: params || undefined }),
+    getPerformas: build.query<PaginatedResponse<Performa>, {
+      page?: number; page_size?: number; search?: string;
+      job_card_id?: string; status?: string;
+    } | void>({
+      query: (params) => ({ url: "/performas/", params: params || undefined }),
       providesTags: ["Performas"],
     }),
     getPerforma: build.query<Performa, string>({
@@ -12,7 +16,7 @@ export const performasApi = api.injectEndpoints({
       providesTags: (_r, _e, id) => [{ type: "Performas", id }],
     }),
     createPerforma: build.mutation<Performa, PerformaCreateDTO>({
-      query: (body) => ({ url: "/performas", method: "POST", body }),
+      query: (body) => ({ url: "/performas/", method: "POST", body }),
       invalidatesTags: ["Performas"],
     }),
     sendPerforma: build.mutation<Performa, { id: string; client_email: string }>({

@@ -24,6 +24,7 @@ import {
   UserCircle,
   Truck,
   Briefcase,
+  History,
 } from "lucide-react";
 
 const navItems = [
@@ -33,15 +34,19 @@ const navItems = [
   { href: "/vehicles", labelKey: "vehicles", icon: Truck, permission: "job_cards.read", disabled: false },
   { href: "/employees", labelKey: "employees", icon: Briefcase, permission: "hr.read", disabled: false },
   { href: "/performas", labelKey: "performas", icon: Receipt, permission: "performa.read" },
-  { href: "/inventory", labelKey: "inventory", icon: Package, permission: "inventory.read", disabled: true },
-  { href: "/tools", labelKey: "tools", icon: Wrench, permission: "tools.read", disabled: true },
+  { href: "/invoices", labelKey: "invoices", icon: Receipt, permission: "performa.read" },
+  { href: "/inventory", labelKey: "inventory", icon: Package, permission: "inventory.read", disabled: false },
+  { href: "/tools", labelKey: "tools", icon: Wrench, permission: "tools.read", disabled: false },
   { href: "/users", labelKey: "users", icon: Users, permission: "users.read", disabled: false },
   { href: "/roles", labelKey: "roles", icon: ShieldCheck, permission: "users.read", disabled: false },
-  { href: "/settings", labelKey: "settings", icon: Settings, permission: "settings.read", disabled: true },
+  { href: "/profile", labelKey: "profile", icon: UserCircle, permission: null },
+  { href: "/settings", labelKey: "settings", icon: Settings, permission: "settings.read", disabled: false },
+  { href: "/audit-logs", labelKey: "auditLogs", icon: History, permission: "settings.read", disabled: false },
 ];
 
 export function Sidebar() {
   const t = useTranslations("nav");
+  const tc = useTranslations("common");
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const { user } = useAppSelector((s) => s.auth);
@@ -91,7 +96,7 @@ export function Sidebar() {
                   ? "bg-indigo-500/15 text-indigo-300 font-medium"
                   : "text-white/60 hover:bg-white/5 hover:text-white/90"
               } ${item.disabled ? "pointer-events-none opacity-30" : ""}`}
-              title={item.disabled ? "Coming soon" : undefined}
+              title={item.disabled ? tc("comingSoon") : undefined}
             >
               {isActive && (
                 <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-indigo-400" />
@@ -121,24 +126,25 @@ export function Sidebar() {
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-white/90">{user.full_name}</p>
-              <p className="truncate text-xs text-white/40">{user.role_name || "User"}</p>
             </div>
           </div>
         )}
 
-        <div className="flex gap-1">
-          {collapsed && user && (
+        <div className="flex flex-col gap-1">
+          {!collapsed && (
             <button
               onClick={handleLogout}
               className="flex flex-1 items-center justify-center rounded-lg px-2 py-2 text-white/40 transition-colors hover:bg-white/5 hover:text-white/70"
-              title="Logout"
+              title={tc("logout")}
             >
               <LogOut size={16} />
             </button>
           )}
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="flex flex-1 items-center justify-center rounded-lg px-2 py-2 text-white/40 transition-colors hover:bg-white/5 hover:text-white/70"
+            className={`flex items-center justify-center rounded-lg px-2 py-2 text-white/40 transition-colors hover:bg-white/5 hover:text-white/70 ${
+              collapsed ? "w-full" : "flex-1"
+            }`}
           >
             {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
           </button>

@@ -12,12 +12,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function EditJobCardPage({ params }: { params: Promise<{ id: string }> }) {
   const [id, setId] = useState("");
   useEffect(() => { params.then((p) => setId(p.id)); }, [params]);
 
   const t = useTranslations("jobCards");
+  const tc = useTranslations("common");
   const router = useRouter();
   const { data: jobCard, isLoading: loading } = useGetJobCardQuery(id, { skip: !id });
   const [update, { isLoading: updating }] = useUpdateJobCardMutation();
@@ -60,19 +62,33 @@ export default function EditJobCardPage({ params }: { params: Promise<{ id: stri
           requested_materials: data.requested_materials || null,
         },
       }).unwrap();
+      toast.success(t("edit"));
       router.push(`/job-cards/${id}`);
     } catch {
-      setError("root", { message: "Failed to update job card" });
+      toast.error(tc("error"));
     }
   };
 
-  if (loading) return <div className="p-8 text-center text-muted-foreground">Loading...</div>;
+  if (loading) return (
+    <div className="flex items-center justify-center py-20">
+      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+    </div>
+  );
+  if (!jobCard) return (
+    <div className="flex flex-col items-center justify-center gap-3 py-20">
+      <p className="text-sm text-muted-foreground">{t("notFound")}</p>
+      <Button variant="ghost" onClick={() => router.back()}>
+        <ArrowLeft size={15} />
+        {tc("back")}
+      </Button>
+    </div>
+  );
 
   return (
     <div className="mx-auto max-w-2xl pb-24">
       <Button variant="ghost" onClick={() => router.push(`/job-cards/${id}`)} className="mb-6">
         <ArrowLeft size={15} />
-        Back to Job Card
+        {tc("back")}
       </Button>
       <h1 className="mb-6 text-2xl font-semibold tracking-tight">{t("edit")}</h1>
 
@@ -118,21 +134,19 @@ export default function EditJobCardPage({ params }: { params: Promise<{ id: stri
           </div>
         </div>
 
-        {errors.root && <p className="text-sm text-destructive">{errors.root.message}</p>}
-
         <div className="hidden md:block">
           <Button type="submit" disabled={updating}>
             {updating && <Loader2 className="h-4 w-4 animate-spin" />}
-            {updating ? "Saving..." : t("save")}
+            {tc("save")}
           </Button>
         </div>
 
         <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:hidden">
           <div className="flex items-center justify-between px-4 py-3">
-            <span className="text-sm text-muted-foreground">Edit job card</span>
+            <span className="text-sm text-muted-foreground">{t("edit")}</span>
             <Button type="submit" disabled={updating} className="min-w-32">
               {updating && <Loader2 className="h-4 w-4 animate-spin" />}
-              {updating ? "Saving..." : t("save")}
+              {tc("save")}
             </Button>
           </div>
         </div>

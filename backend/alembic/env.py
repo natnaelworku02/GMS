@@ -16,6 +16,7 @@ import app.inventory.models  # noqa: F401
 import app.tools.models  # noqa: F401
 import app.notifications.models  # noqa: F401
 import app.audit.models  # noqa: F401
+import app.invoice.models  # noqa: F401
 
 config = context.config
 if config.config_file_name is not None:

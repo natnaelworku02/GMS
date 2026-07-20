@@ -1,10 +1,11 @@
 from contextlib import asynccontextmanager
 from typing import Any
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from redis.exceptions import RedisError
 from sqlalchemy import text
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
@@ -31,6 +32,14 @@ app.add_middleware(
 )
 
 
+@app.exception_handler(IntegrityError)
+async def integrity_error_handler(_request: Request, exc: IntegrityError) -> JSONResponse:
+    return JSONResponse(
+        status_code=409,
+        content={"detail": "Resource already exists or violates a uniqueness constraint."},
+    )
+
+
 # --- Mount all routers ---
 from app.auth.routes import (
     router as auth_router,
@@ -52,6 +61,7 @@ from app.inventory.routes import (
 from app.performa.routes import router as performa_router  # noqa: E402
 from app.tools.routes import router as tools_router  # noqa: E402
 from app.notifications.routes import router as notifications_router  # noqa: E402
+from app.invoice.routes import router as invoice_router  # noqa: E402
 from app.dashboard import router as dashboard_router  # noqa: E402
 
 app.include_router(auth_router, prefix="/api/v1")
@@ -66,6 +76,7 @@ app.include_router(locations_router, prefix="/api/v1")
 app.include_router(items_router, prefix="/api/v1")
 app.include_router(stock_router, prefix="/api/v1")
 app.include_router(performa_router, prefix="/api/v1")
+app.include_router(invoice_router, prefix="/api/v1")
 app.include_router(tools_router, prefix="/api/v1")
 app.include_router(notifications_router, prefix="/api/v1")
 app.include_router(dashboard_router)

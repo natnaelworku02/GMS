@@ -17,29 +17,34 @@ import { MechanicAssign } from "@/features/jobCards/components/MechanicAssign";
 import { jobCardCreateSchema, type JobCardCreateFormData } from "@/lib/formSchemas";
 import { PART_SECTIONS } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Combobox } from "@/components/ui/combobox";
 import { cn } from "@/lib/utils";
 import { ArrowLeft, Loader2, Check, ChevronLeft, ChevronRight, Plus, User, Truck, Wrench, ClipboardCheck } from "lucide-react";
+import { toast } from "sonner";
 import type { VehicleConditionInput } from "@/features/jobCards/types";
 
 const CONDITION_STEP_START = 2;
 
-const OUTER_STEPS = [
-  { label: "Owner", icon: User },
-  { label: "Vehicle", icon: Truck },
-  ...PART_SECTIONS.map((s) => ({ label: s.sectionLabel, icon: Wrench })),
-  { label: "Staff", icon: User },
-  { label: "Review", icon: ClipboardCheck },
-];
-
 export default function NewJobCardPage() {
   const t = useTranslations("jobCards");
+  const tc = useTranslations("common");
+
+  const OUTER_STEPS = [
+    { label: t("owner"), icon: User },
+    { label: t("vehicle"), icon: Truck },
+    ...PART_SECTIONS.map((s) => ({ label: s.sectionLabel, icon: Wrench })),
+    { label: t("staffSummary"), icon: User },
+    { label: t("review"), icon: ClipboardCheck },
+  ];
   const router = useRouter();
   const [create, { isLoading }] = useCreateJobCardMutation();
-  const { data: owners = [] } = useGetOwnersQuery();
-  const { data: vehicles = [] } = useGetVehiclesQuery();
+  const { data: ownersResp } = useGetOwnersQuery({ page: 1, page_size: 100 });
+  const owners = ownersResp?.items ?? [];
+  const { data: vehiclesResp } = useGetVehiclesQuery({ page: 1, page_size: 100 });
+  const vehicles = vehiclesResp?.items ?? [];
   const [createOwner, { isLoading: creatingOwner }] = useCreateOwnerMutation();
   const [createVehicle, { isLoading: creatingVehicle }] = useCreateVehicleMutation();
 
@@ -52,10 +57,12 @@ export default function NewJobCardPage() {
     setValue,
     watch,
     setError,
+    trigger,
     formState: { errors },
   } = useForm<JobCardCreateFormData>({
     resolver: zodResolver(jobCardCreateSchema),
     defaultValues: {
+      mileage_km: 0,
       private_paint: false,
       private_mechanic: false,
       insurance_provider: "",
@@ -111,7 +118,7 @@ export default function NewJobCardPage() {
       setNewOwnerName("");
       setNewOwnerPhone("");
     } catch {
-      setError("root", { message: "Failed to create owner" });
+      toast.error(t("createOwnerError"));
     }
   }, [newOwnerName, newOwnerPhone, createOwner, setValue, setError]);
 
@@ -134,7 +141,7 @@ export default function NewJobCardPage() {
       setNewVehicleEngine("");
       setNewVehicleChassis("");
     } catch {
-      setError("root", { message: "Failed to create vehicle" });
+      toast.error(t("createVehicleError"));
     }
   }, [newVehicleModel, newVehicleType, newVehiclePlate, newVehicleEngine, newVehicleChassis, ownerId, createVehicle, setValue, setError]);
 
@@ -143,7 +150,7 @@ export default function NewJobCardPage() {
       await create({
         vehicle_id: data.vehicle_id,
         owner_id: data.owner_id,
-        mileage_km: data.mileage_km,
+        mileage_km: data.mileage_km ?? 0,
         private_paint: data.private_paint,
         private_mechanic: data.private_mechanic,
         insurance_provider: data.insurance_provider || null,
@@ -155,17 +162,20 @@ export default function NewJobCardPage() {
       }).unwrap();
       router.push("/job-cards");
     } catch {
-      setError("root", { message: "Failed to create job card" });
+      toast.error(t("createJobCardError"));
     }
   };
 
-  const canGoNext = () => {
-    if (step === 0) return !!ownerId;
-    if (step === 1) return !!vehicleId;
-    return true;
-  };
+  const canGoNext = () => true;
 
-  const handleNext = () => {
+  const handleNext = async () => {
+    let valid = true;
+    if (step === 0) {
+      valid = await trigger("owner_id");
+    } else if (step === 1) {
+      valid = await trigger(["vehicle_id", "mileage_km", "description"]);
+    }
+    if (!valid) return;
     if (step >= CONDITION_STEP_START && step < CONDITION_STEP_START + PART_SECTIONS.length - 1) {
       setCwStep(cwStep + 1);
     }
@@ -188,7 +198,7 @@ export default function NewJobCardPage() {
     <div className="mx-auto max-w-3xl pb-24">
       <Button variant="ghost" onClick={() => router.push("/job-cards")} className="mb-4">
         <ArrowLeft size={15} />
-        Back to Job Cards
+        {t("backToList")}
       </Button>
 
       {/* Unified Step Indicator */}
@@ -248,8 +258,8 @@ export default function NewJobCardPage() {
         {/* Step 1: Owner */}
         {step === 0 && (
           <div className="rounded-xl border bg-card p-6 shadow-sm space-y-5">
-            <h2 className="text-sm font-semibold">Step 1 — Owner</h2>
-            <p className="text-xs text-muted-foreground">Select an existing owner or create a new one.</p>
+            <h2 className="text-sm font-semibold">{t("step1Heading")}</h2>
+            <p className="text-xs text-muted-foreground">{t("selectOwnerDesc")}</p>
 
             <div className="space-y-2">
               <Label>{t("owner")}</Label>
@@ -260,9 +270,9 @@ export default function NewJobCardPage() {
                   setValue("owner_id", val, { shouldValidate: true });
                   setValue("vehicle_id", "", { shouldValidate: true });
                 }}
-                placeholder="Select owner..."
-                searchPlaceholder="Search owners..."
-                emptyText="No owners found."
+                placeholder={t("selectOwner")}
+                searchPlaceholder={t("searchOwner")}
+                emptyText={t("noOwnersFound")}
               />
               {errors.owner_id && <p className="text-sm text-destructive">{errors.owner_id.message}</p>}
             </div>
@@ -270,32 +280,30 @@ export default function NewJobCardPage() {
             {/* Inline New Owner Form */}
             {showNewOwner ? (
               <div className="rounded-lg border border-indigo-200 bg-indigo-50/50 p-4 space-y-3">
-                <h3 className="text-xs font-semibold text-indigo-600">New Owner</h3>
+                <h3 className="text-xs font-semibold text-indigo-600">{t("newOwner")}</h3>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Name</Label>
-                    <input value={newOwnerName} onChange={(e) => setNewOwnerName(e.target.value)}
-                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm" />
+                    <Label className="text-xs">{t("name")}</Label>
+                    <Input value={newOwnerName} onChange={(e) => setNewOwnerName(e.target.value)} />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Phone</Label>
-                    <input value={newOwnerPhone} onChange={(e) => setNewOwnerPhone(e.target.value)}
-                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm" />
+                    <Label className="text-xs">{t("phone")}</Label>
+                    <Input value={newOwnerPhone} onChange={(e) => setNewOwnerPhone(e.target.value)} />
                   </div>
                 </div>
                 <div className="flex gap-2 pt-1">
-                  <Button type="button" variant="outline" size="sm" onClick={() => setShowNewOwner(false)}>Cancel</Button>
+                  <Button type="button" variant="outline" size="sm" onClick={() => setShowNewOwner(false)}>{tc("cancel")}</Button>
                   <Button type="button" size="sm" onClick={handleCreateOwner}
                     disabled={creatingOwner || !newOwnerName.trim() || !newOwnerPhone.trim()}>
                     {creatingOwner && <Loader2 className="h-3 w-3 animate-spin" />}
-                    Create Owner
+                    {t("createOwner")}
                   </Button>
                 </div>
               </div>
             ) : (
               <Button type="button" variant="outline" size="sm" onClick={() => setShowNewOwner(true)}>
                 <Plus size={14} />
-                New Owner
+                {t("newOwner")}
               </Button>
             )}
           </div>
@@ -304,8 +312,8 @@ export default function NewJobCardPage() {
         {/* Step 2: Vehicle */}
         {step === 1 && (
           <div className="rounded-xl border bg-card p-6 shadow-sm space-y-5">
-            <h2 className="text-sm font-semibold">Step 2 — Vehicle & Details</h2>
-            <p className="text-xs text-muted-foreground">Select a vehicle for {owners.find((o) => o.id === ownerId)?.name || "this owner"}.</p>
+            <h2 className="text-sm font-semibold">{t("step2Heading")}</h2>
+            <p className="text-xs text-muted-foreground">{t("selectVehicleDesc", { name: owners.find((o) => o.id === ownerId)?.name || "" })}</p>
 
             <div className="space-y-2">
               <Label>{t("vehicle")}</Label>
@@ -313,9 +321,9 @@ export default function NewJobCardPage() {
                 options={vehicleOptions}
                 value={vehicleId}
                 onSelect={(val) => setValue("vehicle_id", val, { shouldValidate: true })}
-                placeholder={ownerId ? "Select vehicle..." : "Select owner first"}
-                searchPlaceholder="Search vehicles..."
-                emptyText="No vehicles for this owner."
+                placeholder={ownerId ? t("selectVehicle") : t("selectOwnerFirst")}
+                searchPlaceholder={t("searchVehicle")}
+                emptyText={t("noVehiclesForOwner")}
                 disabled={!ownerId}
               />
               {errors.vehicle_id && <p className="text-sm text-destructive">{errors.vehicle_id.message}</p>}
@@ -324,40 +332,35 @@ export default function NewJobCardPage() {
             {/* Inline New Vehicle Form */}
             {showNewVehicle ? (
               <div className="rounded-lg border border-indigo-200 bg-indigo-50/50 p-4 space-y-3">
-                <h3 className="text-xs font-semibold text-indigo-600">New Vehicle</h3>
+                <h3 className="text-xs font-semibold text-indigo-600">{t("newVehicle")}</h3>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Model</Label>
-                    <input value={newVehicleModel} onChange={(e) => setNewVehicleModel(e.target.value)}
-                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm" />
+                    <Label className="text-xs">{t("model")}</Label>
+                    <Input value={newVehicleModel} onChange={(e) => setNewVehicleModel(e.target.value)} />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Type</Label>
-                    <input value={newVehicleType} onChange={(e) => setNewVehicleType(e.target.value)}
-                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm" />
+                    <Label className="text-xs">{t("type")}</Label>
+                    <Input value={newVehicleType} onChange={(e) => setNewVehicleType(e.target.value)} />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Plate #</Label>
-                    <input value={newVehiclePlate} onChange={(e) => setNewVehiclePlate(e.target.value)}
-                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 font-mono text-sm" />
+                    <Label className="text-xs">{t("labelPlateNumber")}</Label>
+                    <Input value={newVehiclePlate} onChange={(e) => setNewVehiclePlate(e.target.value)} className="font-mono" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Engine #</Label>
-                    <input value={newVehicleEngine} onChange={(e) => setNewVehicleEngine(e.target.value)}
-                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 font-mono text-sm" />
+                    <Label className="text-xs">{t("labelEngineNumber")}</Label>
+                    <Input value={newVehicleEngine} onChange={(e) => setNewVehicleEngine(e.target.value)} className="font-mono" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Chassis #</Label>
-                    <input value={newVehicleChassis} onChange={(e) => setNewVehicleChassis(e.target.value)}
-                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 font-mono text-sm" />
+                    <Label className="text-xs">{t("labelChassisNumber")}</Label>
+                    <Input value={newVehicleChassis} onChange={(e) => setNewVehicleChassis(e.target.value)} className="font-mono" />
                   </div>
                 </div>
                 <div className="flex gap-2 pt-1">
-                  <Button type="button" variant="outline" size="sm" onClick={() => setShowNewVehicle(false)}>Cancel</Button>
+                  <Button type="button" variant="outline" size="sm" onClick={() => setShowNewVehicle(false)}>{tc("cancel")}</Button>
                   <Button type="button" size="sm" onClick={handleCreateVehicle}
                     disabled={creatingVehicle || !newVehicleModel.trim() || !newVehiclePlate.trim()}>
                     {creatingVehicle && <Loader2 className="h-3 w-3 animate-spin" />}
-                    Create Vehicle
+                    {t("createVehicle")}
                   </Button>
                 </div>
               </div>
@@ -365,7 +368,7 @@ export default function NewJobCardPage() {
               ownerId && (
                 <Button type="button" variant="outline" size="sm" onClick={() => setShowNewVehicle(true)}>
                   <Plus size={14} />
-                  New Vehicle
+                  {t("newVehicle")}
                 </Button>
               )
             )}
@@ -375,15 +378,13 @@ export default function NewJobCardPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label htmlFor="mileage">{t("mileage")}</Label>
-                <input id="mileage" type="number" {...register("mileage_km", { valueAsNumber: true })}
-                  className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+                <Input id="mileage" type="number" {...register("mileage_km", { valueAsNumber: true })} />
                 {errors.mileage_km && <p className="text-sm text-destructive">{errors.mileage_km.message}</p>}
               </div>
 
               <div className="space-y-1.5">
                 <Label htmlFor="ins">{t("insuranceProvider")}</Label>
-                <input id="ins" {...register("insurance_provider")}
-                  className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+                <Input id="ins" {...register("insurance_provider")} />
               </div>
             </div>
 
@@ -435,8 +436,8 @@ export default function NewJobCardPage() {
         {/* Step 10: Staff Assignments */}
         {step === CONDITION_STEP_START + PART_SECTIONS.length && (
           <div className="rounded-xl border bg-card p-6 shadow-sm space-y-4">
-            <h2 className="text-sm font-semibold">Step {CONDITION_STEP_START + PART_SECTIONS.length + 1} — Staff Assignments</h2>
-            <p className="text-xs text-muted-foreground">Assign mechanics and their roles to this job card.</p>
+            <h2 className="text-sm font-semibold">{t("stepStaffHeading", { step: CONDITION_STEP_START + PART_SECTIONS.length + 1 })}</h2>
+            <p className="text-xs text-muted-foreground">{t("staffAssignDesc")}</p>
             <MechanicAssign
               value={mechanicIds || []}
               onChange={(val: string[]) => setValue("mechanic_ids", val, { shouldValidate: true })}
@@ -447,15 +448,26 @@ export default function NewJobCardPage() {
         {/* Step 11: Review & Submit */}
         {isLastStep && (
           <div className="rounded-xl border bg-card p-6 shadow-sm space-y-5">
-            <h2 className="text-sm font-semibold">Step {totalSteps} — Review & Submit</h2>
-            <p className="text-xs text-muted-foreground">Review all information before creating the job card.</p>
+            <h2 className="text-sm font-semibold">{t("stepReviewHeading", { step: totalSteps })}</h2>
+            <p className="text-xs text-muted-foreground">{t("reviewDesc")}</p>
+
+            {Object.keys(errors).length > 0 && (
+              <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 space-y-1">
+                <p className="text-xs font-medium text-destructive">Please fix the following errors:</p>
+                <ul className="list-disc list-inside text-xs text-destructive/80 space-y-0.5">
+                  {Object.entries(errors).map(([key, err]) => (
+                    <li key={key}>{(err as { message?: string })?.message || key}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {/* Owner Summary */}
             {ownerId && (() => {
               const owner = owners.find((o) => o.id === ownerId);
               return owner ? (
                 <div className="rounded-lg border bg-muted/30 p-3 space-y-1">
-                  <p className="text-xs font-medium text-muted-foreground">Owner</p>
+                  <p className="text-xs font-medium text-muted-foreground">{t("ownerSummary")}</p>
                   <p className="text-sm font-medium">{owner.name}</p>
                   <p className="text-xs text-muted-foreground">{owner.phone}</p>
                 </div>
@@ -467,7 +479,7 @@ export default function NewJobCardPage() {
               const vehicle = vehicles.find((v) => v.id === vehicleId);
               return vehicle ? (
                 <div className="rounded-lg border bg-muted/30 p-3 space-y-1">
-                  <p className="text-xs font-medium text-muted-foreground">Vehicle</p>
+                  <p className="text-xs font-medium text-muted-foreground">{t("vehicleSummary")}</p>
                   <p className="text-sm font-medium">{vehicle.model}</p>
                   <p className="text-xs text-muted-foreground">{vehicle.plate_number} · {vehicle.type}</p>
                 </div>
@@ -477,27 +489,26 @@ export default function NewJobCardPage() {
             {/* Damage Summary */}
             {totalDamaged > 0 ? (
               <div className="rounded-lg border bg-muted/30 p-3 space-y-1">
-                <p className="text-xs font-medium text-muted-foreground">Vehicle Condition</p>
-                <p className="text-sm">{totalDamaged} part(s) with issues</p>
+                <p className="text-xs font-medium text-muted-foreground">{t("damageSummary")}</p>
+                <p className="text-sm">{t("partsWithIssues", { count: totalDamaged })}</p>
               </div>
             ) : (
               <div className="rounded-lg border bg-muted/30 p-3 space-y-1">
-                <p className="text-xs font-medium text-muted-foreground">Vehicle Condition</p>
-                <p className="text-sm text-emerald-600">All parts available</p>
+                <p className="text-xs font-medium text-muted-foreground">{t("damageSummary")}</p>
+                <p className="text-sm text-emerald-600">{t("allPartsAvailable")}</p>
               </div>
             )}
 
             {/* Staff Summary */}
             <div className="rounded-lg border bg-muted/30 p-3 space-y-1">
-              <p className="text-xs font-medium text-muted-foreground">Staff</p>
+              <p className="text-xs font-medium text-muted-foreground">{t("staffSummary")}</p>
               {mechanicIds && mechanicIds.length > 0 ? (
-                <p className="text-sm">{mechanicIds.length} staff assigned</p>
+                <p className="text-sm">{t("staffCount", { count: mechanicIds.length })}</p>
               ) : (
-                <p className="text-sm text-muted-foreground">No staff assigned</p>
+                <p className="text-sm text-muted-foreground">{t("noStaffAssigned")}</p>
               )}
             </div>
 
-            {errors.root && <p className="text-sm text-destructive">{errors.root.message}</p>}
           </div>
         )}
 
@@ -507,20 +518,20 @@ export default function NewJobCardPage() {
             {step > 0 && (
               <Button type="button" variant="outline" onClick={handlePrev}>
                 <ChevronLeft size={15} />
-                Previous
+                {t("previous")}
               </Button>
             )}
           </div>
           <div>
             {!isLastStep ? (
               <Button type="button" onClick={handleNext} disabled={!canGoNext()}>
-                Next
+                {t("next")}
                 <ChevronRight size={15} />
               </Button>
             ) : (
               <Button type="submit" disabled={isLoading}>
                 {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-                {isLoading ? "Creating..." : t("create")}
+                {isLoading ? t("creating") : t("create")}
               </Button>
             )}
           </div>
@@ -531,10 +542,10 @@ export default function NewJobCardPage() {
       {isLastStep && (
         <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:hidden">
           <div className="flex items-center justify-between px-4 py-3">
-            <span className="text-sm text-muted-foreground">Review job card</span>
+            <span className="text-sm text-muted-foreground">{t("reviewJobCard")}</span>
             <Button type="submit" form="job-card-form" disabled={isLoading} className="min-w-32">
               {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-              {isLoading ? "Creating..." : t("create")}
+              {isLoading ? t("creating") : t("create")}
             </Button>
           </div>
         </div>

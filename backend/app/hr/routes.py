@@ -1,10 +1,11 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.models import User
 from app.core.audit import create_audit_log
+from app.core.pagination import PaginatedResponse
 from app.core.rbac import RequirePermission
 from app.db import get_db
 from app.hr import schemas, service
@@ -24,13 +25,16 @@ async def create_employee(
     return emp
 
 
-@router.get("/", response_model=list[schemas.EmployeeResponse])
+@router.get("/", response_model=PaginatedResponse[schemas.EmployeeResponse])
 async def list_employees(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
+    search: str | None = Query(default=None),
     active_only: bool = False,
     _user=Depends(RequirePermission("hr", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    return await service.list_employees(db, active_only)
+    return await service.list_employees(db, page, page_size, search, active_only)
 
 
 @router.get("/{employee_id}", response_model=schemas.EmployeeResponse)
@@ -43,6 +47,17 @@ async def get_employee(
     if not emp:
         raise HTTPException(status_code=404, detail="Employee not found")
     return emp
+
+
+@router.delete("/{employee_id}", status_code=204)
+async def delete_employee(
+    employee_id: uuid.UUID,
+    current_user: User = Depends(RequirePermission("hr", "delete")),
+    db: AsyncSession = Depends(get_db),
+):
+    await service.delete_employee(db, employee_id)
+    await create_audit_log(db, current_user.id, "employee.delete", "employee", employee_id)
+    await db.commit()
 
 
 @router.patch("/{employee_id}", response_model=schemas.EmployeeResponse)
