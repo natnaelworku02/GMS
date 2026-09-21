@@ -18,13 +18,22 @@ class Settings(BaseSettings):
     admin_phone: str = "+251900000000"
     admin_password: str = "admin123"
 
+    # Optional operational seed users. Roles are always created; a user is
+    # created only when its password is supplied through the environment.
+    seed_inventory_phone: str = "+251900000101"
+    seed_inventory_password: str | None = None
+    seed_tools_phone: str = "+251900000102"
+    seed_tools_password: str | None = None
+    seed_job_cards_phone: str = "+251900000103"
+    seed_job_cards_password: str | None = None
+
     # SMTP
     smtp_host: str = ""
     smtp_port: int = 587
     smtp_user: str = ""
     smtp_password: str = ""
     smtp_from_email: str = ""
-    CORS_ORIGINS: list[str] = ["*"]
+    cors_origins: str = "http://localhost:3000,https://gms-six-lyart.vercel.app"
 
     backup_dir: str = "/backups"
     backup_retention_days: int = 30
@@ -35,6 +44,10 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
     )
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        return [origin.strip().rstrip("/") for origin in self.cors_origins.split(",") if origin.strip()]
 
 
 @lru_cache
