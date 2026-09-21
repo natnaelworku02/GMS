@@ -23,6 +23,7 @@ import {
 import { Plus, ClipboardList, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { toolSchema, type ToolFormData } from "@/lib/formSchemas";
+import { getApiErrorMessage } from "@/lib/utils";
 import type { Tool } from "@/features/tools/types";
 
 export default function ToolsPage() {
@@ -48,7 +49,7 @@ export default function ToolsPage() {
       toast.success("Tool deleted");
       setDeleteTarget(null);
     } catch (error) {
-      const msg = (error as any)?.data?.detail || "Failed to delete tool";
+      const msg = getApiErrorMessage(error, "Failed to delete tool");
       toast.error(msg);
     }
   };

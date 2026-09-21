@@ -17,7 +17,9 @@ export interface LineItemInput {
 
 export interface Performa {
   id: string;
-  job_card_id: string;
+  vehicle_id: string;
+  job_card_id: string | null;
+  series_id: string;
   version: number;
   subtotal: number;
   vat_rate: number;
@@ -31,7 +33,8 @@ export interface Performa {
 }
 
 export interface PerformaCreateDTO {
-  job_card_id: string;
+  vehicle_id?: string;
+  job_card_id?: string;
   client_email?: string;
   line_items: LineItemInput[];
 }

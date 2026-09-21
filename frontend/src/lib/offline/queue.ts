@@ -13,17 +13,28 @@ export interface QueuedMutation {
 }
 
 const DB_NAME = "gms-offline";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = "mutations";
+const QUERY_CACHE_STORE = "queryCache";
 
 let dbPromise: Promise<IDBPDatabase> | null = null;
 
 function getDb(): Promise<IDBPDatabase> {
   if (!dbPromise) {
     dbPromise = openDB(DB_NAME, DB_VERSION, {
-      upgrade(db) {
+      upgrade(db, _oldVersion, _newVersion, transaction) {
         if (!db.objectStoreNames.contains(STORE_NAME)) {
-          db.createObjectStore(STORE_NAME, { keyPath: "id" });
+          const store = db.createObjectStore(STORE_NAME, { keyPath: "id" });
+          store.createIndex("status", "status");
+        } else {
+          const store = transaction.objectStore(STORE_NAME);
+          if (!store.indexNames.contains("status")) {
+            store.createIndex("status", "status");
+          }
+        }
+
+        if (!db.objectStoreNames.contains(QUERY_CACHE_STORE)) {
+          db.createObjectStore(QUERY_CACHE_STORE, { keyPath: "key" });
         }
       },
     });

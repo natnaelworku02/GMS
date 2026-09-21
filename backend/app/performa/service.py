@@ -8,20 +8,44 @@ from sqlalchemy.orm import selectinload
 from app.auth.service import get_setting
 from app.core.pagination import paginate_query
 from app.performa.models import Performa, PerformaLineItem
+from app.job_cards.models import JobCard, Vehicle
 
-
-async def create_performa(db: AsyncSession, job_card_id: uuid.UUID, client_email: str | None, line_items: list[dict]) -> Performa:
+async def create_performa(
+    db: AsyncSession,
+    vehicle_id: uuid.UUID | None,
+    job_card_id: uuid.UUID | None,
+    client_email: str | None,
+    line_items: list[dict],
+    series_id: uuid.UUID | None = None,
+) -> Performa:
     vat_setting = await get_setting(db, "vat_rate")
     vat_rate = Decimal(vat_setting.value) if vat_setting else Decimal("15.0")
 
+    if job_card_id:
+        job_result = await db.execute(select(JobCard).where(JobCard.id == job_card_id))
+        job_card = job_result.scalar_one_or_none()
+        if not job_card:
+            raise ValueError("Job card not found")
+        if vehicle_id and vehicle_id != job_card.vehicle_id:
+            raise ValueError("Vehicle does not match the selected job card")
+        vehicle_id = job_card.vehicle_id
+    if not vehicle_id:
+        raise ValueError("A vehicle or job card is required")
+    vehicle_result = await db.execute(select(Vehicle.id).where(Vehicle.id == vehicle_id))
+    if not vehicle_result.scalar_one_or_none():
+        raise ValueError("Vehicle not found")
+
+    series_id = series_id or uuid.uuid4()
     result = await db.execute(
-        select(Performa).where(Performa.job_card_id == job_card_id).order_by(Performa.version.desc())
+        select(Performa).where(Performa.series_id == series_id).order_by(Performa.version.desc()).limit(1)
     )
     latest = result.scalar_one_or_none()
-    version = (latest.version + 1) if latest else 1
+    version = latest.version + 1 if latest else 1
 
     performa = Performa(
+        vehicle_id=vehicle_id,
         job_card_id=job_card_id,
+        series_id=series_id,
         version=version,
         client_email=client_email,
         vat_rate=vat_rate,
@@ -82,4 +106,18 @@ async def revise_performa(db: AsyncSession, performa_id: uuid.UUID, line_items: 
     original = await get_performa(db, performa_id)
     if not original:
         return None
-    return await create_performa(db, original.job_card_id, original.client_email, line_items)
+    return await create_performa(
+        db, original.vehicle_id, original.job_card_id, original.client_email, line_items, original.series_id
+    )
+
+
+async def link_job_card(db: AsyncSession, performa: Performa, job_card_id: uuid.UUID) -> Performa:
+    result = await db.execute(select(JobCard).where(JobCard.id == job_card_id))
+    job_card = result.scalar_one_or_none()
+    if not job_card:
+        raise ValueError("Job card not found")
+    if job_card.vehicle_id != performa.vehicle_id:
+        raise ValueError("Job card vehicle does not match proforma vehicle")
+    performa.job_card_id = job_card_id
+    await db.commit()
+    return await get_performa(db, performa.id)

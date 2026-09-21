@@ -14,6 +14,9 @@ import type {
   OwnerUpdateDTO,
   Vehicle,
   VehicleCreateDTO,
+  VehicleHistory,
+  JobCardHistory,
+  EmployeeHistory,
 } from "./types";
 
 export const jobCardsApi = api.injectEndpoints({
@@ -51,6 +54,10 @@ export const jobCardsApi = api.injectEndpoints({
       query: (id) => `/vehicles/${id}`,
       providesTags: (_r, _e, id) => [{ type: "Vehicles", id }],
     }),
+    getVehicleHistory: build.query<VehicleHistory, string>({
+      query: (id) => `/vehicles/${id}/history`,
+      providesTags: (_r, _e, id) => [{ type: "Vehicles", id }, "JobCards", "Performas"],
+    }),
     deleteVehicle: build.mutation<void, string>({
       query: (id) => ({ url: `/vehicles/${id}`, method: "DELETE" }),
       invalidatesTags: ["Vehicles"],
@@ -70,6 +77,10 @@ export const jobCardsApi = api.injectEndpoints({
     }),
     getJobCard: build.query<JobCard, string>({
       query: (id) => `/job-cards/${id}`,
+      providesTags: (_r, _e, id) => [{ type: "JobCards", id }],
+    }),
+    getJobCardHistory: build.query<JobCardHistory, string>({
+      query: (id) => `/job-cards/${id}/history`,
       providesTags: (_r, _e, id) => [{ type: "JobCards", id }],
     }),
     createJobCard: build.mutation<JobCard, JobCardCreateDTO>({
@@ -112,6 +123,10 @@ export const jobCardsApi = api.injectEndpoints({
       query: (id) => `/hr/employees/${id}`,
       providesTags: (_r, _e, id) => [{ type: "Employees", id }],
     }),
+    getEmployeeHistory: build.query<EmployeeHistory, string>({
+      query: (id) => `/hr/employees/${id}/history`,
+      providesTags: (_r, _e, id) => [{ type: "Employees", id }],
+    }),
     createEmployee: build.mutation<Employee, EmployeeCreateDTO>({
       query: (body) => ({ url: "/hr/employees/", method: "POST", body }),
       invalidatesTags: ["Employees"],
@@ -135,10 +150,12 @@ export const {
   useDeleteOwnerMutation,
   useGetVehiclesQuery,
   useGetVehicleQuery,
+  useGetVehicleHistoryQuery,
   useCreateVehicleMutation,
   useDeleteVehicleMutation,
   useGetJobCardsQuery,
   useGetJobCardQuery,
+  useGetJobCardHistoryQuery,
   useCreateJobCardMutation,
   useUpdateJobCardMutation,
   useDeleteJobCardMutation,
@@ -146,6 +163,7 @@ export const {
   useUseInventoryMutation,
   useGetEmployeesQuery,
   useGetEmployeeQuery,
+  useGetEmployeeHistoryQuery,
   useCreateEmployeeMutation,
   useUpdateEmployeeMutation,
   useDeleteEmployeeMutation,

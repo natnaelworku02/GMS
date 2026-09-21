@@ -22,6 +22,7 @@ import {
 import { Plus, MapPin, Pencil, Trash2, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { inventoryItemSchema, type InventoryItemFormData } from "@/lib/formSchemas";
+import { getApiErrorMessage } from "@/lib/utils";
 import type { InventoryItem } from "@/features/inventory/types";
 
 const VEHICLE_TYPE_OPTIONS = ["Pickup", "SUV", "Sedan", "Truck", "Bus", "Minibus", "Motorcycle"];
@@ -56,7 +57,7 @@ export default function InventoryPage() {
       toast.success("Item deleted");
       setDeleteTarget(null);
     } catch (error) {
-      const msg = (error as any)?.data?.detail || "Failed to delete item";
+      const msg = getApiErrorMessage(error, "Failed to delete item");
       toast.error(msg);
     }
   };
@@ -70,7 +71,7 @@ export default function InventoryPage() {
     formState: { errors },
   } = useForm<InventoryItemFormData>({
     resolver: zodResolver(inventoryItemSchema),
-    defaultValues: { applicable_vehicle_types: [], supplier_info: "", min_stock_threshold: undefined },
+    defaultValues: { applicable_vehicle_types: [], condition: "new", origin: "original", supplier_info: "", min_stock_threshold: undefined },
   });
 
   const vehicleTypes = watch("applicable_vehicle_types") ?? [];
@@ -89,6 +90,8 @@ export default function InventoryPage() {
     try {
       await create({
         part_name: data.part_name.trim(),
+        condition: data.condition,
+        origin: data.origin,
         applicable_vehicle_types: data.applicable_vehicle_types,
         unit_price: data.unit_price,
         supplier_info: data.supplier_info?.trim() || undefined,
@@ -135,6 +138,11 @@ export default function InventoryPage() {
       header: t("unitPrice"),
       render: (item) => <span className="text-muted-foreground">{fmt(item.unit_price)}</span>,
       sortable: true,
+    },
+    {
+      key: "classification",
+      header: "Classification",
+      render: (item) => <span className="text-sm text-muted-foreground">{item.condition === "new" ? "New" : "Used"} · {item.origin === "original" ? "Original" : "Locally Made"}</span>,
     },
     {
       key: "stock",
@@ -259,6 +267,20 @@ export default function InventoryPage() {
               <Label htmlFor="inv-name">{t("partName")}</Label>
               <Input id="inv-name" {...register("part_name")} />
               {errors.part_name && <p className="text-xs text-destructive">{errors.part_name.message}</p>}
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="inv-condition">Condition</Label>
+                <select id="inv-condition" {...register("condition")} className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm">
+                  <option value="new">New</option><option value="used">Used</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="inv-origin">Origin</Label>
+                <select id="inv-origin" {...register("origin")} className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm">
+                  <option value="original">Original</option><option value="locally_made">Locally Made</option>
+                </select>
+              </div>
             </div>
 
             <div className="space-y-2">

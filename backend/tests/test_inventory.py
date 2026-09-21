@@ -29,11 +29,15 @@ async def test_create_location_and_item_with_stock(client: AsyncClient, inv_setu
 
     item = await client.post("/api/v1/inventory/items", json={
         "part_name": "Headlight",
+        "condition": "used",
+        "origin": "locally_made",
         "applicable_vehicle_types": ["Land Cruiser", "Yaris"],
         "unit_price": "150.00",
         "min_stock_threshold": 5,
     }, headers=h)
     assert item.status_code == 201
+    assert item.json()["condition"] == "used"
+    assert item.json()["origin"] == "locally_made"
     item_id = item.json()["id"]
 
     stock = await client.put("/api/v1/inventory/stock", json={
@@ -44,3 +48,9 @@ async def test_create_location_and_item_with_stock(client: AsyncClient, inv_setu
 
     detail = await client.get(f"/api/v1/inventory/items/{item_id}", headers=h)
     assert len(detail.json()["stock_entries"]) == 1
+
+    movements = await client.get(f"/api/v1/inventory/stock/movements?item_id={item_id}", headers=h)
+    assert movements.status_code == 200
+    assert movements.json()[0]["movement_type"] == "stock_set"
+    assert movements.json()[0]["quantity_before"] == 0
+    assert movements.json()[0]["quantity_after"] == 20

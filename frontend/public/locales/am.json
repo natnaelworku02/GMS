@@ -54,6 +54,7 @@
     "jobCards": "የሥራ ካርዶች",
     "owners": "ባለቤቶች",
     "vehicles": "ተሽከርካሪዎች",
+    "history": "ታሪክ",
     "employees": "ሰራተኞች",
     "performas": "ፐርፎርማዎች",
     "invoices": "ኢንቮይሶች",
@@ -299,9 +300,11 @@
     "chassisNumber": "የቻሲስ ቁጥር",
     "currentMileage": "አሁን ያለው ማይልጅ (ኪሜ)",
     "owner": "ባለቤት",
+    "phone": "ስልክ",
     "noVehicles": "ምንም ተሽከርካሪዎች አልተገኙም",
     "selectOwner": "ባለቤት ይምረጡ...",
     "newOwner": "አዲስ ባለቤት",
+    "search": "ፈልግ",
     "searchPlaceholder": "ታርጋ፣ ሞዴል ወይም ባለቤት ይፈልጉ..."
   },
   "users": {

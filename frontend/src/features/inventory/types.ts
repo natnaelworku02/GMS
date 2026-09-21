@@ -7,6 +7,8 @@ export interface InventoryLocation {
 export interface InventoryItem {
   id: string;
   part_name: string;
+  condition: "new" | "used";
+  origin: "original" | "locally_made";
   applicable_vehicle_types: string[] | null;
   unit_price: number;
   supplier_info: string;
@@ -23,6 +25,8 @@ export interface StockEntry {
 
 export interface InventoryItemCreateDTO {
   part_name: string;
+  condition: "new" | "used";
+  origin: "original" | "locally_made";
   applicable_vehicle_types?: string[];
   unit_price: number;
   supplier_info?: string;
@@ -39,4 +43,17 @@ export interface StockDeltaDTO {
   item_id: string;
   store_location_id: string;
   delta: number;
+}
+
+export interface InventoryMovement {
+  id: string;
+  item_id: string;
+  store_location_id: string;
+  job_card_id: string | null;
+  user_id: string;
+  movement_type: string;
+  quantity_change: number;
+  quantity_before: number;
+  quantity_after: number;
+  created_at: string;
 }

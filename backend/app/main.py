@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -14,8 +15,13 @@ from app.db import close_connections, engine, redis_client
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    yield
-    await close_connections()
+    from app.backup.service import scheduled_backup_loop
+    backup_task = asyncio.create_task(scheduled_backup_loop())
+    try:
+        yield
+    finally:
+        backup_task.cancel()
+        await close_connections()
 
 
 settings = get_settings()
@@ -63,6 +69,8 @@ from app.tools.routes import router as tools_router  # noqa: E402
 from app.notifications.routes import router as notifications_router  # noqa: E402
 from app.invoice.routes import router as invoice_router  # noqa: E402
 from app.dashboard import router as dashboard_router  # noqa: E402
+from app.payments.routes import router as payments_router  # noqa: E402
+from app.backup.routes import router as backup_router  # noqa: E402
 
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(roles_router, prefix="/api/v1")
@@ -80,6 +88,8 @@ app.include_router(invoice_router, prefix="/api/v1")
 app.include_router(tools_router, prefix="/api/v1")
 app.include_router(notifications_router, prefix="/api/v1")
 app.include_router(dashboard_router)
+app.include_router(payments_router, prefix="/api/v1")
+app.include_router(backup_router, prefix="/api/v1")
 
 
 @app.get("/")

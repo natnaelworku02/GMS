@@ -15,7 +15,9 @@ class Performa(Base):
     __tablename__ = "performas"
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    job_card_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("job_cards.id"), nullable=False)
+    vehicle_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("vehicles.id"), nullable=False)
+    job_card_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, ForeignKey("job_cards.id"), nullable=True)
+    series_id: Mapped[uuid.UUID] = mapped_column(Uuid, default=uuid.uuid4, nullable=False, index=True)
     version: Mapped[int] = mapped_column(Integer, default=1)
     subtotal: Mapped[float] = mapped_column(Numeric(12, 2), default=0)
     vat_rate: Mapped[float] = mapped_column(Numeric(5, 2), default=15.0)

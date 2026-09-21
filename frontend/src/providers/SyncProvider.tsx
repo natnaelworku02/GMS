@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, createContext, useContext } from "react";
 import { getPendingMutations, updateMutation, removeMutation, getMutationCount } from "@/lib/offline/queue";
+import { storage } from "@/lib/storage";
 import { api } from "@/lib/api";
 
 interface SyncContextValue {
@@ -20,8 +21,11 @@ const SyncContext = createContext<SyncContextValue>({
 
 export const useSync = () => useContext(SyncContext);
 
+const getOnlineStatus = () =>
+  typeof navigator === "undefined" ? true : navigator.onLine;
+
 export function SyncProvider({ children }: { children: React.ReactNode }) {
-  const [isOnline, setIsOnline] = useState(true);
+  const [isOnline, setIsOnline] = useState(getOnlineStatus);
   const [isSyncing, setIsSyncing] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
 
@@ -38,7 +42,8 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       for (const mutation of pending) {
         try {
           await updateMutation(mutation.id, { status: "syncing" });
-          const token = localStorage.getItem("accessToken");
+          const tokens = await storage.getTokens();
+          const token = tokens?.accessToken ?? null;
           const headers: Record<string, string> = {
             "Content-Type": "application/json",
           };
@@ -76,8 +81,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   }, [refreshCount]);
 
   useEffect(() => {
-    setIsOnline(navigator.onLine);
-    refreshCount();
+    void Promise.resolve().then(refreshCount);
 
     const handleOnline = async () => {
       setIsOnline(true);

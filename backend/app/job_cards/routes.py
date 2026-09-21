@@ -2,6 +2,7 @@ import uuid
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.models import User
@@ -109,6 +110,38 @@ async def get_vehicle(
     return vehicle
 
 
+@vehicles_router.get("/{vehicle_id}/history")
+async def get_vehicle_history(
+    vehicle_id: uuid.UUID,
+    _user=Depends(RequirePermission("job_cards", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    vehicle = await service.get_vehicle(db, vehicle_id)
+    if not vehicle:
+        raise HTTPException(status_code=404, detail="Vehicle not found")
+    owner = await service.get_owner(db, vehicle.owner_id)
+    jobs = await service.list_job_cards(db, page=1, page_size=100, vehicle_id=vehicle_id)
+    from app.performa.models import Performa
+    from sqlalchemy.orm import selectinload
+    performa_result = await db.execute(
+        select(Performa).options(selectinload(Performa.line_items))
+        .where(Performa.vehicle_id == vehicle_id).order_by(Performa.created_at.desc())
+    )
+    performas = list(performa_result.scalars().all())
+    return {
+        "vehicle": schemas.VehicleResponse.model_validate(vehicle),
+        "owner": schemas.OwnerResponse.model_validate(owner),
+        "job_cards": [schemas.JobCardResponse.model_validate(job) for job in jobs["items"]],
+        "performas": [
+            {
+                "id": item.id, "job_card_id": item.job_card_id, "version": item.version,
+                "status": item.status, "grand_total": item.grand_total, "created_at": item.created_at,
+            }
+            for item in performas
+        ],
+    }
+
+
 @vehicles_router.delete("/{vehicle_id}", status_code=204)
 async def delete_vehicle(
     vehicle_id: uuid.UUID,
@@ -132,7 +165,11 @@ async def create_job_card(
         db,
         created_by=current_user.id,
         conditions=[c.model_dump() for c in body.conditions],
-        mechanic_ids=body.mechanic_ids,
+        staff_assignments=[assignment.model_dump() for assignment in body.staff_assignments] + [
+            {"employee_id": employee_id, "work_category": "mechanic"}
+            for employee_id in body.mechanic_ids
+            if employee_id not in {assignment.employee_id for assignment in body.staff_assignments}
+        ],
         vehicle_id=body.vehicle_id,
         owner_id=body.owner_id,
         mileage_km=body.mileage_km,
@@ -176,6 +213,40 @@ async def get_job_card(
     return jc
 
 
+@job_cards_router.get("/{job_card_id}/history")
+async def get_job_card_history(
+    job_card_id: uuid.UUID,
+    _user=Depends(RequirePermission("job_cards", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    jc = await service.get_job_card(db, job_card_id)
+    if not jc:
+        raise HTTPException(status_code=404, detail="Job card not found")
+    from app.audit.models import AuditLog
+    from app.inventory.models import InventoryMovement
+    audit_result = await db.execute(
+        select(AuditLog).where(AuditLog.entity_type == "job_card", AuditLog.entity_id == job_card_id)
+        .order_by(AuditLog.created_at.desc())
+    )
+    movement_result = await db.execute(
+        select(InventoryMovement).where(InventoryMovement.job_card_id == job_card_id)
+        .order_by(InventoryMovement.created_at.desc())
+    )
+    return {
+        "events": [
+            {"id": event.id, "action": event.action, "details": event.details,
+             "user_id": event.user_id, "created_at": event.created_at}
+            for event in audit_result.scalars().all()
+        ],
+        "inventory_movements": [
+            {"id": movement.id, "item_id": movement.item_id, "store_location_id": movement.store_location_id,
+             "quantity_change": movement.quantity_change, "quantity_before": movement.quantity_before,
+             "quantity_after": movement.quantity_after, "created_at": movement.created_at}
+            for movement in movement_result.scalars().all()
+        ],
+    }
+
+
 @job_cards_router.delete("/{job_card_id}", status_code=204)
 async def delete_job_card(
     job_card_id: uuid.UUID,
@@ -213,7 +284,7 @@ async def use_inventory(
     jc = await service.get_job_card(db, job_card_id)
     if not jc:
         raise HTTPException(status_code=404, detail="Job card not found")
-    usage = await service.use_inventory(db, job_card_id, body.item_id, body.store_location_id, body.quantity)
+    usage = await service.use_inventory(db, job_card_id, body.item_id, body.store_location_id, body.quantity, current_user.id)
     await create_audit_log(db, current_user.id, "inventory.consume", "job_card", job_card_id,
                            details={"item_id": str(body.item_id), "quantity": body.quantity})
     await db.commit()

@@ -5,8 +5,11 @@ services:
     environment:
       APP_NAME: ${APP_NAME:-GMS Backend}
       ENVIRONMENT: ${ENVIRONMENT:-development}
-      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://gms:gms@postgres:5432/gms}
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      DATABASE_URL: ${DOCKER_DATABASE_URL:-postgresql+asyncpg://gms:gms@postgres:5432/gms}
+      REDIS_URL: ${DOCKER_REDIS_URL:-redis://redis:6379/0}
+      BACKUP_DIR: /backups
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
+      BACKUP_INTERVAL_HOURS: ${BACKUP_INTERVAL_HOURS:-24}
       WATCHFILES_FORCE_POLLING: "true"
     ports:
       - "${API_PORT:-8000}:8000"
@@ -20,15 +23,11 @@ services:
       - ./main.py:/app/main.py
       - ./alembic:/app/alembic
       - ./alembic.ini:/app/alembic.ini
+      - ${BACKUP_PATH:-../gms-backups}:/backups
     command: >
       uvicorn app.main:app
       --host 0.0.0.0
       --port 8000
-      --reload
-      --reload-dir /app/app
-      --reload-dir /app/alembic
-      --reload-include '*.py'
-      --reload-include '*.html'
 
   postgres:
     image: postgres:17-alpine

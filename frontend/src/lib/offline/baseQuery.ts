@@ -6,6 +6,7 @@ import { cacheQuery, getCachedQuery } from "./cache";
 
 const baseQuery = fetchBaseQuery({
   baseUrl: process.env.NEXT_PUBLIC_API_URL,
+  timeout: 8000,
   prepareHeaders: (headers, { getState }) => {
     const token = (getState() as RootState).auth?.accessToken;
     if (token) {

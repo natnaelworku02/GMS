@@ -11,6 +11,7 @@ import { Can } from "@/features/auth/components/Can";
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { getApiErrorMessage } from "@/lib/utils";
 import type { Role } from "@/features/auth/types";
 
 export default function RolesPage() {
@@ -33,7 +34,7 @@ export default function RolesPage() {
       toast.success("Role deleted");
       setDeleteTarget(null);
     } catch (error) {
-      const msg = (error as any)?.data?.detail || "Failed to delete role";
+      const msg = getApiErrorMessage(error, "Failed to delete role");
       toast.error(msg);
     }
   };

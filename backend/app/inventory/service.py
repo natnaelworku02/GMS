@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.pagination import paginate_query
-from app.inventory.models import InventoryItem, StockEntry, StoreLocation
+from app.inventory.models import InventoryItem, InventoryMovement, StockEntry, StoreLocation
 
 
 async def create_location(db: AsyncSession, name: str) -> StoreLocation:
@@ -90,7 +90,7 @@ async def update_location(db: AsyncSession, location: StoreLocation, name: str) 
     return location
 
 
-async def adjust_stock(db: AsyncSession, item_id: uuid.UUID, store_location_id: uuid.UUID, delta: int) -> StockEntry:
+async def adjust_stock(db: AsyncSession, item_id: uuid.UUID, store_location_id: uuid.UUID, delta: int, user_id: uuid.UUID) -> StockEntry:
     result = await db.execute(
         select(StockEntry).where(
             StockEntry.item_id == item_id,
@@ -98,6 +98,7 @@ async def adjust_stock(db: AsyncSession, item_id: uuid.UUID, store_location_id: 
         )
     )
     entry = result.scalar_one_or_none()
+    before = entry.quantity if entry else 0
     if entry:
         new_qty = entry.quantity + delta
         if new_qty < 0:
@@ -108,12 +109,17 @@ async def adjust_stock(db: AsyncSession, item_id: uuid.UUID, store_location_id: 
             raise ValueError("Insufficient stock")
         entry = StockEntry(item_id=item_id, store_location_id=store_location_id, quantity=delta)
         db.add(entry)
+    db.add(InventoryMovement(
+        item_id=item_id, store_location_id=store_location_id, user_id=user_id,
+        movement_type="adjustment", quantity_change=delta,
+        quantity_before=before, quantity_after=before + delta,
+    ))
     await db.commit()
     await db.refresh(entry)
     return entry
 
 
-async def set_stock(db: AsyncSession, item_id: uuid.UUID, store_location_id: uuid.UUID, quantity: int) -> StockEntry:
+async def set_stock(db: AsyncSession, item_id: uuid.UUID, store_location_id: uuid.UUID, quantity: int, user_id: uuid.UUID) -> StockEntry:
     result = await db.execute(
         select(StockEntry).where(
             StockEntry.item_id == item_id,
@@ -121,11 +127,17 @@ async def set_stock(db: AsyncSession, item_id: uuid.UUID, store_location_id: uui
         )
     )
     entry = result.scalar_one_or_none()
+    before = entry.quantity if entry else 0
     if entry:
         entry.quantity = quantity
     else:
         entry = StockEntry(item_id=item_id, store_location_id=store_location_id, quantity=quantity)
         db.add(entry)
+    db.add(InventoryMovement(
+        item_id=item_id, store_location_id=store_location_id, user_id=user_id,
+        movement_type="stock_set", quantity_change=quantity - before,
+        quantity_before=before, quantity_after=quantity,
+    ))
     await db.commit()
     await db.refresh(entry)
     return entry
@@ -159,3 +171,13 @@ async def check_low_stock(db: AsyncSession, item_id: uuid.UUID) -> bool:
         return False
     total = await get_aggregate_stock(db, item_id)
     return total < item.min_stock_threshold
+
+
+async def list_movements(db: AsyncSession, item_id: uuid.UUID | None = None, job_card_id: uuid.UUID | None = None):
+    query = select(InventoryMovement).order_by(InventoryMovement.created_at.desc())
+    if item_id:
+        query = query.where(InventoryMovement.item_id == item_id)
+    if job_card_id:
+        query = query.where(InventoryMovement.job_card_id == job_card_id)
+    result = await db.execute(query.limit(200))
+    return list(result.scalars().all())

@@ -31,6 +31,8 @@ async def create_invoice_from_performa(
         raise HTTPException(status_code=404, detail="Performa not found")
     if performa.status != "approved":
         raise HTTPException(status_code=422, detail="Performa must be approved before creating an invoice")
+    if not performa.job_card_id:
+        raise HTTPException(status_code=422, detail="Start the job and link a job card before creating an invoice")
 
     invoice = await service.create_invoice_from_performa(db, performa)
     await create_audit_log(db, current_user.id, "invoice.create", "invoice", invoice.id,

@@ -8,8 +8,8 @@ from app.core.pagination import paginate_query
 from app.hr.models import Employee
 
 
-async def create_employee(db: AsyncSession, name: str, job_title: str, phone: str) -> Employee:
-    employee = Employee(name=name, job_title=job_title, phone=phone)
+async def create_employee(db: AsyncSession, name: str, job_title: str, work_category: str, phone: str) -> Employee:
+    employee = Employee(name=name, job_title=job_title, work_category=work_category, phone=phone)
     db.add(employee)
     await db.commit()
     await db.refresh(employee)

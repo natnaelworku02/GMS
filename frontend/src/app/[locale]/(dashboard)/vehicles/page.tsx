@@ -11,6 +11,7 @@ import { Can } from "@/features/auth/components/Can";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { getApiErrorMessage } from "@/lib/utils";
 import type { Vehicle } from "@/features/jobCards/types";
 import CreateVehicleModal from "@/features/jobCards/components/CreateVehicleModal";
 
@@ -38,7 +39,7 @@ export default function VehiclesPage() {
       toast.success("Vehicle deleted");
       setDeleteTarget(null);
     } catch (error) {
-      const msg = (error as any)?.data?.detail || "Failed to delete vehicle";
+      const msg = getApiErrorMessage(error, "Failed to delete vehicle");
       toast.error(msg);
     }
   };
@@ -129,6 +130,7 @@ export default function VehiclesPage() {
           searchPlaceholder={t("searchPlaceholder")}
           searchValue={search}
           onSearch={(v) => { setSearch(v); setPage(1); }}
+          onRowClick={(vehicle) => router.push(`/vehicles/${vehicle.id}`)}
           serverTotal={total}
           serverPage={page}
           serverPageSize={20}

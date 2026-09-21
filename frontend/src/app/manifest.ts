@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Garage Management System",
     short_name: "GMS",
     description: "Comprehensive garage management for job cards, inventory, tools, performas, and invoicing",
-    start_url: "/en/dashboard",
+    start_url: "/en",
     display: "standalone",
     background_color: "#ffffff",
     theme_color: "#4f46e5",

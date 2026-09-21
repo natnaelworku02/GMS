@@ -2,21 +2,33 @@ import { cn } from "@/lib/utils";
 
 const statusStyles: Record<string, string> = {
   pending_inspection:
-    "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+    "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800/50",
   waiting_for_approval:
-    "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20",
+    "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/40 dark:text-orange-400 dark:border-orange-800/50",
   in_repair:
-    "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20",
+    "bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-400 dark:border-indigo-800/50",
   waiting_for_parts:
-    "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",
+    "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800/50",
   ready_for_testing:
-    "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
+    "bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-950/40 dark:text-cyan-400 dark:border-cyan-800/50",
   completed:
-    "bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20",
+    "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/50",
   draft: "bg-muted text-muted-foreground border-border",
-  sent: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
-  approved: "bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20",
-  rejected: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",
+  sent: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800/50",
+  approved: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/50",
+  rejected: "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800/50",
+};
+
+const dotColors: Record<string, string> = {
+  pending_inspection: "bg-amber-500",
+  waiting_for_approval: "bg-orange-500",
+  in_repair: "bg-indigo-500",
+  waiting_for_parts: "bg-red-500",
+  ready_for_testing: "bg-cyan-500",
+  completed: "bg-emerald-500",
+  sent: "bg-blue-500",
+  approved: "bg-emerald-500",
+  rejected: "bg-red-500",
 };
 
 type Props = {
@@ -32,7 +44,7 @@ export function StatusBadge({ status, className }: Props) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium",
+        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors",
         statusStyles[status] || "bg-muted text-muted-foreground border-border",
         status === "in_repair" && "animate-pulse",
         className,
@@ -40,7 +52,8 @@ export function StatusBadge({ status, className }: Props) {
     >
       <span
         className={cn(
-          "h-1.5 w-1.5 rounded-full bg-current",
+          "h-1.5 w-1.5 rounded-full",
+          dotColors[status] || "bg-current",
           status === "in_repair" && "animate-pulse",
         )}
       />

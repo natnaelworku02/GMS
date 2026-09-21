@@ -22,6 +22,7 @@ import {
 import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { ownerSchema, type OwnerFormData } from "@/lib/formSchemas";
+import { getApiErrorMessage } from "@/lib/utils";
 import type { Owner } from "@/features/jobCards/types";
 
 export default function OwnersPage() {
@@ -49,7 +50,7 @@ export default function OwnersPage() {
       toast.success("Owner deleted");
       setDeleteTarget(null);
     } catch (error) {
-      const msg = (error as any)?.data?.detail || "Failed to delete owner";
+      const msg = getApiErrorMessage(error, "Failed to delete owner");
       toast.error(msg);
     }
   };

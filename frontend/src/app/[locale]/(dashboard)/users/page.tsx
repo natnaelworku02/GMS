@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAppSelector } from "@/lib/hooks";
+import { getApiErrorMessage } from "@/lib/utils";
 import type { User } from "@/features/auth/types";
 
 export default function UsersPage() {
@@ -38,7 +39,7 @@ export default function UsersPage() {
       toast.success("User deleted");
       setDeleteTarget(null);
     } catch (error) {
-      const msg = (error as any)?.data?.detail || "Failed to delete user";
+      const msg = getApiErrorMessage(error, "Failed to delete user");
       toast.error(msg);
     }
   };

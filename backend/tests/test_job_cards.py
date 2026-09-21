@@ -56,11 +56,18 @@ async def test_job_card_create_and_invalid_transition(client: AsyncClient, jc_se
             {"part_name": "trunk", "condition_state": "available"},
             {"part_name": "lh_body", "condition_state": "dent"},
         ],
-        "mechanic_ids": [str(jc_setup["mechanic"].id)],
+        "staff_assignments": [{
+            "employee_id": str(jc_setup["mechanic"].id),
+            "work_category": "mechanic",
+        }],
     }, headers=h)
     assert jc_resp.status_code == 201
     jc_id = jc_resp.json()["id"]
     assert jc_resp.json()["status"] == "pending_inspection"
+    assert jc_resp.json()["staff_assignments"] == [{
+        "employee_id": str(jc_setup["mechanic"].id),
+        "work_category": "mechanic",
+    }]
 
     # Invalid: pending_inspection -> in_repair
     resp = await client.patch(f"/api/v1/job-cards/{jc_id}/status", json={"status": "in_repair"}, headers=h)

@@ -3,12 +3,14 @@ import { z } from "zod";
 export const employeeCreateSchema = z.object({
   name: z.string().min(1, "Name is required"),
   job_title: z.string().min(1, "Job title is required"),
+  work_category: z.enum(["mechanic", "bat_lamera", "strip_and_fit", "auto_electrician", "painter"]),
   phone: z.string().min(1, "Phone is required"),
 });
 
 export const employeeUpdateSchema = z.object({
   name: z.string().min(1, "Name is required"),
   job_title: z.string().min(1, "Job title is required"),
+  work_category: z.enum(["mechanic", "bat_lamera", "strip_and_fit", "auto_electrician", "painter"]),
   phone: z.string().min(1, "Phone is required"),
   is_active: z.boolean(),
 });
@@ -37,7 +39,10 @@ export const jobCardCreateSchema = z.object({
   description: z.string().min(1, "Description is required"),
   remarks: z.string().optional(),
   requested_materials: z.string().optional(),
-  mechanic_ids: z.array(z.string().min(1)).optional(),
+  staff_assignments: z.array(z.object({
+    employee_id: z.string().min(1),
+    work_category: z.string().min(1),
+  })).optional(),
   conditions: z.array(
     z.object({
       part_name: z.string(),
@@ -57,7 +62,8 @@ export const jobCardUpdateSchema = z.object({
 });
 
 export const performaCreateSchema = z.object({
-  job_card_id: z.string().min(1, "Job card is required"),
+  vehicle_id: z.string().optional(),
+  job_card_id: z.string().optional(),
   client_email: z.string().optional(),
   line_items: z
     .array(
@@ -73,6 +79,8 @@ export const performaCreateSchema = z.object({
 
 export const inventoryItemSchema = z.object({
   part_name: z.string().min(1, "Part name is required"),
+  condition: z.enum(["new", "used"]),
+  origin: z.enum(["original", "locally_made"]),
   applicable_vehicle_types: z.array(z.string()).min(1, "At least one vehicle type is required"),
   unit_price: z.number().min(0, "Price must be non-negative"),
   supplier_info: z.string().optional(),

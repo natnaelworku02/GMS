@@ -7,6 +7,7 @@ import type {
   StockEntry,
   StockAdjustDTO,
   StockDeltaDTO,
+  InventoryMovement,
 } from "./types";
 
 export const inventoryApi = api.injectEndpoints({
@@ -54,6 +55,10 @@ export const inventoryApi = api.injectEndpoints({
       query: ({ id, body }) => ({ url: `/inventory/items/${id}`, method: "PATCH", body }),
       invalidatesTags: ["InventoryItems"],
     }),
+    getInventoryMovements: build.query<InventoryMovement[], { item_id?: string; job_card_id?: string } | void>({
+      query: (params) => ({ url: "/inventory/stock/movements", params: params || undefined }),
+      providesTags: ["Stock"],
+    }),
 
     // --- Stock ---
     adjustStock: build.mutation<StockEntry, StockAdjustDTO>({
@@ -75,6 +80,7 @@ export const {
   useGetInventoryItemQuery,
   useCreateInventoryItemMutation,
   useUpdateInventoryItemMutation,
+  useGetInventoryMovementsQuery,
   useAdjustStockMutation,
   useAdjustStockDeltaMutation,
   useDeleteInventoryItemMutation,

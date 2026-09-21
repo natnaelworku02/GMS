@@ -16,49 +16,32 @@ export function AuthInit({ children }: { children: React.ReactNode }) {
   const [getRole] = useLazyGetRoleQuery();
   const [refreshToken] = useRefreshTokenMutation();
   const initialized = useRef(false);
+  const browserPath = typeof window === "undefined" ? "" : window.location.pathname;
+  const isLoginPage =
+    pathname === "/login" ||
+    pathname.endsWith("/login") ||
+    browserPath.endsWith("/login");
 
   useEffect(() => {
     if (initialized.current) return;
     initialized.current = true;
 
     async function init() {
-      const stored = await storage.getTokens();
-      if (!stored) {
-        dispatch(setLoading(false));
-        return;
-      }
-
-      dispatch(setTokens(stored));
-
       try {
-        const user = await getMe().unwrap();
-        const role = await getRole(user.role_id).unwrap();
-
-        const permissions: Record<string, boolean> = {};
-        if (role.permissions) {
-          role.permissions.forEach((p) => {
-            permissions[`${p.module}.create`] = p.can_create;
-            permissions[`${p.module}.read`] = p.can_read;
-            permissions[`${p.module}.update`] = p.can_update;
-            permissions[`${p.module}.delete`] = p.can_delete;
-          });
+        if (isLoginPage) {
+          dispatch(setLoading(false));
+          return;
         }
 
-        dispatch(
-          setCredentials({
-            user: { ...user, role_name: role.name },
-            accessToken: stored.accessToken,
-            refreshToken: stored.refreshToken,
-            permissions,
-            isSuperAdmin: role.is_superadmin,
-          }),
-        );
-      } catch {
-        try {
-          const refreshed = await refreshToken({ refresh_token: stored.refreshToken }).unwrap();
-          await storage.setTokens(refreshed.access_token, refreshed.refresh_token);
-          dispatch(setTokens({ accessToken: refreshed.access_token, refreshToken: refreshed.refresh_token }));
+        const stored = await storage.getTokens();
+        if (!stored) {
+          dispatch(setLoading(false));
+          return;
+        }
 
+        dispatch(setTokens(stored));
+
+        try {
           const user = await getMe().unwrap();
           const role = await getRole(user.role_id).unwrap();
 
@@ -75,33 +58,67 @@ export function AuthInit({ children }: { children: React.ReactNode }) {
           dispatch(
             setCredentials({
               user: { ...user, role_name: role.name },
-              accessToken: refreshed.access_token,
-              refreshToken: refreshed.refresh_token,
+              accessToken: stored.accessToken,
+              refreshToken: stored.refreshToken,
               permissions,
               isSuperAdmin: role.is_superadmin,
             }),
           );
         } catch {
-          await storage.clearTokens();
-          dispatch(logout());
+          try {
+            const refreshed = await refreshToken({ refresh_token: stored.refreshToken }).unwrap();
+            await storage.setTokens(refreshed.access_token, refreshed.refresh_token);
+            dispatch(setTokens({ accessToken: refreshed.access_token, refreshToken: refreshed.refresh_token }));
+
+            const user = await getMe().unwrap();
+            const role = await getRole(user.role_id).unwrap();
+
+            const permissions: Record<string, boolean> = {};
+            if (role.permissions) {
+              role.permissions.forEach((p) => {
+                permissions[`${p.module}.create`] = p.can_create;
+                permissions[`${p.module}.read`] = p.can_read;
+                permissions[`${p.module}.update`] = p.can_update;
+                permissions[`${p.module}.delete`] = p.can_delete;
+              });
+            }
+
+            dispatch(
+              setCredentials({
+                user: { ...user, role_name: role.name },
+                accessToken: refreshed.access_token,
+                refreshToken: refreshed.refresh_token,
+                permissions,
+                isSuperAdmin: role.is_superadmin,
+              }),
+            );
+          } catch {
+            await storage.clearTokens();
+            dispatch(logout());
+          }
         }
+      } catch {
+        dispatch(logout());
       }
     }
 
     init();
-  }, [dispatch, getMe, getRole, refreshToken]);
+  }, [dispatch, getMe, getRole, refreshToken, isLoginPage]);
 
   useEffect(() => {
     if (isLoading) return;
 
-    const isLoginPage = pathname === "/login";
     if (!isAuthenticated && !isLoginPage) {
       router.replace("/login");
     }
     if (isAuthenticated && user && isLoginPage) {
       router.replace("/");
     }
-  }, [isAuthenticated, isLoading, user, pathname, router]);
+  }, [isAuthenticated, isLoading, user, isLoginPage, router]);
+
+  if (isLoginPage) {
+    return <>{children}</>;
+  }
 
   if (isLoading) {
     return (

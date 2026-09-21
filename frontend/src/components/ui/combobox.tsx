@@ -53,7 +53,7 @@ export function Combobox({
         role="combobox"
         aria-expanded={open}
         className={cn(
-          "group/button inline-flex h-10 shrink-0 items-center justify-between rounded-lg border border-input bg-clip-padding px-3 py-2 text-sm font-normal text-foreground outline-none transition-all hover:bg-accent hover:text-accent-foreground focus-visible:border-indigo-500/30 focus-visible:ring-2 focus-visible:ring-indigo-500/20 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+          "group/button inline-flex min-h-10 shrink-0 items-center justify-between rounded-lg border border-input bg-background px-3 py-2 text-left text-sm font-normal text-foreground outline-none transition-all hover:bg-accent hover:text-accent-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
           "w-full",
           className
         )}

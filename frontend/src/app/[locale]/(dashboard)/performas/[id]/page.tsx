@@ -16,8 +16,9 @@ import { PerformaSummary } from "@/features/performas/components/PerformaSummary
 import { PerformaStatusBadge } from "@/features/performas/components/PerformaStatusBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Loader2, Send, ThumbsUp, ThumbsDown, RotateCcw, FileText, Download } from "lucide-react";
+import { ArrowLeft, Loader2, Send, ThumbsUp, ThumbsDown, RotateCcw, FileText, Download, Truck } from "lucide-react";
 import { toast } from "sonner";
+import { useGetOwnerQuery, useGetVehicleQuery } from "@/features/jobCards/api";
 
 export default function PerformaDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -26,11 +27,13 @@ export default function PerformaDetailPage({ params }: { params: Promise<{ id: s
   const tc = useTranslations("common");
   const router = useRouter();
   const { data: performa, isLoading } = useGetPerformaQuery(id);
+  const { data: vehicle } = useGetVehicleQuery(performa?.vehicle_id ?? "", { skip: !performa?.vehicle_id });
+  const { data: owner } = useGetOwnerQuery(vehicle?.owner_id ?? "", { skip: !vehicle?.owner_id });
   const [send, { isLoading: sending }] = useSendPerformaMutation();
   const [updateStatus, { isLoading: updating }] = useUpdatePerformaStatusMutation();
   const [revise, { isLoading: revising }] = useRevisePerformaMutation();
   const [createInvoice, { isLoading: creatingInvoice }] = useCreateInvoiceFromPerformaMutation();
-  const { data: existingInvoice } = useGetInvoiceByPerformaQuery(id, { skip: performa?.status !== "approved" });
+  const { data: existingInvoice } = useGetInvoiceByPerformaQuery(id, { skip: performa?.status !== "approved" || !performa?.job_card_id });
   const accessToken = useAppSelector((s) => s.auth.accessToken);
 
   const [clientEmail, setClientEmail] = useState("");
@@ -164,6 +167,18 @@ export default function PerformaDetailPage({ params }: { params: Promise<{ id: s
         </div>
       </div>
 
+      <div className="mb-6 rounded-xl border bg-card p-6 shadow-sm">
+        <h2 className="text-sm font-semibold">Vehicle</h2>
+        <div className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
+          <p><span className="text-muted-foreground">Owner:</span> {owner?.name ?? "—"} {owner?.phone ? `· ${owner.phone}` : ""}</p>
+          <p><span className="text-muted-foreground">Model:</span> {vehicle?.model ?? "—"}</p>
+          <p><span className="text-muted-foreground">Type:</span> {vehicle?.type ?? "—"}</p>
+          <p><span className="text-muted-foreground">Plate:</span> {vehicle?.plate_number ?? "—"}</p>
+          <p><span className="text-muted-foreground">Engine:</span> {vehicle?.engine_number ?? "—"}</p>
+          <p><span className="text-muted-foreground">Chassis:</span> {vehicle?.chassis_number ?? "—"}</p>
+        </div>
+      </div>
+
       {/* Line Items */}
       <div className="mb-6 rounded-xl border bg-card p-6 shadow-sm space-y-4">
         <h2 className="text-sm font-semibold">{t("lineItems")}</h2>
@@ -221,19 +236,28 @@ export default function PerformaDetailPage({ params }: { params: Promise<{ id: s
 
         {/* Convert to Invoice (only when approved) */}
         {performa.status === "approved" && (
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            {!performa.job_card_id ? (
+              <Button onClick={() => router.push(`/start-job?performa_id=${performa.id}`)}>
+                <Truck className="mr-1 h-4 w-4" /> Start Job
+              </Button>
+            ) : (
+              <Button variant="outline" onClick={() => router.push(`/job-cards/${performa.job_card_id}`)}>
+                <Truck className="mr-1 h-4 w-4" /> View Job Card
+              </Button>
+            )}
             {existingInvoice ? (
               <Button variant="default" onClick={() => router.push(`/invoices/${existingInvoice.id}`)}>
                 <FileText className="mr-1 h-4 w-4" />
                 View Invoice ({existingInvoice.invoice_number})
               </Button>
-            ) : (
+            ) : performa.job_card_id ? (
               <Button onClick={handleConvertToInvoice} disabled={creatingInvoice}>
                 {creatingInvoice && <Loader2 className="h-4 w-4 animate-spin" />}
                 <FileText className="mr-1 h-4 w-4" />
                 {t("convertToInvoice") || "Convert to Invoice"}
               </Button>
-            )}
+            ) : null}
             <Button variant="outline" onClick={handleRevise} disabled={revising}>
               {revising && <Loader2 className="h-4 w-4 animate-spin" />}
               <RotateCcw className="mr-1 h-4 w-4" />
