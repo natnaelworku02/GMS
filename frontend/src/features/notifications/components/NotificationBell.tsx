@@ -15,6 +15,7 @@ export function NotificationBell() {
 
   const { data: unread = [] } = useGetNotificationsQuery({ unread: true });
   const [markRead] = useMarkNotificationReadMutation();
+  const [now] = useState(() => Date.now());
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -31,7 +32,6 @@ export function NotificationBell() {
   };
 
   const timeAgo = (dateStr: string) => {
-    const now = Date.now();
     const date = new Date(dateStr).getTime();
     const diff = now - date;
     const mins = Math.floor(diff / 60000);

@@ -72,6 +72,16 @@ class VehicleConditionResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class StaffAssignmentInput(BaseModel):
+    employee_id: uuid.UUID
+    work_category: str
+
+
+class StaffAssignmentResponse(BaseModel):
+    employee_id: uuid.UUID
+    work_category: str
+
+
 # --- Job Card ---
 class JobCardCreate(BaseModel):
     vehicle_id: uuid.UUID
@@ -84,6 +94,7 @@ class JobCardCreate(BaseModel):
     remarks: str | None = None
     requested_materials: str | None = None
     conditions: list[VehicleConditionInput] = []
+    staff_assignments: list[StaffAssignmentInput] = []
     mechanic_ids: list[uuid.UUID] = []
 
 
@@ -134,6 +145,7 @@ class JobCardResponse(BaseModel):
     updated_at: datetime
     conditions: list[VehicleConditionResponse] = []
     mechanics: list[EmployeeResponse] = []
+    staff_assignments: list[StaffAssignmentResponse] = []
     inventory_usage: list[InventoryUsageResponse] = []
 
     model_config = {"from_attributes": True}

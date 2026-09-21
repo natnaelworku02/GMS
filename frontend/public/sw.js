@@ -1,12 +1,10 @@
-var CACHE_NAME = "gms-cache-v1";
+var CACHE_NAME = "gms-cache-v2";
 var STATIC_ASSETS = [
   "/",
   "/en/dashboard",
   "/en/login",
   "/offline",
 ];
-var API_CACHE = "gms-api-cache-v1";
-
 self.addEventListener("install", function (event) {
   event.waitUntil(
     Promise.resolve()
@@ -27,7 +25,7 @@ self.addEventListener("activate", function (event) {
         await Promise.all(
           keys
             .filter(function (k) {
-              return k !== CACHE_NAME && k !== API_CACHE;
+              return k !== CACHE_NAME;
             })
             .map(function (k) {
               return caches.delete(k);
@@ -44,11 +42,6 @@ self.addEventListener("fetch", function (event) {
   var url = new URL(request.url);
 
   if (request.method !== "GET") return;
-
-  if (url.pathname.startsWith("/api/")) {
-    event.respondWith(networkFirstWithCache(request));
-    return;
-  }
 
   if (
     url.origin === self.location.origin &&
@@ -73,27 +66,11 @@ async function cacheFirst(request) {
       cache.put(request, response.clone());
     }
     return response;
-  } catch (e) {
-    return new Response("Offline", { status: 503 });
-  }
-}
-
-async function networkFirstWithCache(request) {
-  try {
-    var response = await fetch(request);
-    if (response.ok) {
-      var cache = await caches.open(API_CACHE);
-      cache.put(request, response.clone());
+  } catch {
+    if (request.destination === "document") {
+      var offlinePage = await caches.match("/offline");
+      if (offlinePage) return offlinePage;
     }
-    return response;
-  } catch (e) {
-    try {
-      var cached = await caches.match(request);
-      if (cached) return cached;
-    } catch (e2) {}
-    return new Response(JSON.stringify({ detail: "You are offline" }), {
-      status: 503,
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response("Offline", { status: 503 });
   }
 }

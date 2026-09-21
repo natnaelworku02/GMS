@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useCreatePerformaMutation } from "@/features/performas/api";
-import { useGetJobCardsQuery, useGetJobCardQuery, useGetVehicleQuery } from "@/features/jobCards/api";
+import { useGetJobCardsQuery, useGetJobCardQuery, useGetVehicleQuery, useGetVehiclesQuery } from "@/features/jobCards/api";
 import { useGetInventoryItemsQuery } from "@/features/inventory/api";
 import { PerformaLineItems } from "@/features/performas/components/PerformaLineItems";
 import { PerformaSummary } from "@/features/performas/components/PerformaSummary";
@@ -51,9 +51,12 @@ export default function NewPerformaPage({ searchParams }: { searchParams: Promis
   const [create, { isLoading }] = useCreatePerformaMutation();
 
   const [jobCardId, setJobCardId] = useState(jobCardIdFromUrl);
+  const [vehicleId, setVehicleId] = useState("");
   const [showDamaged, setShowDamaged] = useState(true);
   const { data: jobCard } = useGetJobCardQuery(jobCardId, { skip: !jobCardId });
-  const { data: vehicle } = useGetVehicleQuery(jobCard?.vehicle_id || "", { skip: !jobCard?.vehicle_id });
+  const effectiveVehicleId = jobCard?.vehicle_id ?? vehicleId;
+  const { data: vehicle } = useGetVehicleQuery(effectiveVehicleId, { skip: !effectiveVehicleId });
+  const { data: vehiclesResp } = useGetVehiclesQuery({ page: 1, page_size: 100 });
   const { data: jobCardsResp } = useGetJobCardsQuery({ page: 1, page_size: 100 });
   const { data: inventoryResp } = useGetInventoryItemsQuery({ page: 1, page_size: 100, vehicle_type: vehicle?.type });
   const jobCards = jobCardsResp?.items ?? [];
@@ -65,17 +68,16 @@ export default function NewPerformaPage({ searchParams }: { searchParams: Promis
     register,
     handleSubmit,
     setValue,
-    setError,
     formState: { errors },
   } = useForm<PerformaCreateFormData>({
     resolver: zodResolver(performaCreateSchema),
-    defaultValues: { job_card_id: jobCardIdFromUrl, client_email: "", line_items: lineItems } as any,
+    defaultValues: { vehicle_id: "", job_card_id: jobCardIdFromUrl, client_email: "", line_items: lineItems },
   });
 
   const handleLineItemsChange = useCallback(
     (items: LineItemInput[]) => {
       setLineItems(items);
-      setValue("line_items" as any, items, { shouldValidate: false });
+      setValue("line_items", items, { shouldValidate: false });
     },
     [setValue],
   );
@@ -87,7 +89,7 @@ export default function NewPerformaPage({ searchParams }: { searchParams: Promis
     const newItem: LineItemInput = { type: "labor", description: `Repair ${label}`, quantity: 1, unit_price: 0 };
     const updated = [...lineItems, newItem];
     setLineItems(updated);
-    setValue("line_items" as any, updated, { shouldValidate: false });
+    setValue("line_items", updated, { shouldValidate: false });
   };
 
   const subtotal = lineItems.reduce((s, li) => s + li.quantity * li.unit_price, 0);
@@ -96,13 +98,18 @@ export default function NewPerformaPage({ searchParams }: { searchParams: Promis
   const grandTotal = subtotal + vatAmount;
 
   const onSubmit = async (data: PerformaCreateFormData) => {
+    if (!effectiveVehicleId) {
+      toast.error("Select a vehicle");
+      return;
+    }
     if (!lineItems.some((li) => li.description.trim())) {
       toast.error(t("lineItemRequired"));
       return;
     }
     try {
       const perf = await create({
-        job_card_id: jobCardId,
+        vehicle_id: effectiveVehicleId,
+        job_card_id: jobCardId || undefined,
         client_email: data.client_email || undefined,
         line_items: lineItems.map((li) => ({ ...li, description: li.description.trim() })),
       }).unwrap();
@@ -118,6 +125,11 @@ export default function NewPerformaPage({ searchParams }: { searchParams: Promis
     label: `${jc.description.slice(0, 50)}${jc.description.length > 50 ? "…" : ""}`,
     subtitle: jc.status,
   }));
+  const vehicleOptions = (vehiclesResp?.items ?? []).map((item) => ({
+    value: item.id,
+    label: `${item.model} — ${item.plate_number}`,
+    subtitle: `${item.type} · ${item.engine_number} · ${item.chassis_number}`,
+  }));
 
   return (
     <div className="mx-auto max-w-5xl pb-24">
@@ -130,13 +142,32 @@ export default function NewPerformaPage({ searchParams }: { searchParams: Promis
       <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 items-start">
         {/* ===== Left Column ===== */}
         <div className="space-y-6 min-w-0">
-          {/* Job Card Selection */}
+          {/* Vehicle and optional job card selection */}
           <div className="rounded-xl border bg-card p-6 shadow-sm space-y-4">
-            <h2 className="text-sm font-semibold">{t("jobCard")}</h2>
+            <h2 className="text-sm font-semibold">Vehicle and Job</h2>
             <div className="space-y-2">
-              <Label>{t("jobCardId")}</Label>
+              <Label>Vehicle</Label>
               <Combobox
-                options={jobCardOptions}
+                options={vehicleOptions}
+                value={effectiveVehicleId}
+                onSelect={(value) => {
+                  setVehicleId(value);
+                  setValue("vehicle_id", value, { shouldValidate: true });
+                  if (jobCard && jobCard.vehicle_id !== value) {
+                    setJobCardId("");
+                    setValue("job_card_id", "");
+                  }
+                }}
+                placeholder="Select a vehicle..."
+                searchPlaceholder="Search vehicle..."
+                emptyText={tc("noResults")}
+              />
+              {errors.vehicle_id && <p className="text-sm text-destructive">{errors.vehicle_id.message}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label>{t("jobCardId")} (optional)</Label>
+              <Combobox
+                options={jobCardOptions.filter((option) => !effectiveVehicleId || jobCards.find((card) => card.id === option.value)?.vehicle_id === effectiveVehicleId)}
                 value={jobCardId}
                 onSelect={(val) => {
                   setJobCardId(val);
@@ -146,7 +177,7 @@ export default function NewPerformaPage({ searchParams }: { searchParams: Promis
                 searchPlaceholder={tc("search") + "..."}
                 emptyText={tc("noResults")}
               />
-              {jobCard && vehicle && (
+              {vehicle && (
                 <div className="flex flex-wrap gap-2 mt-2">
                   <Badge variant="outline" className="text-xs">
                     {vehicle.model} — {vehicle.plate_number}
@@ -154,7 +185,7 @@ export default function NewPerformaPage({ searchParams }: { searchParams: Promis
                   <Badge variant="outline" className="text-xs">
                     {vehicle.type}
                   </Badge>
-                  {jobCard.status && (
+                  {jobCard?.status && (
                     <Badge variant="secondary" className="text-xs">
                       {jobCard.status}
                     </Badge>

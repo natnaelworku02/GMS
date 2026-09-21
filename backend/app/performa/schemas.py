@@ -26,14 +26,17 @@ class LineItemResponse(BaseModel):
 
 
 class PerformaCreate(BaseModel):
-    job_card_id: uuid.UUID
+    vehicle_id: uuid.UUID | None = None
+    job_card_id: uuid.UUID | None = None
     client_email: str | None = None
     line_items: list[LineItemCreate] = Field(min_length=1)
 
 
 class PerformaResponse(BaseModel):
     id: uuid.UUID
-    job_card_id: uuid.UUID
+    vehicle_id: uuid.UUID
+    job_card_id: uuid.UUID | None
+    series_id: uuid.UUID
     version: int
     subtotal: Decimal
     vat_rate: Decimal

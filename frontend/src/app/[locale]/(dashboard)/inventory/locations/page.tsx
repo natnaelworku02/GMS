@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { Plus, ArrowLeft, Pencil, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { getApiErrorMessage } from "@/lib/utils";
 import type { InventoryLocation } from "@/features/inventory/types";
 
 export default function InventoryLocationsPage() {
@@ -43,7 +44,7 @@ export default function InventoryLocationsPage() {
       toast.success("Location deleted");
       setDeleteTarget(null);
     } catch (error) {
-      const msg = (error as any)?.data?.detail || "Failed to delete location";
+      const msg = getApiErrorMessage(error, "Failed to delete location");
       toast.error(msg);
     }
   };

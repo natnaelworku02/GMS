@@ -52,6 +52,7 @@ job_card_mechanics = Table(
     Base.metadata,
     Column("job_card_id", Uuid, ForeignKey("job_cards.id"), primary_key=True),
     Column("employee_id", Uuid, ForeignKey("employees.id"), primary_key=True),
+    Column("work_category", String(40), nullable=False, default="mechanic"),
 )
 
 

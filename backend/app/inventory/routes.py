@@ -135,7 +135,7 @@ async def set_stock(
     current_user: User = Depends(RequirePermission("inventory", "update")),
     db: AsyncSession = Depends(get_db),
 ):
-    entry = await service.set_stock(db, body.item_id, body.store_location_id, body.quantity)
+    entry = await service.set_stock(db, body.item_id, body.store_location_id, body.quantity, current_user.id)
     await create_audit_log(db, current_user.id, "stock.set", "inventory_item", body.item_id,
                            details={"store": str(body.store_location_id), "quantity": body.quantity})
     await db.commit()
@@ -149,10 +149,20 @@ async def adjust_stock(
     db: AsyncSession = Depends(get_db),
 ):
     try:
-        entry = await service.adjust_stock(db, body.item_id, body.store_location_id, body.delta)
+        entry = await service.adjust_stock(db, body.item_id, body.store_location_id, body.delta, current_user.id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     await create_audit_log(db, current_user.id, "stock.adjust", "inventory_item", body.item_id,
                            details={"store": str(body.store_location_id), "delta": body.delta})
     await db.commit()
     return entry
+
+
+@stock_router.get("/movements", response_model=list[schemas.InventoryMovementResponse])
+async def list_movements(
+    item_id: uuid.UUID | None = Query(default=None),
+    job_card_id: uuid.UUID | None = Query(default=None),
+    _user=Depends(RequirePermission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    return await service.list_movements(db, item_id, job_card_id)

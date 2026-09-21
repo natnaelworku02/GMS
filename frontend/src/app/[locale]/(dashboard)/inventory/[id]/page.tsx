@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, use } from "react";
+import { useEffect, useState, use } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useGetInventoryItemQuery, useGetInventoryLocationsQuery, useAdjustStockMutation, useAdjustStockDeltaMutation } from "@/features/inventory/api";
+import { useGetInventoryItemQuery, useGetInventoryLocationsQuery, useGetInventoryMovementsQuery, useAdjustStockMutation, useAdjustStockDeltaMutation, useUpdateInventoryItemMutation } from "@/features/inventory/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,10 +25,21 @@ export default function InventoryItemDetailPage({ params }: { params: Promise<{ 
   const t = useTranslations("inventory");
   const router = useRouter();
   const { data: item, isLoading } = useGetInventoryItemQuery(id);
-  const { data: locationsResp } = useGetInventoryLocationsQuery({ page: 1, page_size: 1000 });
+  const { data: movements = [] } = useGetInventoryMovementsQuery({ item_id: id });
+  const { data: locationsResp } = useGetInventoryLocationsQuery({ page: 1, page_size: 100 });
   const locations = locationsResp?.items ?? [];
   const [adjustStock, { isLoading: isAdjusting }] = useAdjustStockMutation();
   const [adjustStockDelta, { isLoading: isDeltaAdjusting }] = useAdjustStockDeltaMutation();
+  const [updateItem, { isLoading: isUpdatingItem }] = useUpdateInventoryItemMutation();
+  const [condition, setCondition] = useState<"new" | "used">("new");
+  const [origin, setOrigin] = useState<"original" | "locally_made">("original");
+
+  useEffect(() => {
+    if (item) {
+      setCondition(item.condition);
+      setOrigin(item.origin);
+    }
+  }, [item]);
 
   const [confirmStock, setConfirmStock] = useState(false);
   const [pendingData, setPendingData] = useState<StockAdjustFormData | null>(null);
@@ -68,6 +79,15 @@ export default function InventoryItemDetailPage({ params }: { params: Promise<{ 
   const handleAdjust = (data: StockAdjustFormData) => {
     setPendingData(data);
     setConfirmStock(true);
+  };
+
+  const handleClassificationUpdate = async () => {
+    try {
+      await updateItem({ id, body: { condition, origin } }).unwrap();
+      toast.success("Classification updated");
+    } catch {
+      toast.error("Failed to update classification");
+    }
   };
 
   const confirmAdjustStock = async () => {
@@ -134,6 +154,18 @@ export default function InventoryItemDetailPage({ params }: { params: Promise<{ 
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
+              <p className="text-xs text-muted-foreground">Condition</p>
+              <select value={condition} onChange={(event) => setCondition(event.target.value as "new" | "used")} className="mt-1 h-9 w-full rounded-lg border border-input bg-background px-3 text-sm">
+                <option value="new">New</option><option value="used">Used</option>
+              </select>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Origin</p>
+              <select value={origin} onChange={(event) => setOrigin(event.target.value as "original" | "locally_made")} className="mt-1 h-9 w-full rounded-lg border border-input bg-background px-3 text-sm">
+                <option value="original">Original</option><option value="locally_made">Locally Made</option>
+              </select>
+            </div>
+            <div>
               <p className="text-xs text-muted-foreground">{t("unitPrice")}</p>
               <p className="font-medium">{fmt(item.unit_price)}</p>
             </div>
@@ -142,6 +174,11 @@ export default function InventoryItemDetailPage({ params }: { params: Promise<{ 
               <p className="font-medium">{item.min_stock_threshold || "—"}</p>
             </div>
           </div>
+
+          <Button size="sm" variant="outline" onClick={handleClassificationUpdate} disabled={isUpdatingItem || (condition === item.condition && origin === item.origin)}>
+            {isUpdatingItem && <Loader2 className="h-4 w-4 animate-spin" />}
+            Save Classification
+          </Button>
 
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground">{t("currentStock")}</p>
@@ -161,6 +198,20 @@ export default function InventoryItemDetailPage({ params }: { params: Promise<{ 
               <Badge key={vt} variant="outline" className="text-xs">{vt}</Badge>
             ))}
           </div>
+        </div>
+
+        <div className="rounded-xl border bg-card p-6 shadow-sm space-y-4">
+          <h2 className="text-sm font-semibold">Stock Movement History</h2>
+          {movements.length === 0 ? <p className="text-sm text-muted-foreground">No stock movements recorded yet.</p> : (
+            <div className="divide-y">
+              {movements.map((movement) => (
+                <div key={movement.id} className="flex items-center justify-between gap-4 py-3 text-sm">
+                  <div><p className="font-medium capitalize">{movement.movement_type.replaceAll("_", " ")}</p><p className="text-xs text-muted-foreground">{new Date(movement.created_at).toLocaleString()} · {locationName(movement.store_location_id)}</p></div>
+                  <div className="text-right"><p className={movement.quantity_change >= 0 ? "font-medium text-emerald-600" : "font-medium text-destructive"}>{movement.quantity_change >= 0 ? "+" : ""}{movement.quantity_change}</p><p className="text-xs text-muted-foreground">{movement.quantity_before} → {movement.quantity_after}</p></div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Stock Entries by Location */}

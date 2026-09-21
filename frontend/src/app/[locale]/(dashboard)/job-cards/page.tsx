@@ -13,7 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Plus, Eye, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { JOB_STATUS_LABELS } from "@/lib/constants";
-import type { JobCard, Vehicle, Owner } from "@/features/jobCards/types";
+import { getApiErrorMessage } from "@/lib/utils";
+import type { JobCard } from "@/features/jobCards/types";
 
 const STATUS_OPTIONS = (t: (key: string) => string) => [
   { value: "", label: t("allStatuses") },
@@ -54,7 +55,7 @@ export default function JobCardsPage() {
       toast.success("Job card deleted");
       setDeleteTarget(null);
     } catch (error) {
-      const msg = (error as any)?.data?.detail || "Failed to delete job card";
+      const msg = getApiErrorMessage(error, "Failed to delete job card");
       toast.error(msg);
     }
   };
@@ -146,19 +147,19 @@ export default function JobCardsPage() {
         }
       />
 
-      <div className="mt-4 flex flex-wrap items-center gap-3">
+      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1">
           <input
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             placeholder={t("searchPlaceholder")}
-            className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="flex h-10 w-full rounded-full border border-border/60 bg-muted/40 pl-3 pr-3 text-sm transition-all focus:border-primary/30 focus:bg-muted/60 focus:outline-none focus:ring-2 focus:ring-primary/10"
           />
         </div>
         <select
           value={statusFilter}
           onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-          className="h-10 rounded-lg border border-input bg-background px-3 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="h-10 rounded-full border border-border/60 bg-muted/40 px-3 text-sm transition-all focus:border-primary/30 focus:outline-none focus:ring-2 focus:ring-primary/10"
         >
           {STATUS_OPTIONS(t).map((opt) => (
             <option key={opt.value} value={opt.value}>{opt.label}</option>

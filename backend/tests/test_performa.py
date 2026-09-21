@@ -38,7 +38,11 @@ async def perf_setup(db_session):
     await db_session.refresh(job_card)
 
     token = create_access_token({"user_id": str(user.id), "role_id": str(role.id)})
-    return {"headers": {"Authorization": f"Bearer {token}"}, "job_card_id": str(job_card.id)}
+    return {
+        "headers": {"Authorization": f"Bearer {token}"},
+        "job_card_id": str(job_card.id),
+        "vehicle_id": str(vehicle.id),
+    }
 
 
 @pytest.mark.asyncio
@@ -77,3 +81,21 @@ async def test_revise_performa_increments_version(client: AsyncClient, perf_setu
     }, headers=h)
     assert resp2.status_code == 201
     assert resp2.json()["version"] == 2
+
+
+@pytest.mark.asyncio
+async def test_vehicle_first_performa_can_link_job_card(client: AsyncClient, perf_setup):
+    h = perf_setup["headers"]
+    created = await client.post("/api/v1/performas", json={
+        "vehicle_id": perf_setup["vehicle_id"],
+        "line_items": [{"type": "labor", "description": "Estimate", "unit_price": "500.00"}],
+    }, headers=h)
+    assert created.status_code == 201
+    assert created.json()["job_card_id"] is None
+    assert created.json()["vehicle_id"] == perf_setup["vehicle_id"]
+
+    linked = await client.patch(
+        f"/api/v1/performas/{created.json()['id']}/job-card/{perf_setup['job_card_id']}", headers=h
+    )
+    assert linked.status_code == 200
+    assert linked.json()["job_card_id"] == perf_setup["job_card_id"]

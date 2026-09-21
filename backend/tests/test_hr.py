@@ -23,10 +23,12 @@ async def admin_setup(db_session):
 @pytest.mark.asyncio
 async def test_create_employee(client: AsyncClient, admin_setup):
     resp = await client.post("/api/v1/hr/employees", json={
-        "name": "John Mechanic", "job_title": "Mechanic", "phone": "+251900111111",
+        "name": "John Mechanic", "job_title": "Senior Technician",
+        "work_category": "mechanic", "phone": "+251900111111",
     }, headers=admin_setup["headers"])
     assert resp.status_code == 201
     assert resp.json()["name"] == "John Mechanic"
+    assert resp.json()["work_category"] == "mechanic"
 
 
 @pytest.mark.asyncio

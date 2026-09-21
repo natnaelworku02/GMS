@@ -120,7 +120,7 @@ async def create_job_card(
     db: AsyncSession,
     created_by: uuid.UUID,
     conditions: list[dict],
-    mechanic_ids: list[uuid.UUID],
+    staff_assignments: list[dict],
     **kwargs,
 ) -> JobCard:
     job_card = JobCard(created_by=created_by, **kwargs)
@@ -131,10 +131,12 @@ async def create_job_card(
         vc = VehicleCondition(job_card_id=job_card.id, **cond)
         db.add(vc)
 
-    if mechanic_ids:
-        for mech_id in mechanic_ids:
+    if staff_assignments:
+        for assignment in staff_assignments:
             await db.execute(job_card_mechanics.insert().values(
-                job_card_id=job_card.id, employee_id=mech_id
+                job_card_id=job_card.id,
+                employee_id=assignment["employee_id"],
+                work_category=assignment["work_category"],
             ))
 
     await db.commit()
@@ -147,7 +149,17 @@ async def get_job_card(db: AsyncSession, job_card_id: uuid.UUID) -> JobCard | No
         .options(selectinload(JobCard.conditions), selectinload(JobCard.mechanics), selectinload(JobCard.inventory_usage))
         .where(JobCard.id == job_card_id)
     )
-    return result.scalar_one_or_none()
+    job_card = result.scalar_one_or_none()
+    if job_card:
+        assignments = await db.execute(
+            select(job_card_mechanics.c.employee_id, job_card_mechanics.c.work_category)
+            .where(job_card_mechanics.c.job_card_id == job_card.id)
+        )
+        job_card.staff_assignments = [
+            {"employee_id": row.employee_id, "work_category": row.work_category}
+            for row in assignments
+        ]
+    return job_card
 
 
 async def list_job_cards(
@@ -161,7 +173,15 @@ async def list_job_cards(
     date_from: date | None = None,
     date_to: date | None = None,
 ):
-    query = select(JobCard).options(selectinload(JobCard.conditions), selectinload(JobCard.mechanics)).order_by(JobCard.created_at.desc())
+    query = (
+        select(JobCard)
+        .options(
+            selectinload(JobCard.conditions),
+            selectinload(JobCard.mechanics),
+            selectinload(JobCard.inventory_usage),
+        )
+        .order_by(JobCard.created_at.desc())
+    )
     if search:
         query = query.where(or_(JobCard.description.ilike(f"%{search}%"), JobCard.remarks.ilike(f"%{search}%")))
     if status:
@@ -175,6 +195,22 @@ async def list_job_cards(
     if date_to:
         query = query.where(JobCard.created_at <= date_to)
     items, total, page, page_size, total_pages = await paginate_query(db, query, page, page_size)
+    if items:
+        assignment_result = await db.execute(
+            select(
+                job_card_mechanics.c.job_card_id,
+                job_card_mechanics.c.employee_id,
+                job_card_mechanics.c.work_category,
+            ).where(job_card_mechanics.c.job_card_id.in_([item.id for item in items]))
+        )
+        grouped: dict[uuid.UUID, list[dict]] = {item.id: [] for item in items}
+        for row in assignment_result:
+            grouped[row.job_card_id].append({
+                "employee_id": row.employee_id,
+                "work_category": row.work_category,
+            })
+        for item in items:
+            item.staff_assignments = grouped[item.id]
     return {"items": items, "total": total, "page": page, "page_size": page_size, "total_pages": total_pages}
 
 
@@ -212,8 +248,8 @@ async def update_job_card(db: AsyncSession, job_card: JobCard, **kwargs) -> JobC
     return await get_job_card(db, job_card.id)
 
 
-async def use_inventory(db: AsyncSession, job_card_id: uuid.UUID, item_id: uuid.UUID, store_location_id: uuid.UUID, quantity: int):
-    from app.inventory.models import StockEntry
+async def use_inventory(db: AsyncSession, job_card_id: uuid.UUID, item_id: uuid.UUID, store_location_id: uuid.UUID, quantity: int, user_id: uuid.UUID):
+    from app.inventory.models import InventoryMovement, StockEntry
     from sqlalchemy import select
     result = await db.execute(
         select(StockEntry).where(
@@ -224,11 +260,17 @@ async def use_inventory(db: AsyncSession, job_card_id: uuid.UUID, item_id: uuid.
     entry = result.scalar_one_or_none()
     if not entry or entry.quantity < quantity:
         raise HTTPException(status_code=400, detail="Insufficient stock")
+    before = entry.quantity
     entry.quantity -= quantity
     usage = JobCardInventoryUsage(
         job_card_id=job_card_id, item_id=item_id, store_location_id=store_location_id, quantity=quantity
     )
     db.add(usage)
+    db.add(InventoryMovement(
+        item_id=item_id, store_location_id=store_location_id, job_card_id=job_card_id,
+        user_id=user_id, movement_type="job_consumption", quantity_change=-quantity,
+        quantity_before=before, quantity_after=entry.quantity,
+    ))
     await db.flush()
     return usage
 

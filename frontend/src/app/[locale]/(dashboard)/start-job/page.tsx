@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
@@ -13,10 +13,10 @@ import {
   useCreateVehicleMutation,
 } from "@/features/jobCards/api";
 import { ConditionWizard } from "@/features/jobCards/components/ConditionWizard";
-import { MechanicAssign } from "@/features/jobCards/components/MechanicAssign";
+import { MechanicAssign, WORK_CATEGORIES } from "@/features/jobCards/components/MechanicAssign";
 import { PerformaLineItems } from "@/features/performas/components/PerformaLineItems";
 import { PerformaSummary } from "@/features/performas/components/PerformaSummary";
-import { useCreatePerformaMutation } from "@/features/performas/api";
+import { useCreatePerformaMutation, useGetPerformaQuery, useLinkPerformaJobCardMutation } from "@/features/performas/api";
 import { jobCardCreateSchema, type JobCardCreateFormData } from "@/lib/formSchemas";
 import { PART_SECTIONS } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
@@ -26,13 +26,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Combobox } from "@/components/ui/combobox";
 import { cn } from "@/lib/utils";
-import { ArrowLeft, Loader2, Check, ChevronLeft, ChevronRight, Plus, User, Truck, Wrench, ClipboardCheck, Receipt } from "lucide-react";
+import { ArrowLeft, Loader2, Check, ChevronLeft, ChevronRight, Plus, User, Truck, Wrench, ClipboardCheck, Receipt, AlertCircle } from "lucide-react";
 import type { VehicleConditionInput } from "@/features/jobCards/types";
 import type { LineItemInput } from "@/features/performas/types";
 
 const CONDITION_STEP_START = 2;
 
-export default function StartJobPage() {
+export default function StartJobPage({ searchParams }: { searchParams: Promise<{ performa_id?: string }> }) {
   const t = useTranslations("startJob");
   const STEPS = [
     { label: t("stepOwnerLabel"), icon: User },
@@ -46,6 +46,10 @@ export default function StartJobPage() {
   const router = useRouter();
   const [createJobCard, { isLoading: isCreatingJobCard }] = useCreateJobCardMutation();
   const [createPerforma, { isLoading: isCreatingPerforma }] = useCreatePerformaMutation();
+  const [linkPerforma] = useLinkPerformaJobCardMutation();
+  const [performaId, setPerformaId] = useState("");
+  useEffect(() => { searchParams.then((params) => setPerformaId(params.performa_id ?? "")); }, [searchParams]);
+  const { data: sourcePerforma } = useGetPerformaQuery(performaId, { skip: !performaId });
   const { data: ownersResp } = useGetOwnersQuery({ page: 1, page_size: 100 });
   const owners = ownersResp?.items ?? [];
   const { data: vehiclesResp } = useGetVehiclesQuery({ page: 1, page_size: 100 });
@@ -75,17 +79,30 @@ export default function StartJobPage() {
       remarks: "",
       requested_materials: "",
       conditions: [],
-      mechanic_ids: [],
+      staff_assignments: [],
     },
   });
 
   const ownerId = watch("owner_id");
   const vehicleId = watch("vehicle_id");
   const conditions = watch("conditions");
-  const mechanicIds = watch("mechanic_ids");
+  const staffAssignments = watch("staff_assignments") ?? [];
 
   const [lineItems, setLineItems] = useState<LineItemInput[]>([{ type: "labor", description: "", quantity: 1, unit_price: 0 }]);
   const [clientEmail, setClientEmail] = useState("");
+
+  useEffect(() => {
+    if (!sourcePerforma) return;
+    const selectedVehicle = vehicles.find((vehicle) => vehicle.id === sourcePerforma.vehicle_id);
+    if (selectedVehicle) {
+      setValue("owner_id", selectedVehicle.owner_id, { shouldValidate: true });
+      setValue("vehicle_id", selectedVehicle.id, { shouldValidate: true });
+    }
+    setLineItems(sourcePerforma.line_items.map((item) => ({
+      type: item.type, description: item.description, quantity: item.quantity, unit_price: item.unit_price,
+    })));
+    setClientEmail(sourcePerforma.client_email ?? "");
+  }, [sourcePerforma, vehicles, setValue]);
 
   const [showNewOwner, setShowNewOwner] = useState(false);
   const [newOwnerName, setNewOwnerName] = useState("");
@@ -167,8 +184,13 @@ export default function StartJobPage() {
         remarks: data.remarks || null,
         requested_materials: data.requested_materials || null,
         conditions: data.conditions.filter((c) => c.condition_state !== "available"),
-        mechanic_ids: data.mechanic_ids,
+        staff_assignments: data.staff_assignments,
       }).unwrap();
+      if (performaId) {
+        await linkPerforma({ id: performaId, job_card_id: jc.id }).unwrap();
+        router.push(`/job-cards/${jc.id}`);
+        return;
+      }
       setCreatedJobCardId(jc.id);
       setStep(totalSteps - 1);
     } catch {
@@ -227,19 +249,42 @@ export default function StartJobPage() {
   const vatRate = 15;
   const vatAmount = subtotal * (vatRate / 100);
   const grandTotal = subtotal + vatAmount;
+  const currentStepLabel = STEPS[Math.min(step, totalSteps - 1)]?.label;
 
   return (
-    <div className="mx-auto max-w-3xl pb-24">
-      <Button variant="ghost" onClick={() => router.back()} className="mb-4">
-        <ArrowLeft size={15} />
-        {tc("back")}
-      </Button>
+    <div className="mx-auto max-w-7xl pb-28">
+      <div className="mb-4 rounded-xl border border-border/60 bg-card p-4 shadow-card md:p-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <Button variant="ghost" size="icon-sm" onClick={() => router.back()} aria-label={tc("back")}>
+              <ArrowLeft size={17} />
+            </Button>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wider text-primary">{t("title")}</p>
+              <h1 className="mt-1 text-2xl font-semibold tracking-tight md:text-3xl">
+                {isPerformaStep ? t("performa") : currentStepLabel}
+              </h1>
+              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                {isPerformaStep ? t("performaDescription") : t("step", { step: step + 1 })}
+              </p>
+            </div>
+          </div>
+          {!isPerformaStep && (
+            <div className="flex items-center gap-2 rounded-lg bg-muted/50 p-1">
+              <span className="rounded-md bg-background px-3 py-2 text-sm font-semibold shadow-sm">
+                {step + 1} / {totalSteps - 1}
+              </span>
+              <span className="pr-2 text-xs font-medium text-muted-foreground">{totalDamaged} issues</span>
+            </div>
+          )}
+        </div>
+      </div>
 
-      {/* Step indicator */}
+      <div className="sticky top-14 z-20 mb-4 rounded-xl border border-border/60 bg-background/95 p-3 shadow-card backdrop-blur supports-[backdrop-filter]:bg-background/80 lg:top-0">
       {!isPerformaStep && (
         <>
-          <div className="mb-8 overflow-x-auto">
-            <div className="flex items-center gap-1 min-w-max">
+          <div className="hidden overflow-x-auto lg:block">
+            <div className="flex items-center gap-1.5 min-w-max">
               {STEPS.slice(0, -1).map((s, i) => (
                 <div key={i} className="flex items-center gap-1">
                   <button
@@ -254,18 +299,18 @@ export default function StartJobPage() {
                     }}
                     disabled={i > step}
                     className={cn(
-                      "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all",
+                      "flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition-all",
                       i === step
-                        ? "bg-indigo-500 text-white shadow-sm"
+                        ? "bg-primary text-primary-foreground shadow-sm"
                         : i < step
                           ? "bg-emerald-500/15 text-emerald-600"
-                          : "bg-muted text-muted-foreground",
+                          : "bg-muted/70 text-muted-foreground",
                     )}
                   >
                     <span className={cn(
                       "flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold",
                       i === step
-                        ? "bg-white/20 text-white"
+                        ? "bg-primary-foreground/20 text-primary-foreground"
                         : i < step
                           ? "bg-emerald-500 text-white"
                           : "bg-muted-foreground/20 text-muted-foreground",
@@ -281,21 +326,37 @@ export default function StartJobPage() {
               ))}
             </div>
           </div>
-          <div className="mb-6 h-1.5 w-full rounded-full bg-muted overflow-hidden">
+          <div className="lg:hidden">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  {t("step", { step: step + 1 })}
+                </p>
+                <p className="truncate text-sm font-semibold">{currentStepLabel}</p>
+              </div>
+              <span className="shrink-0 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+                {step + 1}/{totalSteps - 1}
+              </span>
+            </div>
+          </div>
+          <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-muted">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-teal-400 transition-all duration-500"
+              className="h-full rounded-full bg-gradient-to-r from-primary to-secondary transition-all duration-500"
               style={{ width: `${((step + 1) / (totalSteps - 1)) * 100}%` }}
             />
           </div>
         </>
       )}
+      </div>
 
       <form id="job-card-form" onSubmit={handleSubmit(handleCreateJobCard)}>
         {/* Step 0: Owner */}
         {step === 0 && (
-          <div className="rounded-xl border bg-card p-6 shadow-sm space-y-5">
-            <h2 className="text-sm font-semibold">{t("step", { step: 1 })} — {t("owner")}</h2>
-            <p className="text-xs text-muted-foreground">{t("selectOwner")}</p>
+          <div className="rounded-xl border border-border/60 bg-card p-4 shadow-card space-y-5 md:p-6">
+            <div>
+              <h2 className="text-lg font-semibold">{t("owner")}</h2>
+              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{t("selectOwner")}</p>
+            </div>
 
             <div className="space-y-2">
               <Label>{t("owner")}</Label>
@@ -314,8 +375,8 @@ export default function StartJobPage() {
             </div>
 
             {showNewOwner ? (
-              <div className="rounded-lg border border-indigo-200 bg-indigo-50/50 p-4 space-y-3">
-                <h3 className="text-xs font-semibold text-indigo-600">{t("newOwner")}</h3>
+              <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-4 md:p-5">
+                <h3 className="text-sm font-semibold text-primary">{t("newOwner")}</h3>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="space-y-1.5">
                     <Label className="text-xs">{t("name")}</Label>
@@ -326,7 +387,7 @@ export default function StartJobPage() {
                     <Input value={newOwnerPhone} onChange={(e) => setNewOwnerPhone(e.target.value)} />
                   </div>
                 </div>
-                <div className="flex gap-2 pt-1">
+                <div className="flex flex-col gap-2 pt-1 sm:flex-row">
                   <Button type="button" variant="outline" size="sm" onClick={() => setShowNewOwner(false)}>{tc("cancel")}</Button>
                   <Button type="button" size="sm" onClick={handleCreateOwner}
                     disabled={creatingOwner || !newOwnerName.trim() || !newOwnerPhone.trim()}>
@@ -346,9 +407,11 @@ export default function StartJobPage() {
 
         {/* Step 1: Vehicle + Details */}
         {step === 1 && (
-          <div className="rounded-xl border bg-card p-6 shadow-sm space-y-5">
-            <h2 className="text-sm font-semibold">{t("step", { step: 2 })} — {t("vehicle")}</h2>
-            <p className="text-xs text-muted-foreground">{t("selectVehicle", { name: owners.find((o) => o.id === ownerId)?.name || "" })}</p>
+          <div className="rounded-xl border border-border/60 bg-card p-4 shadow-card space-y-5 md:p-6">
+            <div>
+              <h2 className="text-lg font-semibold">{t("vehicle")}</h2>
+              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{t("selectVehicle", { name: owners.find((o) => o.id === ownerId)?.name || "" })}</p>
+            </div>
 
             <div className="space-y-2">
               <Label>{t("vehicle")}</Label>
@@ -365,8 +428,8 @@ export default function StartJobPage() {
             </div>
 
             {showNewVehicle ? (
-              <div className="rounded-lg border border-indigo-200 bg-indigo-50/50 p-4 space-y-3">
-                <h3 className="text-xs font-semibold text-indigo-600">{t("newVehicle")}</h3>
+              <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-4 md:p-5">
+                <h3 className="text-sm font-semibold text-primary">{t("newVehicle")}</h3>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="space-y-1.5">
                     <Label className="text-xs">{t("model")}</Label>
@@ -389,7 +452,7 @@ export default function StartJobPage() {
                     <Input value={newVehicleChassis} onChange={(e) => setNewVehicleChassis(e.target.value)} className="font-mono" />
                   </div>
                 </div>
-                <div className="flex gap-2 pt-1">
+                <div className="flex flex-col gap-2 pt-1 sm:flex-row">
                   <Button type="button" variant="outline" size="sm" onClick={() => setShowNewVehicle(false)}>{tc("cancel")}</Button>
                   <Button type="button" size="sm" onClick={handleCreateVehicle}
                     disabled={creatingVehicle || !newVehicleModel.trim() || !newVehiclePlate.trim()}>
@@ -409,7 +472,7 @@ export default function StartJobPage() {
 
             <hr className="border-border" />
 
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-1.5">
                 <Label htmlFor="mileage">{t("mileage")}</Label>
                 <Input id="mileage" type="number" {...register("mileage_km", { valueAsNumber: true })} />
@@ -440,7 +503,7 @@ export default function StartJobPage() {
               </label>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-1.5">
                 <Label htmlFor="rem">{t("remarks")}</Label>
                 <Textarea id="rem" rows={2} {...register("remarks")} />
@@ -455,8 +518,8 @@ export default function StartJobPage() {
 
         {/* Steps 2-8: Condition Wizard */}
         {isConditionStep && (
-          <div className="rounded-xl border bg-card p-6 shadow-sm">
-            <h2 className="text-sm font-semibold mb-4">{t("step", { step: step + 1 })} — {t("condition")}</h2>
+          <div className="rounded-xl border border-border/60 bg-card p-4 shadow-card md:p-6">
+            <h2 className="sr-only">{t("condition")}</h2>
             <ConditionWizard
               conditions={conditions}
               onChange={(val: VehicleConditionInput[]) => setValue("conditions", val, { shouldValidate: true })}
@@ -469,25 +532,29 @@ export default function StartJobPage() {
 
         {/* Step 9: Staff */}
         {step === CONDITION_STEP_START + PART_SECTIONS.length && (
-          <div className="rounded-xl border bg-card p-6 shadow-sm space-y-4">
-            <h2 className="text-sm font-semibold">{t("step", { step: step + 1 })} — {t("staff")}</h2>
-            <p className="text-xs text-muted-foreground">{t("staffDescription")}</p>
+          <div className="rounded-xl border border-border/60 bg-card p-4 shadow-card space-y-5 md:p-6">
+            <div>
+              <h2 className="text-lg font-semibold">{t("staff")}</h2>
+              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{t("staffDescription")}</p>
+            </div>
             <MechanicAssign
-              value={mechanicIds || []}
-              onChange={(val: string[]) => setValue("mechanic_ids", val, { shouldValidate: true })}
+              value={staffAssignments}
+              onChange={(value) => setValue("staff_assignments", value, { shouldValidate: true })}
             />
           </div>
         )}
 
         {/* Step 10: Review & Submit Job Card */}
         {isReviewStep && (
-          <div className="rounded-xl border bg-card p-6 shadow-sm space-y-5">
-            <h2 className="text-sm font-semibold">{t("step", { step: step + 1 })} — {t("review")}</h2>
-            <p className="text-xs text-muted-foreground">{t("reviewDescription")}</p>
+          <div className="rounded-xl border border-border/60 bg-card p-4 shadow-card space-y-4 md:p-6">
+            <div>
+              <h2 className="text-lg font-semibold">{t("review")}</h2>
+              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{t("reviewDescription")}</p>
+            </div>
 
             {Object.keys(errors).length > 0 && (
-              <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 space-y-1">
-                <p className="text-xs font-medium text-destructive">Please fix the following errors:</p>
+              <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-4 space-y-2">
+                <p className="flex items-center gap-2 text-sm font-semibold text-destructive"><AlertCircle size={16} /> Please fix the following errors:</p>
                 <ul className="list-disc list-inside text-xs text-destructive/80 space-y-0.5">
                   {Object.entries(errors).map(([key, err]) => (
                     <li key={key}>{(err as { message?: string })?.message || key}</li>
@@ -499,7 +566,7 @@ export default function StartJobPage() {
             {ownerId && (() => {
               const owner = owners.find((o) => o.id === ownerId);
               return owner ? (
-                <div className="rounded-lg border bg-muted/30 p-3 space-y-1">
+                <div className="rounded-xl border border-border/60 bg-muted/30 p-4 space-y-1">
                   <p className="text-xs font-medium text-muted-foreground">{t("ownerSummary")}</p>
                   <p className="text-sm font-medium">{owner.name}</p>
                   <p className="text-xs text-muted-foreground">{owner.phone}</p>
@@ -510,30 +577,37 @@ export default function StartJobPage() {
             {vehicleId && (() => {
               const vehicle = vehicles.find((v) => v.id === vehicleId);
               return vehicle ? (
-                <div className="rounded-lg border bg-muted/30 p-3 space-y-1">
+                <div className="rounded-xl border border-border/60 bg-muted/30 p-4 space-y-1">
                   <p className="text-xs font-medium text-muted-foreground">{t("vehicleSummary")}</p>
                   <p className="text-sm font-medium">{vehicle.model}</p>
                   <p className="text-xs text-muted-foreground">{vehicle.plate_number} · {vehicle.type}</p>
+                  <p className="text-xs text-muted-foreground">Engine: {vehicle.engine_number}</p>
+                  <p className="text-xs text-muted-foreground">Chassis: {vehicle.chassis_number}</p>
                 </div>
               ) : null;
             })()}
 
             {totalDamaged > 0 ? (
-              <div className="rounded-lg border bg-muted/30 p-3 space-y-1">
+              <div className="rounded-xl border border-border/60 bg-muted/30 p-4 space-y-1">
                 <p className="text-xs font-medium text-muted-foreground">{t("damageSummary")}</p>
                 <p className="text-sm">{t("partsWithIssues", { count: totalDamaged })}</p>
               </div>
             ) : (
-              <div className="rounded-lg border bg-muted/30 p-3 space-y-1">
+              <div className="rounded-xl border border-border/60 bg-muted/30 p-4 space-y-1">
                 <p className="text-xs font-medium text-muted-foreground">{t("damageSummary")}</p>
                 <p className="text-sm text-emerald-600">{t("allPartsAvailable")}</p>
               </div>
             )}
 
-            <div className="rounded-lg border bg-muted/30 p-3 space-y-1">
+            <div className="rounded-xl border border-border/60 bg-muted/30 p-4 space-y-1">
               <p className="text-xs font-medium text-muted-foreground">{t("staffSummary")}</p>
-              {mechanicIds && mechanicIds.length > 0 ? (
-                <p className="text-sm">{t("staffCount", { count: mechanicIds.length })}</p>
+              {staffAssignments.length > 0 ? (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {WORK_CATEGORIES.map((category) => {
+                    const count = staffAssignments.filter((assignment) => assignment.work_category === category.value).length;
+                    return count ? <span key={category.value} className="rounded-md bg-background px-2 py-1 text-xs">{category.label}: {count}</span> : null;
+                  })}
+                </div>
               ) : (
                 <p className="text-sm text-muted-foreground">{t("noStaffAssigned")}</p>
               )}
@@ -547,18 +621,18 @@ export default function StartJobPage() {
       {isPerformaStep && (
         <div className="space-y-6">
           {createdJobCardId && (
-            <div className="rounded-xl border bg-emerald-500/10 border-emerald-500/30 p-4">
+          <div className="rounded-xl border bg-emerald-500/10 border-emerald-500/30 p-4">
               <p className="text-sm text-emerald-600 font-medium">{t("jobCardCreated")}</p>
             </div>
           )}
 
-          <div className="rounded-xl border bg-card p-6 shadow-sm space-y-4">
-            <h2 className="text-sm font-semibold">{t("step", { step: totalSteps })} — {t("performa")}</h2>
-            <p className="text-xs text-muted-foreground">{t("performaDescription")}</p>
+          <div className="rounded-xl border border-border/60 bg-card p-4 shadow-card space-y-3 md:p-6">
+            <h2 className="text-lg font-semibold">{t("step", { step: totalSteps })} — {t("performa")}</h2>
+            <p className="text-sm leading-relaxed text-muted-foreground">{t("performaDescription")}</p>
           </div>
 
-          <div className="rounded-xl border bg-card p-6 shadow-sm space-y-4">
-            <h2 className="text-sm font-semibold">{t("clientEmail")}</h2>
+          <div className="rounded-xl border border-border/60 bg-card p-4 shadow-card space-y-4 md:p-6">
+            <h2 className="text-base font-semibold">{t("clientEmail")}</h2>
             <Input
               type="email"
               placeholder={t("clientEmailPlaceholder")}
@@ -567,29 +641,14 @@ export default function StartJobPage() {
             />
           </div>
 
-          <div className="rounded-xl border bg-card p-6 shadow-sm space-y-4">
-            <h2 className="text-sm font-semibold">{t("lineItems")}</h2>
+          <div className="rounded-xl border border-border/60 bg-card p-4 shadow-card space-y-4 md:p-6">
+            <h2 className="text-base font-semibold">{t("lineItems")}</h2>
             <PerformaLineItems items={lineItems} onChange={setLineItems} />
             <PerformaSummary subtotal={subtotal} vatRate={vatRate} vatAmount={vatAmount} grandTotal={grandTotal} />
           </div>
 
-          <div className="hidden md:flex items-center justify-between">
-            <Button type="button" variant="outline" onClick={() => setStep(totalSteps - 2)}>
-              <ChevronLeft size={15} />
-              {t("previous")}
-            </Button>
-            <Button
-              type="button"
-              onClick={handleCreatePerforma}
-              disabled={isCreatingPerforma}
-            >
-              {isCreatingPerforma && <Loader2 className="h-4 w-4 animate-spin" />}
-              {isCreatingPerforma ? t("creatingPerforma") : t("createPerforma")}
-            </Button>
-          </div>
-
-          <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:hidden">
-            <div className="flex items-center justify-between px-4 py-3">
+          <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background/95 shadow-float backdrop-blur supports-[backdrop-filter]:bg-background/80">
+            <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
               <Button type="button" variant="outline" size="sm" onClick={() => setStep(totalSteps - 2)}>
                 <ChevronLeft size={15} />
                 {t("previous")}
@@ -610,36 +669,9 @@ export default function StartJobPage() {
 
       {/* Navigation (steps 0-10) */}
       {!isPerformaStep && (
-        <div className="mt-6 hidden md:flex items-center justify-between">
-          <div>
-            {step > 0 && (
-              <Button type="button" variant="outline" onClick={handlePrev}>
-                <ChevronLeft size={15} />
-                {t("previous")}
-              </Button>
-            )}
-          </div>
-          <div>
-            {!isReviewStep ? (
-              <Button type="button" onClick={handleNext} disabled={!canGoNext()}>
-                {t("next")}
-                <ChevronRight size={15} />
-              </Button>
-            ) : (
-              <Button type="submit" form="job-card-form" disabled={isCreatingJobCard}>
-                {isCreatingJobCard && <Loader2 className="h-4 w-4 animate-spin" />}
-                {isCreatingJobCard ? t("creatingJobCard") : t("createJobCard")}
-              </Button>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Mobile navigation bar (steps 0-10) */}
-      {!isPerformaStep && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:hidden">
-          <div className="flex items-center justify-between px-4 py-3">
-            <div>
+        <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background/95 shadow-float backdrop-blur supports-[backdrop-filter]:bg-background/80">
+          <div className="mx-auto grid max-w-7xl grid-cols-[1fr_auto_1fr] items-center gap-2 px-4 py-3">
+            <div className="justify-self-start">
               {step > 0 && (
                 <Button type="button" variant="outline" size="sm" onClick={handlePrev}>
                   <ChevronLeft size={15} />
@@ -647,7 +679,10 @@ export default function StartJobPage() {
                 </Button>
               )}
             </div>
-            <div>
+            <span className="text-xs font-medium text-muted-foreground">
+              {step + 1}/{totalSteps - 1}
+            </span>
+            <div className="justify-self-end">
               {!isReviewStep ? (
                 <Button type="button" size="sm" onClick={handleNext} disabled={!canGoNext()}>
                   {t("next")}

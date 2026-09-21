@@ -14,10 +14,9 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   BarChart, Bar,
 } from "recharts";
-import { ArrowRight, PlusCircle, FileText, Package, Wrench, Receipt, Activity } from "lucide-react";
+import { ArrowRight, PlusCircle, FileText, Package, Wrench, Receipt, Activity, TrendingUp, AlertTriangle } from "lucide-react";
 import { JOB_STATUS_LABELS } from "@/lib/constants";
 import type { InventoryItem } from "@/features/inventory/types";
-import type { JobCard } from "@/features/jobCards/types";
 
 const STATUS_COLORS: Record<string, string> = {
   pending_inspection: "#f59e0b",
@@ -43,52 +42,66 @@ export default function DashboardPage() {
   }, []);
 
   return (
-    <div className="mx-auto max-w-6xl">
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          {t(greetingKey)}, {user?.full_name?.split(" ")[0]}
-        </h1>
-        <p className="mt-1 text-muted-foreground">{tnav("dashboard")}</p>
-      </div>
-
-      <StatCards />
-      <DashboardCharts />
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="mx-auto max-w-7xl space-y-4 md:space-y-5">
+      <div className="animate-fade-in-up grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,26rem)] lg:items-stretch">
+        <div className="rounded-xl border border-border/60 bg-card p-4 shadow-card md:p-5">
+          <p className="text-xs font-semibold uppercase tracking-wider text-primary">{tnav("dashboard")}</p>
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">
+            {t(greetingKey)}, {user?.full_name?.split(" ")[0]}
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+            Keep the workshop moving from intake to invoice.
+          </p>
+        </div>
         <StartJobCard
           title={tstart("title")}
           description={tstart("step", { step: 1 })}
           onClick={() => router.push("/start-job")}
         />
-        <DashboardCard
-          title={tnav("jobCards")}
-          description={tnav("jobCardsDescription")}
-          href="/job-cards"
-        />
-        <DashboardCard
-          title={tnav("performas")}
-          description={tnav("performasDescription")}
-          href="/performas"
-        />
-        <DashboardCard
-          title={tnav("invoices")}
-          description={tnav("invoicesDescription")}
-          href="/invoices"
-        />
-        <DashboardCard
-          title={tnav("inventory")}
-          description={tnav("inventoryDescription")}
-          comingSoon
-        />
       </div>
+
+      <StatCards />
+
+      <div className="animate-fade-in-up" style={{ animationDelay: "0.12s" }}>
+        <h2 className="mb-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Quick Actions</h2>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <DashboardCard
+            title={tnav("jobCards")}
+            description={tnav("jobCardsDescription")}
+            href="/job-cards"
+            icon={FileText}
+          />
+          <DashboardCard
+            title={tnav("performas")}
+            description={tnav("performasDescription")}
+            href="/performas"
+            icon={Receipt}
+          />
+          <DashboardCard
+            title={tnav("invoices")}
+            description={tnav("invoicesDescription")}
+            href="/invoices"
+            icon={Receipt}
+          />
+          <DashboardCard
+            title={tnav("inventory")}
+            description={tnav("inventoryDescription")}
+            href="/inventory"
+            icon={Package}
+          />
+        </div>
+      </div>
+
+      <DashboardCharts />
     </div>
   );
 }
 
 function DashboardCharts() {
   const { data: jobCardsResp } = useGetJobCardsQuery({ page: 1, page_size: 100 });
-  const jobCards = jobCardsResp?.items ?? [];
+  const jobCards = useMemo(() => jobCardsResp?.items ?? [], [jobCardsResp?.items]);
   const { data: performasResp } = useGetPerformasQuery({ page: 1, page_size: 100 });
-  const performas = performasResp?.items ?? [];
+  const performas = useMemo(() => performasResp?.items ?? [], [performasResp?.items]);
 
   const statusData = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -130,84 +143,117 @@ function DashboardCharts() {
   [jobCards]);
 
   return (
-    <div className="mb-8 grid gap-4 lg:grid-cols-2">
-      <div className="rounded-xl border bg-card p-4">
-        <h3 className="mb-2 text-sm font-medium text-muted-foreground">Job Cards by Status</h3>
-        {statusData.length > 0 ? (
-          <ResponsiveContainer width="100%" height={220}>
-            <PieChart>
-              <Pie data={statusData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value" nameKey="name">
-                {statusData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
-              </Pie>
-              <Tooltip />
-              <Legend iconType="circle" fontSize={12} />
-            </PieChart>
-          </ResponsiveContainer>
-        ) : (
-          <p className="text-sm text-muted-foreground">No data yet</p>
-        )}
-      </div>
+    <div className="space-y-4">
+      <div className="grid gap-4 lg:grid-cols-2">
+        <ChartCard title="Job Cards by Status" delay="0.05s">
+          {statusData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={210}>
+              <PieChart>
+                <Pie data={statusData} cx="50%" cy="50%" innerRadius={55} outerRadius={85} dataKey="value" nameKey="name" stroke="none">
+                  {statusData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                </Pie>
+                <Tooltip
+                  contentStyle={{ borderRadius: 12, border: "1px solid var(--border)", background: "var(--popover)", fontSize: 13 }}
+                />
+                <Legend iconType="circle" iconSize={8} fontSize={12} />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <EmptyChart />
+          )}
+        </ChartCard>
 
-      <div className="rounded-xl border bg-card p-4">
-        <h3 className="mb-2 text-sm font-medium text-muted-foreground">Job Cards Over Time</h3>
-        {weeklyData.length > 0 ? (
-          <ResponsiveContainer width="100%" height={220}>
-            <LineChart data={weeklyData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="week" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-              <YAxis allowDecimals={false} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-              <Tooltip />
-              <Line type="monotone" dataKey="count" stroke="#8b5cf6" strokeWidth={2} dot={{ r: 4 }} />
-            </LineChart>
-          </ResponsiveContainer>
-        ) : (
-          <p className="text-sm text-muted-foreground">No data yet</p>
-        )}
-      </div>
+        <ChartCard title="Job Cards Over Time" delay="0.1s">
+          {weeklyData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={210}>
+              <LineChart data={weeklyData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="week" tick={{ fontSize: 11 }} stroke="var(--muted-foreground)" />
+                <YAxis allowDecimals={false} tick={{ fontSize: 11 }} stroke="var(--muted-foreground)" />
+                <Tooltip
+                  contentStyle={{ borderRadius: 12, border: "1px solid var(--border)", background: "var(--popover)", fontSize: 13 }}
+                />
+                <Line type="monotone" dataKey="count" stroke="var(--primary)" strokeWidth={2.5} dot={{ r: 3, fill: "var(--primary)" }} activeDot={{ r: 5 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <EmptyChart />
+          )}
+        </ChartCard>
 
-      <div className="rounded-xl border bg-card p-4">
-        <h3 className="mb-2 text-sm font-medium text-muted-foreground">Revenue from Approved Performas</h3>
-        {revenueData.length > 0 ? (
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={revenueData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="month" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-              <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-              <Tooltip formatter={(v) => `ETB ${Number(v).toLocaleString()}`} />
-              <Bar dataKey="revenue" fill="#22c55e" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        ) : (
-          <p className="text-sm text-muted-foreground">No data yet</p>
-        )}
-      </div>
+        <ChartCard title="Revenue from Approved Performas" delay="0.15s">
+          {revenueData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={210}>
+              <BarChart data={revenueData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="month" tick={{ fontSize: 11 }} stroke="var(--muted-foreground)" />
+                <YAxis tick={{ fontSize: 11 }} stroke="var(--muted-foreground)" />
+                <Tooltip
+                  formatter={(v) => `ETB ${Number(v).toLocaleString()}`}
+                  contentStyle={{ borderRadius: 12, border: "1px solid var(--border)", background: "var(--popover)", fontSize: 13 }}
+                />
+                <Bar dataKey="revenue" fill="var(--success)" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <EmptyChart />
+          )}
+        </ChartCard>
 
-      <div className="rounded-xl border bg-card p-4">
-        <div className="mb-2 flex items-center gap-2">
-          <Activity size={14} className="text-muted-foreground" />
-          <h3 className="text-sm font-medium text-muted-foreground">Recent Activity</h3>
+        <ChartCard title="Recent Activity" delay="0.2s" noPadding>
+          <div className="flex items-center gap-2 px-4 pt-3">
+            <Activity size={14} className="text-muted-foreground" />
+            <h3 className="text-sm font-medium text-muted-foreground">Recent Activity</h3>
+          </div>
+          {recentCards.length > 0 ? (
+            <ul className="divide-y divide-border/50">
+              {recentCards.map((jc) => (
+                <li key={jc.id} className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-muted/30">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span
+                      className="h-2 w-2 shrink-0 rounded-full"
+                      style={{ backgroundColor: STATUS_COLORS[jc.status] || "#6b7280" }}
+                    />
+                    <span className="truncate text-sm text-muted-foreground">{jc.description?.slice(0, 35) || "Job card"}</span>
+                  </div>
+                  <span className="ml-3 shrink-0 text-xs text-muted-foreground/60">
+                    {new Date(jc.created_at).toLocaleDateString()}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="px-4 pb-4 pt-2">
+              <p className="text-sm text-muted-foreground">No activity yet</p>
+            </div>
+          )}
+        </ChartCard>
+      </div>
+    </div>
+  );
+}
+
+function ChartCard({ title, children, delay = "0s", noPadding = false }: { title: string; children: React.ReactNode; delay?: string; noPadding?: boolean }) {
+  return (
+    <div
+      className="animate-fade-in-up overflow-hidden rounded-lg border border-border/60 bg-card shadow-card transition-shadow hover:shadow-elevated"
+      style={{ animationDelay: delay }}
+    >
+      {!noPadding && (
+        <div className="px-4 pt-3 pb-1">
+          <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
         </div>
-        {recentCards.length > 0 ? (
-          <ul className="space-y-2">
-            {recentCards.map((jc) => (
-              <li key={jc.id} className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2 text-sm">
-                <div className="flex items-center gap-2">
-                  <span
-                    className="h-2 w-2 rounded-full"
-                    style={{ backgroundColor: STATUS_COLORS[jc.status] || "#6b7280" }}
-                  />
-                  <span className="text-muted-foreground">{jc.description?.slice(0, 30) || "Job card"}</span>
-                </div>
-                <span className="text-xs text-muted-foreground">
-                  {new Date(jc.created_at).toLocaleDateString()}
-                </span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-sm text-muted-foreground">No activity yet</p>
-        )}
-      </div>
+      )}
+      <div className={noPadding ? "" : "px-2 pb-2"}>{children}</div>
+    </div>
+  );
+}
+
+function EmptyChart() {
+  return (
+    <div className="flex flex-col items-center justify-center py-12 text-muted-foreground/50">
+      <TrendingUp size={24} className="mb-2" />
+      <p className="text-sm">No data yet</p>
     </div>
   );
 }
@@ -225,16 +271,23 @@ function StartJobCard({
     <button
       type="button"
       onClick={onClick}
-      className="group relative col-span-1 sm:col-span-2 lg:col-span-1 rounded-xl bg-gradient-to-br from-indigo-500 to-teal-500 p-5 text-left text-white shadow-sm transition-all hover:shadow-md hover:from-indigo-400 hover:to-teal-400"
+      className="group relative flex min-h-36 w-full overflow-hidden rounded-xl bg-gradient-to-br from-primary via-primary to-secondary p-4 text-left text-primary-foreground shadow-lg shadow-primary/20 transition-all duration-200 hover:shadow-xl hover:shadow-primary/30 md:p-5"
     >
-      <div className="flex items-start justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <PlusCircle size={20} className="text-white/80" />
-            <h3 className="font-semibold text-lg">{title}</h3>
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.12),transparent_50%)]" />
+      <div className="relative flex w-full flex-col justify-between gap-4">
+        <div className="flex min-w-0 items-start gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-white/15 backdrop-blur-sm">
+            <PlusCircle size={21} />
           </div>
-          <p className="mt-2 text-sm text-white/80">{description} &rarr;</p>
+          <div className="min-w-0">
+            <h3 className="text-lg font-semibold">{title}</h3>
+            <p className="mt-1 text-sm leading-relaxed text-white/75">{description}</p>
+          </div>
         </div>
+        <span className="inline-flex w-fit items-center gap-2 rounded-lg bg-white/15 px-3 py-2 text-sm font-semibold">
+          Open workflow
+          <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
+        </span>
       </div>
     </button>
   );
@@ -262,34 +315,34 @@ function StatCards() {
   const activeCheckouts = checkouts.filter((c) => !c.checked_in_at).length;
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       <StatCard
         label="Open Job Cards"
         count={jcLoading ? "-" : openJobs}
         icon={FileText}
-        gradient="from-indigo-500/10 to-indigo-500/5"
-        iconColor="text-indigo-500"
+        gradient="from-indigo-500 to-indigo-600"
+        delay="0s"
       />
       <StatCard
         label="Low Stock Items"
         count={invLoading ? "-" : lowStock}
-        icon={Package}
-        gradient="from-amber-500/10 to-rose-500/5"
-        iconColor="text-amber-500"
+        icon={AlertTriangle}
+        gradient="from-amber-500 to-orange-500"
+        delay="0.05s"
       />
       <StatCard
         label="Active Checkouts"
         count={coLoading ? "-" : activeCheckouts}
         icon={Wrench}
-        gradient="from-emerald-500/10 to-emerald-500/5"
-        iconColor="text-emerald-500"
+        gradient="from-emerald-500 to-teal-500"
+        delay="0.1s"
       />
       <StatCard
         label="Invoices"
         count={invcLoading ? "-" : invoiceCount}
         icon={Receipt}
-        gradient="from-teal-500/10 to-teal-500/5"
-        iconColor="text-teal-500"
+        gradient="from-teal-500 to-cyan-500"
+        delay="0.15s"
       />
     </div>
   );
@@ -300,23 +353,29 @@ function StatCard({
   count,
   icon: Icon,
   gradient,
-  iconColor,
+  delay,
 }: {
   label: string;
   count: number | string;
   icon: React.ElementType;
   gradient: string;
-  iconColor: string;
+  delay: string;
 }) {
   return (
-    <div className="rounded-xl border bg-card p-5 shadow-sm">
+    <div
+      className="animate-fade-in-up group relative overflow-hidden rounded-lg border border-border/60 bg-card p-3 shadow-card transition-all duration-200 hover:shadow-elevated md:p-5"
+      style={{ animationDelay: delay }}
+    >
+      <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-gradient-to-br opacity-[0.06] transition-opacity group-hover:opacity-[0.1]" style={{ backgroundImage: `linear-gradient(to bottom right, var(--primary), transparent)` }} />
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs font-medium text-muted-foreground">{label}</p>
-          <p className="mt-1 text-2xl font-bold">{count}</p>
+          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider md:text-xs">{label}</p>
+          <p className="mt-1 text-2xl font-bold tracking-tight md:mt-1.5 md:text-3xl">{count}</p>
         </div>
-        <div className={`flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br ${gradient}`}>
-          <Icon className={`h-5 w-5 ${iconColor}`} />
+        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${gradient} text-white shadow-lg md:h-11 md:w-11 md:rounded-xl`}
+          style={{ boxShadow: `0 8px 16px -4px var(--tw-shadow-color)` }}
+        >
+          <Icon className="h-5 w-5" />
         </div>
       </div>
     </div>
@@ -328,32 +387,40 @@ function DashboardCard({
   description,
   comingSoon,
   href,
+  icon: Icon,
 }: {
   title: string;
   description: string;
   comingSoon?: boolean;
   href?: string;
+  icon?: React.ElementType;
 }) {
-  const t = useTranslations("common");
   const router = useRouter();
 
   return (
     <button
       type="button"
       onClick={href ? () => router.push(href) : undefined}
-      className="group relative rounded-xl border bg-card p-5 text-left transition-all hover:shadow-md"
+      className="group relative overflow-hidden rounded-lg border border-border/60 bg-card p-3 text-left shadow-card transition-all duration-200 hover:shadow-elevated md:p-4"
     >
       <div className="flex items-start justify-between">
-        <div>
-          <h3 className="font-medium">{title}</h3>
-          <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+        <div className="flex items-start gap-3">
+          {Icon && (
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted/60 text-muted-foreground transition-colors group-hover:bg-primary/10 group-hover:text-primary">
+              <Icon size={18} />
+            </div>
+          )}
+          <div>
+            <h3 className="text-sm font-medium">{title}</h3>
+            <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
+          </div>
         </div>
         {comingSoon ? (
-          <span className="shrink-0 rounded-full bg-muted px-2.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-            {t("comingSoon")}
+          <span className="shrink-0 rounded-full bg-muted/80 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+            Coming Soon
           </span>
         ) : (
-          <ArrowRight size={16} className="mt-0.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+          <ArrowRight size={14} className="mt-1 shrink-0 text-muted-foreground/30 transition-all group-hover:text-primary group-hover:translate-x-0.5" />
         )}
       </div>
     </button>

@@ -13,7 +13,7 @@ import {
   useCreateVehicleMutation,
 } from "@/features/jobCards/api";
 import { ConditionWizard } from "@/features/jobCards/components/ConditionWizard";
-import { MechanicAssign } from "@/features/jobCards/components/MechanicAssign";
+import { MechanicAssign, WORK_CATEGORIES } from "@/features/jobCards/components/MechanicAssign";
 import { jobCardCreateSchema, type JobCardCreateFormData } from "@/lib/formSchemas";
 import { PART_SECTIONS } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
@@ -69,14 +69,14 @@ export default function NewJobCardPage() {
       remarks: "",
       requested_materials: "",
       conditions: [],
-      mechanic_ids: [],
+      staff_assignments: [],
     },
   });
 
   const ownerId = watch("owner_id");
   const vehicleId = watch("vehicle_id");
   const conditions = watch("conditions");
-  const mechanicIds = watch("mechanic_ids");
+  const staffAssignments = watch("staff_assignments") ?? [];
 
   const [showNewOwner, setShowNewOwner] = useState(false);
   const [newOwnerName, setNewOwnerName] = useState("");
@@ -158,7 +158,7 @@ export default function NewJobCardPage() {
         remarks: data.remarks || null,
         requested_materials: data.requested_materials || null,
         conditions: data.conditions.filter((c) => c.condition_state !== "available"),
-        mechanic_ids: data.mechanic_ids,
+        staff_assignments: data.staff_assignments,
       }).unwrap();
       router.push("/job-cards");
     } catch {
@@ -439,8 +439,8 @@ export default function NewJobCardPage() {
             <h2 className="text-sm font-semibold">{t("stepStaffHeading", { step: CONDITION_STEP_START + PART_SECTIONS.length + 1 })}</h2>
             <p className="text-xs text-muted-foreground">{t("staffAssignDesc")}</p>
             <MechanicAssign
-              value={mechanicIds || []}
-              onChange={(val: string[]) => setValue("mechanic_ids", val, { shouldValidate: true })}
+              value={staffAssignments}
+              onChange={(value) => setValue("staff_assignments", value, { shouldValidate: true })}
             />
           </div>
         )}
@@ -482,6 +482,8 @@ export default function NewJobCardPage() {
                   <p className="text-xs font-medium text-muted-foreground">{t("vehicleSummary")}</p>
                   <p className="text-sm font-medium">{vehicle.model}</p>
                   <p className="text-xs text-muted-foreground">{vehicle.plate_number} · {vehicle.type}</p>
+                  <p className="text-xs text-muted-foreground">Engine: {vehicle.engine_number}</p>
+                  <p className="text-xs text-muted-foreground">Chassis: {vehicle.chassis_number}</p>
                 </div>
               ) : null;
             })()}
@@ -502,8 +504,13 @@ export default function NewJobCardPage() {
             {/* Staff Summary */}
             <div className="rounded-lg border bg-muted/30 p-3 space-y-1">
               <p className="text-xs font-medium text-muted-foreground">{t("staffSummary")}</p>
-              {mechanicIds && mechanicIds.length > 0 ? (
-                <p className="text-sm">{t("staffCount", { count: mechanicIds.length })}</p>
+              {staffAssignments.length > 0 ? (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {WORK_CATEGORIES.map((category) => {
+                    const count = staffAssignments.filter((assignment) => assignment.work_category === category.value).length;
+                    return count ? <span key={category.value} className="rounded-md bg-background px-2 py-1 text-xs">{category.label}: {count}</span> : null;
+                  })}
+                </div>
               ) : (
                 <p className="text-sm text-muted-foreground">{t("noStaffAssigned")}</p>
               )}

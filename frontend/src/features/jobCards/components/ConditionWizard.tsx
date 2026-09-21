@@ -4,7 +4,6 @@ import { useState, useCallback } from "react";
 import { PART_SECTIONS, CONDITION_STATES, CONDITION_COLORS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ChevronLeft, ChevronRight, Check, CheckCircle2 } from "lucide-react";
 import type { VehicleConditionInput } from "../types";
 
@@ -19,71 +18,9 @@ interface Props {
   showSummary?: boolean;
 }
 
-function StatePicker({
-  open,
-  onOpenChange,
-  currentState,
-  onSelect,
-  partLabel,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  currentState: string;
-  onSelect: (state: string) => void;
-  partLabel: string;
-}) {
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-sm">
-        <DialogHeader>
-          <DialogTitle>{partLabel}</DialogTitle>
-        </DialogHeader>
-        <div className="grid grid-cols-1 gap-2 py-2">
-          {CONDITION_STATES.map((cs) => {
-            const selected = currentState === cs.value;
-            return (
-              <button
-                key={cs.value}
-                type="button"
-                onClick={() => {
-                  onSelect(cs.value);
-                  onOpenChange(false);
-                }}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg border px-4 py-3 text-left text-sm transition-all",
-                  selected
-                    ? "border-indigo-500 bg-indigo-500/10 font-medium"
-                    : "border-input hover:bg-muted",
-                )}
-              >
-                <span
-                  className={cn(
-                    "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2",
-                    selected
-                      ? "border-indigo-500 bg-indigo-500 text-white"
-                      : "border-muted-foreground/30",
-                  )}
-                >
-                  {selected && <Check size={12} />}
-                </span>
-                <span className="flex items-center gap-2">
-                  <span className={cn("inline-block h-2.5 w-2.5 rounded-full", CONDITION_COLORS[cs.value])} />
-                  {cs.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 export function ConditionWizard({ conditions, onChange, readOnly, showStepIndicator = true, step: externalStep, onStepChange, onShowSummary, showSummary: externalShowSummary }: Props) {
   const [internalStep, setInternalStep] = useState(0);
   const [internalShowSummary, setInternalShowSummary] = useState(false);
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const [pickerPart, setPickerPart] = useState<{ value: string; label: string } | null>(null);
   const step = externalStep ?? internalStep;
   const showSummary = externalShowSummary ?? internalShowSummary;
   const setStep = onStepChange ?? setInternalStep;
@@ -120,11 +57,6 @@ export function ConditionWizard({ conditions, onChange, readOnly, showStepIndica
 
   const totalSections = PART_SECTIONS.length;
 
-  const openPicker = (part: { value: string; label: string }) => {
-    setPickerPart(part);
-    setPickerOpen(true);
-  };
-
   const currentSection = PART_SECTIONS[step];
 
   const damagedCount = currentSection
@@ -138,7 +70,6 @@ export function ConditionWizard({ conditions, onChange, readOnly, showStepIndica
     return (
       <div className="space-y-4">
         {PART_SECTIONS.map((section) => {
-          const sectionDamaged = section.parts.filter((p) => getState(p.value) !== "available");
           return (
             <div key={section.sectionKey} className="rounded-xl border bg-card shadow-sm">
               <div className="border-b border-border px-4 py-2.5">
@@ -233,44 +164,47 @@ export function ConditionWizard({ conditions, onChange, readOnly, showStepIndica
   return (
     <div className="space-y-4">
       {showStepIndicator && (
-        <div className="flex items-center gap-1.5">
+        <div className="flex gap-2 overflow-x-auto pb-1">
           {PART_SECTIONS.map((section, i) => (
-            <div key={section.sectionKey} className="flex items-center gap-1.5 flex-1">
-              <button
-                type="button"
-                onClick={() => setStep(i)}
+            <button
+              key={section.sectionKey}
+              type="button"
+              onClick={() => setStep(i)}
+              className={cn(
+                "flex min-w-32 items-center gap-2 rounded-lg border px-3 py-2 text-left text-xs transition-all",
+                i === step
+                  ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                  : i < step
+                    ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                    : "border-border/70 bg-muted/40 text-muted-foreground",
+              )}
+              title={section.sectionLabel}
+            >
+              <span
                 className={cn(
-                  "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-medium transition-all",
+                  "flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold",
                   i === step
-                    ? "bg-indigo-500 text-white"
+                    ? "bg-primary-foreground/20 text-primary-foreground"
                     : i < step
                       ? "bg-emerald-500 text-white"
-                      : "bg-muted text-muted-foreground",
+                      : "bg-background text-muted-foreground",
                 )}
-                title={section.sectionLabel}
               >
-                {i < step ? <Check size={10} /> : i + 1}
-              </button>
-              {i < totalSections - 1 && (
-                <div
-                  className={cn(
-                    "h-0.5 flex-1 rounded-full transition-all",
-                    i < step ? "bg-emerald-400" : "bg-muted",
-                  )}
-                />
-              )}
-            </div>
+                {i < step ? <Check size={11} /> : i + 1}
+              </span>
+              <span className="line-clamp-1">{section.sectionLabel}</span>
+            </button>
           ))}
         </div>
       )}
 
       {/* Section header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between gap-3 rounded-xl border border-border/60 bg-muted/30 p-4">
         <div>
-          <h3 className="text-sm font-semibold">
+          <h3 className="text-base font-semibold">
             {showStepIndicator ? `Section ${step + 1} of ${totalSections} — ` : ""}{currentSection.sectionLabel}
           </h3>
-          <p className="text-xs text-muted-foreground">
+          <p className="mt-1 text-sm text-muted-foreground">
             {currentSection.parts.length} parts
             {damagedCount > 0 && (
               <span className="ml-1 text-rose-500">· {damagedCount} damaged</span>
@@ -283,30 +217,42 @@ export function ConditionWizard({ conditions, onChange, readOnly, showStepIndica
       </div>
 
       {/* Parts list */}
-      <div className="space-y-1">
+      <div className="grid gap-3 lg:grid-cols-2">
         {currentSection.parts.map((part) => {
           const state = getState(part.value);
-          const stateLabel = CONDITION_STATES.find((cs) => cs.value === state)?.label || "Available";
           return (
-            <button
+            <div
               key={part.value}
-              type="button"
-              onClick={() => openPicker(part)}
-              className="flex w-full items-center justify-between rounded-lg border border-input px-3 py-2.5 text-left text-sm transition-all hover:bg-muted"
+              className="rounded-xl border border-border/70 bg-card p-3 shadow-card"
             >
-              <span className="font-medium">{part.label}</span>
-              <span
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium",
-                  state === "available"
-                    ? "bg-emerald-500/10 text-emerald-600"
-                    : "bg-rose-500/10 text-rose-600",
-                )}
-              >
-                <span className={cn("h-1.5 w-1.5 rounded-full", CONDITION_COLORS[state])} />
-                {stateLabel}
-              </span>
-            </button>
+              <div className="flex items-center justify-between gap-3">
+                <span className="min-w-0 text-sm font-semibold leading-snug">{part.label}</span>
+                <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", CONDITION_COLORS[state])} />
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {CONDITION_STATES.map((cs) => {
+                  const selected = state === cs.value;
+                  return (
+                    <button
+                      key={cs.value}
+                      type="button"
+                      onClick={() => setState(part.value, cs.value)}
+                      className={cn(
+                        "flex min-h-10 items-center justify-center gap-1.5 rounded-lg border px-2 text-xs font-semibold transition-all",
+                        selected
+                          ? cs.value === "available"
+                            ? "border-emerald-500 bg-emerald-500 text-white shadow-sm shadow-emerald-500/20"
+                            : "border-primary bg-primary text-primary-foreground shadow-sm shadow-primary/20"
+                          : "border-border bg-muted/35 text-muted-foreground hover:bg-muted hover:text-foreground",
+                      )}
+                    >
+                      {selected && <Check size={12} />}
+                      <span className="truncate">{cs.label === "Not Available" ? "N/A" : cs.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           );
         })}
       </div>
@@ -335,17 +281,6 @@ export function ConditionWizard({ conditions, onChange, readOnly, showStepIndica
             )}
           </div>
         </div>
-      )}
-
-      {/* State picker dialog */}
-      {pickerPart && (
-        <StatePicker
-          open={pickerOpen}
-          onOpenChange={setPickerOpen}
-          currentState={getState(pickerPart.value)}
-          onSelect={(s) => setState(pickerPart.value, s)}
-          partLabel={pickerPart.label}
-        />
       )}
     </div>
   );

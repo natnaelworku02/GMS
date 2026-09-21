@@ -7,8 +7,9 @@ interface CachedQuery {
 }
 
 const DB_NAME = "gms-offline";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = "queryCache";
+const MUTATION_STORE = "mutations";
 
 let dbPromise: Promise<IDBPDatabase> | null = null;
 
@@ -18,6 +19,10 @@ function getDb(): Promise<IDBPDatabase> {
       upgrade(db) {
         if (!db.objectStoreNames.contains(STORE_NAME)) {
           db.createObjectStore(STORE_NAME, { keyPath: "key" });
+        }
+        if (!db.objectStoreNames.contains(MUTATION_STORE)) {
+          const store = db.createObjectStore(MUTATION_STORE, { keyPath: "id" });
+          store.createIndex("status", "status");
         }
       },
     });

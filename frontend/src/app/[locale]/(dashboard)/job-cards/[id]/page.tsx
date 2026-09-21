@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, use } from "react";
+import { useRef, useState, use } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { useGetJobCardQuery, useUpdateJobCardStatusMutation, useGetOwnerQuery, useGetVehicleQuery, useGetEmployeesQuery } from "@/features/jobCards/api";
+import { useGetJobCardQuery, useGetJobCardHistoryQuery, useUpdateJobCardStatusMutation, useGetOwnerQuery, useGetVehicleQuery, useGetEmployeesQuery } from "@/features/jobCards/api";
 import { useGetToolCheckoutsQuery, useGetToolsQuery, useCheckoutToolMutation, useReturnToolMutation } from "@/features/tools/api";
 import { useGetPerformasQuery } from "@/features/performas/api";
 import { useUseInventoryMutation } from "@/features/jobCards/api";
@@ -34,10 +34,8 @@ import {
 import { ArrowLeft, Pencil, Loader2, Clock, User, Wrench, Receipt, Plus, Undo2, Package } from "lucide-react";
 import { toast } from "sonner";
 import { JOB_STATUS_LABELS, JOB_STATUS_TRANSITIONS } from "@/lib/constants";
-import { toolCheckoutSchema } from "@/lib/formSchemas";
-import { z } from "zod";
-type CheckoutFormData = z.input<typeof toolCheckoutSchema>;
 import type { VehicleConditionInput } from "@/features/jobCards/types";
+import { WORK_CATEGORIES } from "@/features/jobCards/components/MechanicAssign";
 
 export default function JobCardDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -46,6 +44,7 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
   const tc = useTranslations("common");
   const router = useRouter();
   const { data: jobCard, isLoading } = useGetJobCardQuery(id);
+  const { data: history } = useGetJobCardHistoryQuery(id);
   const { data: usersResp } = useGetUsersQuery({ page: 1, page_size: 100 });
   const users = usersResp?.items ?? [];
   const { data: owner } = useGetOwnerQuery(jobCard?.owner_id || "", { skip: !jobCard?.owner_id });
@@ -77,12 +76,13 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
   const [checkoutEmployeeId, setCheckoutEmployeeId] = useState("");
   const [checkoutQty, setCheckoutQty] = useState(1);
 
-  const { data: inventoryItemsResp } = useGetInventoryItemsQuery({ page: 1, page_size: 200 });
+  const { data: inventoryItemsResp } = useGetInventoryItemsQuery({ page: 1, page_size: 100 });
   const inventoryItems = inventoryItemsResp?.items ?? [];
-  const { data: locationsResp } = useGetInventoryLocationsQuery({ page: 1, page_size: 200 });
+  const { data: locationsResp } = useGetInventoryLocationsQuery({ page: 1, page_size: 100 });
   const invLocations = locationsResp?.items ?? [];
-  const [useInventory, { isLoading: isUsingInventory }] = useUseInventoryMutation();
+  const [applyInventory, { isLoading: isUsingInventory }] = useUseInventoryMutation();
   const [invDialogOpen, setInvDialogOpen] = useState(false);
+  const invDialogRef = useRef<HTMLDivElement>(null);
   const [invItemId, setInvItemId] = useState("");
   const [invLocationId, setInvLocationId] = useState("");
   const [invQty, setInvQty] = useState(1);
@@ -118,7 +118,7 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
   const handleUseInventory = async () => {
     if (!invItemId || !invLocationId || invQty < 1) return;
     try {
-      await useInventory({ job_card_id: id, body: { item_id: invItemId, store_location_id: invLocationId, quantity: invQty } }).unwrap();
+      await applyInventory({ job_card_id: id, body: { item_id: invItemId, store_location_id: invLocationId, quantity: invQty } }).unwrap();
       toast.success("Inventory used");
       setInvDialogOpen(false);
       setInvItemId("");
@@ -180,9 +180,9 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
   };
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="mx-auto max-w-4xl space-y-6">
       {/* Top bar */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="flex items-center justify-between">
         <Button variant="ghost" onClick={() => router.push("/job-cards")}>
           <ArrowLeft size={15} />
           {t("backToList")}
@@ -212,132 +212,118 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
       </div>
 
       {/* Header card */}
-      <div className="mb-6 rounded-xl border bg-card p-6 shadow-sm">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">
-              {vehicle?.model || "Vehicle"}
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {vehicle?.plate_number}
-            </p>
+      <div className="animate-fade-in-up overflow-hidden rounded-2xl border border-border/60 bg-card shadow-card">
+        <div className="bg-gradient-to-r from-primary/5 to-transparent px-6 py-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">
+                {vehicle?.model || "Vehicle"}
+              </h1>
+              <p className="mt-1 text-sm text-muted-foreground font-mono">
+                {vehicle?.plate_number}
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <StatusBadge status={jobCard.status} />
+              <span className="rounded-full bg-muted/60 px-3 py-1 text-xs font-medium text-muted-foreground">
+                {jobCard.mileage_km.toLocaleString()} km
+              </span>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <StatusBadge status={jobCard.status} />
-            <span className="text-sm font-medium">
-              {jobCard.mileage_km.toLocaleString()} km
+          <div className="mt-4 flex flex-wrap gap-4 text-xs text-muted-foreground/70">
+            <span className="inline-flex items-center gap-1.5">
+              <User size={12} />
+              {t("createdBy", { name: creator?.full_name || jobCard.created_by })}
             </span>
-          </div>
-        </div>
-        <div className="mt-4 flex flex-wrap gap-4 text-xs text-muted-foreground">
-          <span className="inline-flex items-center gap-1">
-            <User size={12} />
-            {t("createdBy", { name: creator?.full_name || jobCard.created_by })}
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <Clock size={12} />
-            {new Date(jobCard.created_at).toLocaleDateString()}
-          </span>
-          {jobCard.updated_at !== jobCard.created_at && (
-            <span className="inline-flex items-center gap-1">
+            <span className="inline-flex items-center gap-1.5">
               <Clock size={12} />
-              {t("updated")} {new Date(jobCard.updated_at).toLocaleDateString()}
+              {new Date(jobCard.created_at).toLocaleDateString()}
             </span>
-          )}
+            {jobCard.updated_at !== jobCard.created_at && (
+              <span className="inline-flex items-center gap-1.5">
+                <Clock size={12} />
+                {t("updated")} {new Date(jobCard.updated_at).toLocaleDateString()}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Status Timeline */}
-      <div className="mb-6 rounded-xl border bg-card p-6 shadow-sm">
+      <div className="animate-fade-in-up rounded-2xl border border-border/60 bg-card p-6 shadow-card" style={{ animationDelay: "0.05s" }}>
         <StatusTimeline currentStatus={jobCard.status} />
       </div>
 
       {/* Info grid */}
-      <div className="mb-6 grid gap-4 sm:grid-cols-2">
-        <div className="rounded-xl border bg-card p-5 shadow-sm space-y-3">
-          <h2 className="text-sm font-semibold">{t("owner")}</h2>
-          <p className="text-sm">{owner?.name || tc("loading")}</p>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <DetailCard title={t("owner")} delay="0.1s" className="space-y-2">
+          <p className="text-sm font-medium">{owner?.name || tc("loading")}</p>
           <p className="text-xs text-muted-foreground">{owner?.phone}</p>
-        </div>
+        </DetailCard>
 
-        <div className="rounded-xl border bg-card p-5 shadow-sm space-y-3">
-          <h2 className="text-sm font-semibold">{t("vehicle")}</h2>
-          <p className="text-sm">{vehicle?.model}</p>
-          <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+        <DetailCard title={t("vehicle")} delay="0.15s" className="space-y-2">
+          <p className="text-sm font-medium">{vehicle?.model}</p>
+          <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
             <span className="font-mono">{t("plateNumber")}: {vehicle?.plate_number}</span>
             <span className="font-mono">{t("engineNumber")}: {vehicle?.engine_number}</span>
             <span className="font-mono">{t("chassisNumber")}: {vehicle?.chassis_number}</span>
           </div>
-        </div>
+        </DetailCard>
       </div>
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-2">
-        <div className="rounded-xl border bg-card p-5 shadow-sm space-y-3">
-          <h2 className="text-sm font-semibold">{t("details")}</h2>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">{t("mileage")}</span>
-              <span className="font-medium">{jobCard.mileage_km.toLocaleString()} km</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">{t("status")}</span>
-              <StatusBadge status={jobCard.status} />
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">{t("privatePaint")}</span>
-              <span>{jobCard.private_paint ? tc("yes") : tc("no")}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">{t("privateMechanic")}</span>
-              <span>{jobCard.private_mechanic ? tc("yes") : tc("no")}</span>
-            </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <DetailCard title={t("details")} delay="0.2s">
+          <div className="space-y-2.5 text-sm">
+            <InfoRow label={t("mileage")} value={`${jobCard.mileage_km.toLocaleString()} km`} />
+            <InfoRow label={t("status")} value={<StatusBadge status={jobCard.status} />} />
+            <InfoRow label={t("privatePaint")} value={jobCard.private_paint ? tc("yes") : tc("no")} />
+            <InfoRow label={t("privateMechanic")} value={jobCard.private_mechanic ? tc("yes") : tc("no")} />
             {jobCard.insurance_provider && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">{t("insuranceProvider")}</span>
-                <span>{jobCard.insurance_provider}</span>
-              </div>
+              <InfoRow label={t("insuranceProvider")} value={jobCard.insurance_provider} />
             )}
           </div>
-        </div>
+        </DetailCard>
 
-        <div className="rounded-xl border bg-card p-5 shadow-sm space-y-3">
-          <h2 className="text-sm font-semibold">{t("mechanics")}</h2>
-          {jobCard.mechanics.length > 0 ? (
+        <DetailCard title="Assigned Staff" delay="0.25s">
+          {jobCard.staff_assignments.length > 0 ? (
             <div className="space-y-2">
-              {jobCard.mechanics.map((m) => (
-                <div key={m.id} className="flex items-center justify-between rounded-lg bg-muted/30 px-3 py-2">
+              {jobCard.staff_assignments.map((assignment) => {
+                const employee = employees.find((item) => item.id === assignment.employee_id);
+                return employee ? (
+                <div key={employee.id} className="flex items-center justify-between rounded-lg bg-muted/40 px-3 py-2.5">
                   <div>
-                    <p className="text-sm font-medium">{m.name}</p>
-                    <p className="text-xs text-muted-foreground">{m.job_title}</p>
+                    <p className="text-sm font-medium">{employee.name}</p>
+                    <p className="text-xs text-muted-foreground">{WORK_CATEGORIES.find((category) => category.value === assignment.work_category)?.label ?? assignment.work_category}</p>
                   </div>
-                  <span className="text-xs text-muted-foreground">{m.phone}</span>
+                  <span className="text-xs text-muted-foreground font-mono">{employee.phone}</span>
                 </div>
-              ))}
+                ) : null;
+              })}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">{t("noMechanics")}</p>
+            <p className="text-sm text-muted-foreground">No staff assigned</p>
           )}
-        </div>
+        </DetailCard>
       </div>
 
       {/* Tool Checkouts */}
-      <div className="mb-6 rounded-xl border bg-card p-5 shadow-sm space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold flex items-center gap-2">
-            <Wrench size={14} />
-            {t("toolCheckouts")}
-          </h2>
+      <DetailCard
+        title={t("toolCheckouts")}
+        icon={Wrench}
+        delay="0.3s"
+        action={
           <Button size="sm" variant="outline" onClick={() => setCheckoutDialogOpen(true)}>
             <Plus size={14} />
             Checkout
           </Button>
-        </div>
+        }
+      >
         {allCheckouts.length === 0 ? (
           <p className="text-sm text-muted-foreground">No tools checked out</p>
         ) : (
-          <div className="divide-y divide-border">
+          <div className="divide-y divide-border/40">
             {allCheckouts.map((co) => (
-              <div key={co.id} className="flex items-center justify-between py-2 text-sm">
+              <div key={co.id} className="flex items-center justify-between py-3 text-sm">
                 <div className="flex flex-col gap-0.5">
                   <span className="font-medium">{toolName(co.tool_id)}</span>
                   <span className="text-xs text-muted-foreground">
@@ -346,7 +332,9 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
                 </div>
                 <div className="flex items-center gap-2">
                   {co.checked_in_at ? (
-                    <span className="text-xs text-emerald-600">Returned {new Date(co.checked_in_at).toLocaleDateString()}</span>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
+                      Returned {new Date(co.checked_in_at).toLocaleDateString()}
+                    </span>
                   ) : (
                     <Button variant="outline" size="sm" onClick={() => handleReturnTool(co.id)} disabled={isReturning}>
                       {isReturning ? <Loader2 className="h-3 w-3 animate-spin" /> : <Undo2 size={14} />}
@@ -359,53 +347,53 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
           </div>
         )}
         {blockedByTools && (
-          <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+          <div className="mt-3 rounded-xl bg-destructive/5 border border-destructive/10 p-3 text-sm text-destructive">
             {t("returnToolsFirst")} ({unreturnedCheckouts.length} {t("unreturnedTools")})
           </div>
         )}
-      </div>
+      </DetailCard>
 
       {/* Inventory Usage */}
-      <div className="mb-6 rounded-xl border bg-card p-5 shadow-sm space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold flex items-center gap-2">
-            <Package size={14} />
-            Inventory Used
-          </h2>
+      <DetailCard
+        title="Inventory Used"
+        icon={Package}
+        delay="0.35s"
+        action={
           <Button size="sm" variant="outline" onClick={() => setInvDialogOpen(true)}>
             <Plus size={14} />
             Use Item
           </Button>
-        </div>
+        }
+      >
         {(!jobCard.inventory_usage || jobCard.inventory_usage.length === 0) ? (
           <p className="text-sm text-muted-foreground">No inventory used</p>
         ) : (
-          <div className="divide-y divide-border">
+          <div className="divide-y divide-border/40">
             {jobCard.inventory_usage.map((u) => (
-              <div key={u.id} className="flex items-center justify-between py-2 text-sm">
+              <div key={u.id} className="flex items-center justify-between py-3 text-sm">
                 <div>
                   <span className="font-medium">{itemName(u.item_id)}</span>
                   <span className="text-xs text-muted-foreground ml-2">({locationName(u.store_location_id)})</span>
                 </div>
-                <span className="font-medium">-{u.quantity}</span>
+                <span className="font-medium text-muted-foreground">-{u.quantity}</span>
               </div>
             ))}
           </div>
         )}
-      </div>
+      </DetailCard>
 
       {/* Performas */}
-      <div className="mb-6 rounded-xl border bg-card p-5 shadow-sm space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold flex items-center gap-2">
-            <Receipt size={14} />
-            {t("performas")}
-          </h2>
+      <DetailCard
+        title={t("performas")}
+        icon={Receipt}
+        delay="0.4s"
+        action={
           <Button size="sm" variant="outline" onClick={() => router.push(`/performas/new?job_card_id=${id}`)}>
             <Plus size={14} />
             {tc("create")}
           </Button>
-        </div>
+        }
+      >
         {linkedPerformas.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("noPerformas")}</p>
         ) : (
@@ -413,10 +401,10 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
             {linkedPerformas.map((p) => (
               <div
                 key={p.id}
-                className="flex cursor-pointer items-center justify-between rounded-lg border bg-card px-3 py-2 text-sm transition-colors hover:bg-accent/50"
+                className="flex cursor-pointer items-center justify-between rounded-xl border border-border/40 bg-muted/20 px-4 py-3 text-sm transition-all hover:bg-muted/40 hover:shadow-sm"
                 onClick={() => router.push(`/performas/${p.id}`)}
               >
-        <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="font-medium">v{p.version}</span>
                   <PerformaStatusBadge status={p.status} />
                 </div>
@@ -427,35 +415,56 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
             ))}
           </div>
         )}
-      </div>
+      </DetailCard>
 
       {/* Description */}
-      <div className="mb-6 rounded-xl border bg-card p-5 shadow-sm space-y-3">
-        <h2 className="text-sm font-semibold">{t("description")}</h2>
-        <p className="text-sm">{jobCard.description}</p>
+      <DetailCard title={t("description")} delay="0.45s">
+        <p className="text-sm leading-relaxed">{jobCard.description}</p>
         {jobCard.remarks && (
           <>
-            <h3 className="text-xs font-medium text-muted-foreground">{t("remarks")}</h3>
-            <p className="text-sm text-muted-foreground">{jobCard.remarks}</p>
+            <h3 className="mt-3 text-xs font-medium text-muted-foreground">{t("remarks")}</h3>
+            <p className="mt-1 text-sm text-muted-foreground">{jobCard.remarks}</p>
           </>
         )}
         {jobCard.requested_materials && (
           <>
-            <h3 className="text-xs font-medium text-muted-foreground">{t("requestedMaterials")}</h3>
-            <p className="text-sm text-muted-foreground">{jobCard.requested_materials}</p>
+            <h3 className="mt-3 text-xs font-medium text-muted-foreground">{t("requestedMaterials")}</h3>
+            <p className="mt-1 text-sm text-muted-foreground">{jobCard.requested_materials}</p>
           </>
         )}
-      </div>
+      </DetailCard>
+
+      <DetailCard title="Activity History" icon={Clock} delay="0.48s">
+        {!history?.events.length && !history?.inventory_movements.length ? (
+          <p className="text-sm text-muted-foreground">No recorded activity yet.</p>
+        ) : (
+          <div className="border-l pl-4">
+            {[...(history?.events ?? []).map((event) => ({
+              id: event.id, date: event.created_at, title: event.action.replaceAll("_", " ").replaceAll(".", " · "),
+              detail: event.details ? Object.entries(event.details).map(([key, value]) => `${key}: ${String(value)}`).join(" · ") : "",
+            })), ...(history?.inventory_movements ?? []).map((movement) => ({
+              id: movement.id, date: movement.created_at, title: "Inventory used",
+              detail: `${movement.quantity_before} → ${movement.quantity_after} (${movement.quantity_change})`,
+            }))].sort((a, b) => b.date.localeCompare(a.date)).map((event) => (
+              <div key={event.id} className="relative border-b py-3 last:border-0">
+                <span className="absolute -left-[21px] top-4 h-2 w-2 rounded-full bg-primary" />
+                <p className="text-sm font-medium capitalize">{event.title}</p>
+                {event.detail && <p className="mt-1 text-xs text-muted-foreground">{event.detail}</p>}
+                <p className="mt-1 text-xs text-muted-foreground">{new Date(event.date).toLocaleString()}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </DetailCard>
 
       {/* Conditions */}
-      <div className="mb-6 rounded-xl border bg-card p-5 shadow-sm space-y-3">
-        <h2 className="text-sm font-semibold">{t("conditions")}</h2>
+      <DetailCard title={t("conditions")} delay="0.5s">
         <ConditionWizard conditions={conditionsInput} onChange={() => {}} readOnly />
-      </div>
+      </DetailCard>
 
       {/* Inventory Usage Dialog */}
       <Dialog open={invDialogOpen} onOpenChange={setInvDialogOpen}>
-        <DialogContent>
+        <DialogContent ref={invDialogRef}>
           <DialogHeader>
             <DialogTitle>Use Inventory</DialogTitle>
           </DialogHeader>
@@ -463,27 +472,37 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
             <div className="space-y-1.5">
               <Label>Item</Label>
               <Select value={invItemId} onValueChange={(v) => setInvItemId(v || "")}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select item..." />
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select item...">
+                    {invItemId ? itemName(invItemId) : null}
+                  </SelectValue>
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent container={invDialogRef}>
                   {inventoryItems.map((item) => (
                     <SelectItem key={item.id} value={item.id}>{item.part_name}</SelectItem>
                   ))}
                 </SelectContent>
+                {inventoryItems.length === 0 && (
+                  <p className="text-xs text-muted-foreground">No inventory items are available.</p>
+                )}
               </Select>
             </div>
             <div className="space-y-1.5">
               <Label>Location</Label>
               <Select value={invLocationId} onValueChange={(v) => setInvLocationId(v || "")}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select location..." />
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select location...">
+                    {invLocationId ? locationName(invLocationId) : null}
+                  </SelectValue>
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent container={invDialogRef}>
                   {invLocations.map((loc) => (
                     <SelectItem key={loc.id} value={loc.id}>{loc.name}</SelectItem>
                   ))}
                 </SelectContent>
+                {invLocations.length === 0 && (
+                  <p className="text-xs text-muted-foreground">Create an inventory location before using stock.</p>
+                )}
               </Select>
             </div>
             <div className="space-y-1.5">
@@ -560,6 +579,47 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
         confirmLabel={tc("confirm")}
         onConfirm={handleStatusChange}
       />
+    </div>
+  );
+}
+
+function DetailCard({
+  title,
+  icon: Icon,
+  children,
+  action,
+  delay = "0s",
+  className = "",
+}: {
+  title: string;
+  icon?: React.ElementType;
+  children: React.ReactNode;
+  action?: React.ReactNode;
+  delay?: string;
+  className?: string;
+}) {
+  return (
+    <div
+      className="animate-fade-in-up overflow-hidden rounded-2xl border border-border/60 bg-card shadow-card transition-shadow hover:shadow-elevated"
+      style={{ animationDelay: delay }}
+    >
+      <div className="flex items-center justify-between border-b border-border/40 px-5 py-3">
+        <h2 className="flex items-center gap-2 text-sm font-semibold">
+          {Icon && <Icon size={15} className="text-muted-foreground/60" />}
+          {title}
+        </h2>
+        {action}
+      </div>
+      <div className={`px-5 py-4 ${className}`}>{children}</div>
+    </div>
+  );
+}
+
+function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-medium">{value}</span>
     </div>
   );
 }

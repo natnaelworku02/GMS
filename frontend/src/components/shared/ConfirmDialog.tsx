@@ -50,8 +50,8 @@ export function ConfirmDialog({
             disabled={disableConfirm}
             className={
               variant === "destructive"
-                ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                : undefined
+                ? "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-sm shadow-destructive/20"
+                : "shadow-sm shadow-primary/20"
             }
           >
             {confirmLabel}

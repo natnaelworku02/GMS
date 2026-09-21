@@ -19,6 +19,8 @@ class StoreLocationResponse(BaseModel):
 
 class InventoryItemCreate(BaseModel):
     part_name: str
+    condition: str = "new"
+    origin: str = "original"
     applicable_vehicle_types: list[str] | None = None
     unit_price: Decimal
     supplier_info: str | None = None
@@ -27,6 +29,8 @@ class InventoryItemCreate(BaseModel):
 
 class InventoryItemUpdate(BaseModel):
     part_name: str | None = None
+    condition: str | None = None
+    origin: str | None = None
     applicable_vehicle_types: list[str] | None = None
     unit_price: Decimal | None = None
     supplier_info: str | None = None
@@ -44,6 +48,8 @@ class StockEntryResponse(BaseModel):
 class InventoryItemResponse(BaseModel):
     id: uuid.UUID
     part_name: str
+    condition: str
+    origin: str
     applicable_vehicle_types: list[str] | None = None
     unit_price: Decimal
     supplier_info: str | None
@@ -68,3 +74,18 @@ class StockAdjust(BaseModel):
 
 class StoreLocationUpdate(BaseModel):
     name: str
+
+
+class InventoryMovementResponse(BaseModel):
+    id: uuid.UUID
+    item_id: uuid.UUID
+    store_location_id: uuid.UUID
+    job_card_id: uuid.UUID | None
+    user_id: uuid.UUID
+    movement_type: str
+    quantity_change: int
+    quantity_before: int
+    quantity_after: int
+    created_at: datetime
+
+    model_config = {"from_attributes": True}

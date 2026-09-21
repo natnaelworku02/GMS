@@ -22,7 +22,9 @@ import {
 import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { employeeCreateSchema, type EmployeeCreateFormData } from "@/lib/formSchemas";
+import { getApiErrorMessage } from "@/lib/utils";
 import type { Employee } from "@/features/jobCards/types";
+import { WORK_CATEGORIES } from "@/features/jobCards/components/MechanicAssign";
 
 export default function EmployeesPage() {
   const t = useTranslations("hr");
@@ -47,7 +49,7 @@ export default function EmployeesPage() {
       toast.success("Employee deleted");
       setDeleteTarget(null);
     } catch (error) {
-      const msg = (error as any)?.data?.detail || "Failed to delete employee";
+      const msg = getApiErrorMessage(error, "Failed to delete employee");
       toast.error(msg);
     }
   };
@@ -59,11 +61,12 @@ export default function EmployeesPage() {
     formState: { errors },
   } = useForm<EmployeeCreateFormData>({
     resolver: zodResolver(employeeCreateSchema),
+    defaultValues: { work_category: "mechanic" },
   });
 
   const onCreate = async (data: EmployeeCreateFormData) => {
     try {
-      await create({ name: data.name.trim(), job_title: data.job_title.trim(), phone: data.phone.trim() }).unwrap();
+      await create({ name: data.name.trim(), job_title: data.job_title.trim(), work_category: data.work_category, phone: data.phone.trim() }).unwrap();
       toast.success(tc("save"));
       setOpen(false);
       reset();
@@ -90,6 +93,11 @@ export default function EmployeesPage() {
       key: "job_title",
       header: t("jobTitle"),
       render: (e) => <span className="text-muted-foreground">{e.job_title}</span>,
+    },
+    {
+      key: "work_category",
+      header: "Work Category",
+      render: (e) => <span className="text-muted-foreground">{WORK_CATEGORIES.find((category) => category.value === e.work_category)?.label ?? e.work_category}</span>,
     },
     {
       key: "phone",
@@ -192,6 +200,12 @@ export default function EmployeesPage() {
               <Label htmlFor="emp-title">{t("jobTitle")}</Label>
               <Input id="emp-title" {...register("job_title")} />
               {errors.job_title && <p className="text-xs text-destructive">{errors.job_title.message}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="emp-category">Work Category</Label>
+              <select id="emp-category" {...register("work_category")} className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm">
+                {WORK_CATEGORIES.map((category) => <option key={category.value} value={category.value}>{category.label}</option>)}
+              </select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="emp-phone">{t("phone")}</Label>

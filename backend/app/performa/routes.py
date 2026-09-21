@@ -24,12 +24,13 @@ async def create_performa(
     current_user: User = Depends(RequirePermission("performa", "create")),
     db: AsyncSession = Depends(get_db),
 ):
-    performa = await service.create_performa(
-        db,
-        body.job_card_id,
-        body.client_email,
-        [item.model_dump() for item in body.line_items],
-    )
+    try:
+        performa = await service.create_performa(
+            db, body.vehicle_id, body.job_card_id, body.client_email,
+            [item.model_dump() for item in body.line_items],
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     await create_audit_log(db, current_user.id, "performa.create", "performa", performa.id)
     await db.commit()
     return performa
@@ -75,6 +76,27 @@ async def update_status(
     updated = await service.update_status(db, performa, body.status)
     await create_audit_log(db, current_user.id, "performa.status_change", "performa", performa_id,
                            details={"new_status": body.status})
+    await db.commit()
+    return updated
+
+
+@router.patch("/{performa_id}/job-card/{job_card_id}", response_model=schemas.PerformaResponse)
+async def link_job_card(
+    performa_id: uuid.UUID,
+    job_card_id: uuid.UUID,
+    current_user: User = Depends(RequirePermission("performa", "update")),
+    db: AsyncSession = Depends(get_db),
+):
+    performa = await service.get_performa(db, performa_id)
+    if not performa:
+        raise HTTPException(status_code=404, detail="Performa not found")
+
+    try:
+        updated = await service.link_job_card(db, performa, job_card_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    await create_audit_log(db, current_user.id, "performa.job_linked", "performa", performa_id,
+                           details={"job_card_id": str(job_card_id)})
     await db.commit()
     return updated
 
@@ -129,6 +151,13 @@ async def download_performa_pdf(
     if not performa:
         raise HTTPException(status_code=404, detail="Performa not found")
 
+    from app.job_cards.models import Owner, Vehicle
+    from sqlalchemy import select
+    vehicle_result = await db.execute(select(Vehicle).where(Vehicle.id == performa.vehicle_id))
+    vehicle = vehicle_result.scalar_one()
+    owner_result = await db.execute(select(Owner).where(Owner.id == vehicle.owner_id))
+    owner = owner_result.scalar_one()
+
     fmt = lambda n: f"{Decimal(str(n)):,.2f}"
 
     items = []
@@ -148,6 +177,13 @@ async def download_performa_pdf(
         status=performa.status,
         created_at=performa.created_at.strftime("%Y-%m-%d %H:%M"),
         client_email=performa.client_email,
+        owner_name=owner.name,
+        owner_phone=owner.phone,
+        vehicle_model=vehicle.model,
+        vehicle_type=vehicle.type,
+        plate_number=vehicle.plate_number,
+        engine_number=vehicle.engine_number,
+        chassis_number=vehicle.chassis_number,
         subtotal=fmt(performa.subtotal),
         vat_rate=fmt(performa.vat_rate),
         vat_amount=fmt(performa.vat_amount),

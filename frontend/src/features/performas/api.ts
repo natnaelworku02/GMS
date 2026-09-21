@@ -43,6 +43,10 @@ export const performasApi = api.injectEndpoints({
       }),
       invalidatesTags: ["Performas"],
     }),
+    linkPerformaJobCard: build.mutation<Performa, { id: string; job_card_id: string }>({
+      query: ({ id, job_card_id }) => ({ url: `/performas/${id}/job-card/${job_card_id}`, method: "PATCH" }),
+      invalidatesTags: ["Performas", "JobCards"],
+    }),
   }),
 });
 
@@ -53,4 +57,5 @@ export const {
   useSendPerformaMutation,
   useUpdatePerformaStatusMutation,
   useRevisePerformaMutation,
+  useLinkPerformaJobCardMutation,
 } = performasApi;

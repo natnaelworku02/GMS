@@ -23,7 +23,7 @@ export const PERFORMA_STATUS_LABELS: Record<string, string> = {
   rejected: "Rejected",
 };
 
-export const PART_SECTIONS = [
+const PART_SECTIONS_UNORDERED = [
   {
     sectionKey: "trunk",
     sectionLabel: "Trunk",
@@ -158,6 +158,11 @@ export const PART_SECTIONS = [
       { value: "peri_rh_w_guard", label: "RH W. Guard FR & RR" },
     ],
   },
+];
+
+export const PART_SECTIONS = [
+  ...PART_SECTIONS_UNORDERED.filter((section) => section.sectionKey === "interior"),
+  ...PART_SECTIONS_UNORDERED.filter((section) => section.sectionKey !== "interior"),
 ];
 
 export const PART_NAMES = PART_SECTIONS.flatMap((s) =>

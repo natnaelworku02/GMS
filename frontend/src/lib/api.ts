@@ -21,6 +21,8 @@ export const api = createApi({
     "Notifications",
     "AuditLogs",
     "Invoices",
+    "Payments",
+    "Backups",
   ],
   baseQuery: offlineAwareBaseQuery,
   endpoints: () => ({}),

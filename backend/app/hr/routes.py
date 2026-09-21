@@ -1,6 +1,7 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.models import User
@@ -19,7 +20,7 @@ async def create_employee(
     current_user: User = Depends(RequirePermission("hr", "create")),
     db: AsyncSession = Depends(get_db),
 ):
-    emp = await service.create_employee(db, body.name, body.job_title, body.phone)
+    emp = await service.create_employee(db, body.name, body.job_title, body.work_category, body.phone)
     await create_audit_log(db, current_user.id, "employee.create", "employee", emp.id)
     await db.commit()
     return emp
@@ -74,3 +75,31 @@ async def update_employee(
     await create_audit_log(db, current_user.id, "employee.update", "employee", emp.id)
     await db.commit()
     return updated
+
+
+@router.get("/{employee_id}/history")
+async def employee_history(
+    employee_id: uuid.UUID,
+    _user=Depends(RequirePermission("hr", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    employee = await service.get_employee(db, employee_id)
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    from app.job_cards.models import JobCard, job_card_mechanics
+    result = await db.execute(
+        select(JobCard, job_card_mechanics.c.work_category)
+        .join(job_card_mechanics, job_card_mechanics.c.job_card_id == JobCard.id)
+        .where(job_card_mechanics.c.employee_id == employee_id)
+        .order_by(JobCard.created_at.desc())
+    )
+    return {
+        "employee_id": employee_id,
+        "assignments": [
+            {
+                "job_card_id": job.id, "vehicle_id": job.vehicle_id, "work_category": category,
+                "status": job.status, "description": job.description, "created_at": job.created_at,
+            }
+            for job, category in result.all()
+        ],
+    }

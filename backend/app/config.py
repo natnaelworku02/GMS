@@ -26,6 +26,10 @@ class Settings(BaseSettings):
     smtp_from_email: str = ""
     CORS_ORIGINS: list[str] = ["*"]
 
+    backup_dir: str = "/backups"
+    backup_retention_days: int = 30
+    backup_interval_hours: int = 24
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

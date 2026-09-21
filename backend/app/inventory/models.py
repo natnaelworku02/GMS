@@ -24,6 +24,8 @@ class InventoryItem(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     part_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    condition: Mapped[str] = mapped_column(String(10), default="new", nullable=False)
+    origin: Mapped[str] = mapped_column(String(20), default="original", nullable=False)
     applicable_vehicle_types: Mapped[list | None] = mapped_column(JSON, nullable=True)
     unit_price: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False)
     supplier_info: Mapped[str | None] = mapped_column(String(255), nullable=True)
@@ -48,3 +50,18 @@ class StockEntry(Base):
     __table_args__ = (
         UniqueConstraint("item_id", "store_location_id", name="uq_stock_item_location"),
     )
+
+
+class InventoryMovement(Base):
+    __tablename__ = "inventory_movements"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    item_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("inventory_items.id"), nullable=False)
+    store_location_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("store_locations.id"), nullable=False)
+    job_card_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, ForeignKey("job_cards.id"), nullable=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("users.id"), nullable=False)
+    movement_type: Mapped[str] = mapped_column(String(30), nullable=False)
+    quantity_change: Mapped[int] = mapped_column(Integer, nullable=False)
+    quantity_before: Mapped[int] = mapped_column(Integer, nullable=False)
+    quantity_after: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
