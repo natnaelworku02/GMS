@@ -7,6 +7,7 @@ services:
       ENVIRONMENT: ${ENVIRONMENT:-development}
       DATABASE_URL: ${DOCKER_DATABASE_URL:-postgresql+asyncpg://gms:gms@postgres:5432/gms}
       REDIS_URL: ${DOCKER_REDIS_URL:-redis://redis:6379/0}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,https://gms-six-lyart.vercel.app}
       BACKUP_DIR: /backups
       BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
       BACKUP_INTERVAL_HOURS: ${BACKUP_INTERVAL_HOURS:-24}
