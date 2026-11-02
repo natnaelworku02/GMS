@@ -6,8 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import decode_token
 from app.db import get_db
-from app.auth.models import User
+from app.auth.models import RefreshSession, User
 from app.auth.service import get_user
+from sqlalchemy import select
 
 security_scheme = HTTPBearer(auto_error=False)
 
@@ -27,4 +28,9 @@ async def get_current_user(
     user = await get_user(db, uuid.UUID(user_id))
     if not user or not user.is_active:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found or inactive")
+    session_id = payload.get("session_id")
+    if session_id:
+        session = await db.scalar(select(RefreshSession).where(RefreshSession.id == uuid.UUID(session_id)))
+        if not session or session.revoked_at is not None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session revoked")
     return user

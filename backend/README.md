@@ -47,6 +47,33 @@ NEXT_PUBLIC_API_URL=https://gms-vawp.onrender.com/api/v1
 `CORS_ORIGINS` is a comma-separated allowlist without trailing slashes. Add a
 preview domain explicitly when a Vercel preview deployment needs API access.
 
+### Production Docker deployment
+
+Use `docker-compose.prod.yml`, not the development Compose file. It publishes
+only Caddy on ports 80/443; PostgreSQL and Redis have no host ports. Caddy
+obtains and renews HTTPS certificates for `API_DOMAIN`.
+
+Create a production `.env` with unique random values for `POSTGRES_PASSWORD`,
+`REDIS_PASSWORD`, `JWT_SECRET_KEY`, and the administrator password. Set
+`CORS_ORIGINS` to the exact frontend origin and `TRUSTED_HOSTS`/`API_DOMAIN` to
+the API hostname. The application refuses to start in production with default
+or weak values.
+
+Before the first start, create `BACKUP_PATH` as a protected directory writable
+by container user `10001`, then validate and launch the stack:
+
+```bash
+docker compose -f docker-compose.prod.yml config
+docker compose -f docker-compose.prod.yml run --rm api alembic upgrade head
+docker compose -f docker-compose.prod.yml run --rm api python -m app.seed
+docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.prod.yml ps
+```
+
+The production API runs as a non-root user with a read-only root filesystem,
+limited CPU/memory, and `no-new-privileges`. `/health/ready` returns HTTP 503
+unless both PostgreSQL and Redis are reachable.
+
 ### Seeded access roles
 
 Run the idempotent seed after migrations:

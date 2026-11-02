@@ -33,15 +33,17 @@ export function AuthInit({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        const stored = await storage.getTokens();
-        if (!stored) {
+        const storedRefreshToken = await storage.getRefreshToken();
+        if (!storedRefreshToken) {
           dispatch(setLoading(false));
           return;
         }
 
-        dispatch(setTokens(stored));
-
         try {
+          const refreshed = await refreshToken({ refresh_token: storedRefreshToken }).unwrap();
+          await storage.setRefreshToken(refreshed.refresh_token);
+          dispatch(setTokens({ accessToken: refreshed.access_token, refreshToken: refreshed.refresh_token }));
+
           const user = await getMe().unwrap();
           const role = await getRole(user.role_id).unwrap();
 
@@ -58,44 +60,15 @@ export function AuthInit({ children }: { children: React.ReactNode }) {
           dispatch(
             setCredentials({
               user: { ...user, role_name: role.name },
-              accessToken: stored.accessToken,
-              refreshToken: stored.refreshToken,
+              accessToken: refreshed.access_token,
+              refreshToken: refreshed.refresh_token,
               permissions,
               isSuperAdmin: role.is_superadmin,
             }),
           );
         } catch {
-          try {
-            const refreshed = await refreshToken({ refresh_token: stored.refreshToken }).unwrap();
-            await storage.setTokens(refreshed.access_token, refreshed.refresh_token);
-            dispatch(setTokens({ accessToken: refreshed.access_token, refreshToken: refreshed.refresh_token }));
-
-            const user = await getMe().unwrap();
-            const role = await getRole(user.role_id).unwrap();
-
-            const permissions: Record<string, boolean> = {};
-            if (role.permissions) {
-              role.permissions.forEach((p) => {
-                permissions[`${p.module}.create`] = p.can_create;
-                permissions[`${p.module}.read`] = p.can_read;
-                permissions[`${p.module}.update`] = p.can_update;
-                permissions[`${p.module}.delete`] = p.can_delete;
-              });
-            }
-
-            dispatch(
-              setCredentials({
-                user: { ...user, role_name: role.name },
-                accessToken: refreshed.access_token,
-                refreshToken: refreshed.refresh_token,
-                permissions,
-                isSuperAdmin: role.is_superadmin,
-              }),
-            );
-          } catch {
-            await storage.clearTokens();
-            dispatch(logout());
-          }
+          await storage.clearTokens();
+          dispatch(logout());
         }
       } catch {
         dispatch(logout());

@@ -1,6 +1,7 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from redis.asyncio import Redis
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,7 +12,7 @@ from app.core.deps import get_current_user
 from app.core.pagination import PaginatedResponse
 from app.core.rbac import RequirePermission
 from app.core.security import decode_token
-from app.db import get_db
+from app.db import get_db, get_redis
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 roles_router = APIRouter(prefix="/roles", tags=["roles"])
@@ -21,11 +22,24 @@ settings_router = APIRouter(prefix="/settings", tags=["settings"])
 # --- Auth ---
 
 @router.post("/login", response_model=schemas.TokenResponse)
-async def login(body: schemas.LoginRequest, db: AsyncSession = Depends(get_db)):
+async def login(
+    body: schemas.LoginRequest,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    redis: Redis = Depends(get_redis),
+):
+    client_host = request.client.host if request.client else "unknown"
+    rate_key = f"{client_host}:{body.phone}"
+    await service.enforce_login_limit(redis, rate_key)
     user = await service.authenticate_user(db, body.phone, body.password)
     if not user:
+        await service.record_login_failure(redis, rate_key)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
-    return service.create_tokens(user)
+    await service.clear_login_failures(redis, rate_key)
+    tokens = await service.create_session_tokens(db, user)
+    await create_audit_log(db, user.id, "auth.login", "user", user.id, {"ip": client_host})
+    await db.commit()
+    return tokens
 
 
 @router.post("/refresh", response_model=schemas.TokenResponse)
@@ -33,10 +47,19 @@ async def refresh(body: schemas.RefreshRequest, db: AsyncSession = Depends(get_d
     payload = decode_token(body.refresh_token)
     if payload.get("type") != "refresh":
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
-    user = await service.get_user(db, uuid.UUID(payload["user_id"]))
-    if not user or not user.is_active:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
-    return service.create_tokens(user)
+    return await service.rotate_session_tokens(db, body.refresh_token, payload)
+
+
+@router.post("/logout", status_code=204)
+async def logout(body: schemas.RefreshRequest, db: AsyncSession = Depends(get_db)):
+    payload = decode_token(body.refresh_token)
+    session_id = payload.get("session_id")
+    user_id = payload.get("user_id")
+    if session_id:
+        await service.revoke_session(db, uuid.UUID(session_id))
+    if user_id:
+        await create_audit_log(db, uuid.UUID(user_id), "auth.logout", "user", uuid.UUID(user_id))
+        await db.commit()
 
 
 @router.get("/me", response_model=schemas.UserResponse)

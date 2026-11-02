@@ -1,8 +1,10 @@
 import { fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type { BaseQueryFn, FetchArgs, FetchBaseQueryError } from "@reduxjs/toolkit/query/react";
 import type { RootState } from "@/lib/store";
-import { addMutation, getMutationCount } from "./queue";
-import { cacheQuery, getCachedQuery } from "./cache";
+import { logout, setTokens } from "@/features/auth/authSlice";
+import { clearPrivateBrowserData, storage } from "@/lib/storage";
+import { addMutation, clearMutations, getMutationCount } from "./queue";
+import { cacheQuery, clearQueryCache, getCachedQuery } from "./cache";
 
 const baseQuery = fetchBaseQuery({
   baseUrl: process.env.NEXT_PUBLIC_API_URL,
@@ -15,6 +17,34 @@ const baseQuery = fetchBaseQuery({
     return headers;
   },
 });
+
+type RefreshResult = "success" | "rejected" | "network";
+
+let refreshInFlight: Promise<RefreshResult> | null = null;
+
+function requestUrl(args: FetchArgs | string): string {
+  return typeof args === "string" ? args : args.url;
+}
+
+async function refreshSession(api: Parameters<typeof baseQuery>[1], extraOptions: Parameters<typeof baseQuery>[2]) {
+  const refreshToken = (api.getState() as RootState).auth.refreshToken;
+  if (!refreshToken) return "rejected" as const;
+
+  const refreshed = await baseQuery(
+    { url: "/auth/refresh", method: "POST", body: { refresh_token: refreshToken } },
+    api,
+    extraOptions,
+  );
+  if (refreshed.error) {
+    return typeof refreshed.error.status === "string" ? "network" as const : "rejected" as const;
+  }
+  if (!refreshed.data) return "rejected" as const;
+
+  const tokens = refreshed.data as { access_token: string; refresh_token: string };
+  await storage.setRefreshToken(tokens.refresh_token);
+  api.dispatch(setTokens({ accessToken: tokens.access_token, refreshToken: tokens.refresh_token }));
+  return "success" as const;
+}
 
 function isNetworkError(error: unknown): boolean {
   if (error && typeof error === "object" && "status" in error) {
@@ -38,7 +68,24 @@ export const offlineAwareBaseQuery: BaseQueryFn<
   unknown,
   FetchBaseQueryError
 > = async (args, api, extraOptions) => {
-  const result = await baseQuery(args, api, extraOptions);
+  let result = await baseQuery(args, api, extraOptions);
+  const url = requestUrl(args);
+
+  if (
+    result.error?.status === 401 &&
+    !["/auth/login", "/auth/refresh", "/auth/logout"].some((path) => url.includes(path))
+  ) {
+    refreshInFlight ??= refreshSession(api, extraOptions).finally(() => {
+      refreshInFlight = null;
+    });
+    const refreshResult = await refreshInFlight;
+    if (refreshResult === "success") {
+      result = await baseQuery(args, api, extraOptions);
+    } else if (refreshResult === "rejected") {
+      await Promise.all([clearPrivateBrowserData(), clearMutations(), clearQueryCache()]);
+      api.dispatch(logout());
+    }
+  }
   const method = getMethod(args);
   const fetchArgs = asFetchArgs(args);
 

@@ -20,7 +20,6 @@ async def dashboard() -> HTMLResponse:
 
     config = {
         "adminPhone": settings.admin_phone,
-        "adminPassword": settings.admin_password,
         "apiBase": "/api/v1",
     }
     html = _DASHBOARD_PATH.read_text(encoding="utf-8")

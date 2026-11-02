@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useCallback, createContext, useContext } from "react";
 import { getPendingMutations, updateMutation, removeMutation, getMutationCount } from "@/lib/offline/queue";
-import { storage } from "@/lib/storage";
 import { api } from "@/lib/api";
+import { useAppSelector } from "@/lib/hooks";
 
 interface SyncContextValue {
   pendingCount: number;
@@ -25,6 +25,7 @@ const getOnlineStatus = () =>
   typeof navigator === "undefined" ? true : navigator.onLine;
 
 export function SyncProvider({ children }: { children: React.ReactNode }) {
+  const accessToken = useAppSelector((state) => state.auth.accessToken);
   const [isOnline, setIsOnline] = useState(getOnlineStatus);
   const [isSyncing, setIsSyncing] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
@@ -42,13 +43,11 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       for (const mutation of pending) {
         try {
           await updateMutation(mutation.id, { status: "syncing" });
-          const tokens = await storage.getTokens();
-          const token = tokens?.accessToken ?? null;
           const headers: Record<string, string> = {
             "Content-Type": "application/json",
           };
-          if (token) {
-            headers["Authorization"] = `Bearer ${token}`;
+          if (accessToken) {
+            headers["Authorization"] = `Bearer ${accessToken}`;
           }
           const response = await fetch(
             `${process.env.NEXT_PUBLIC_API_URL}${mutation.endpoint}`,
@@ -78,7 +77,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsSyncing(false);
     }
-  }, [refreshCount]);
+  }, [accessToken, refreshCount]);
 
   useEffect(() => {
     void Promise.resolve().then(refreshCount);

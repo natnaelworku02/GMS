@@ -8,6 +8,12 @@ services:
       DATABASE_URL: ${DOCKER_DATABASE_URL:-postgresql+asyncpg://gms:gms@postgres:5432/gms}
       REDIS_URL: ${DOCKER_REDIS_URL:-redis://redis:6379/0}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,https://gms-six-lyart.vercel.app}
+      TRUSTED_HOSTS: ${TRUSTED_HOSTS:-localhost,127.0.0.1,testserver}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change-me-in-production}
+      JWT_ACCESS_TOKEN_EXPIRE_MINUTES: ${JWT_ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+      JWT_REFRESH_TOKEN_EXPIRE_DAYS: ${JWT_REFRESH_TOKEN_EXPIRE_DAYS:-7}
+      ADMIN_PHONE: ${ADMIN_PHONE:-+251900000000}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
       BACKUP_DIR: /backups
       BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
       BACKUP_INTERVAL_HOURS: ${BACKUP_INTERVAL_HOURS:-24}

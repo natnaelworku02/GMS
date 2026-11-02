@@ -30,6 +30,13 @@ export const authApi = api.injectEndpoints({
         body,
       }),
     }),
+    logoutSession: build.mutation<void, { refresh_token: string }>({
+      query: (body) => ({
+        url: "/auth/logout",
+        method: "POST",
+        body,
+      }),
+    }),
     getRole: build.query<Role, string>({
       query: (id) => `/roles/${id}`,
       providesTags: (_r, _e, id) => [{ type: "Roles", id }],
@@ -110,6 +117,7 @@ export const {
   useGetMeQuery,
   useLazyGetMeQuery,
   useRefreshTokenMutation,
+  useLogoutSessionMutation,
   useGetRoleQuery,
   useLazyGetRoleQuery,
   useGetUsersQuery,

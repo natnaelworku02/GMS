@@ -38,6 +38,13 @@ COPY main.py ./
 COPY alembic.ini ./
 COPY alembic ./alembic
 
+RUN groupadd --gid 10001 gms \
+    && useradd --uid 10001 --gid gms --no-create-home --shell /usr/sbin/nologin gms \
+    && mkdir -p /backups \
+    && chown -R gms:gms /app /backups
+
+USER gms
+
 EXPOSE 8000
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

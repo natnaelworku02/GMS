@@ -1,7 +1,19 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+
+def validate_strong_password(value: str) -> str:
+    if len(value) < 12:
+        raise ValueError("Password must contain at least 12 characters")
+    if not any(char.islower() for char in value) or not any(char.isupper() for char in value):
+        raise ValueError("Password must contain upper- and lowercase letters")
+    if not any(char.isdigit() for char in value):
+        raise ValueError("Password must contain a number")
+    if value.isalnum():
+        raise ValueError("Password must contain a special character")
+    return value
 
 
 # --- Auth ---
@@ -27,6 +39,8 @@ class UserCreate(BaseModel):
     full_name: str
     role_id: uuid.UUID
 
+    _validate_password = field_validator("password")(validate_strong_password)
+
 
 class UserUpdate(BaseModel):
     full_name: str | None = None
@@ -36,6 +50,8 @@ class UserUpdate(BaseModel):
 
 class PasswordReset(BaseModel):
     new_password: str = Field(min_length=8)
+
+    _validate_password = field_validator("new_password")(validate_strong_password)
 
 
 class UserResponse(BaseModel):

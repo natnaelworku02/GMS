@@ -5,12 +5,17 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { logout as logoutAction } from "@/features/auth/authSlice";
-import { storage } from "@/lib/storage";
+import { useLogoutSessionMutation } from "@/features/auth/api";
+import { clearPrivateBrowserData } from "@/lib/storage";
+import { clearMutations } from "@/lib/offline/queue";
+import { clearQueryCache } from "@/lib/offline/cache";
+import { api } from "@/lib/api";
 import { LogOut, ChevronDown, User } from "lucide-react";
 
 export function UserMenu() {
   const t = useTranslations("auth");
-  const { user } = useAppSelector((s) => s.auth);
+  const { user, refreshToken } = useAppSelector((s) => s.auth);
+  const [logoutSession] = useLogoutSessionMutation();
   const dispatch = useAppDispatch();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -27,7 +32,11 @@ export function UserMenu() {
   }, []);
 
   const handleLogout = async () => {
-    await storage.clearTokens();
+    if (refreshToken) {
+      await logoutSession({ refresh_token: refreshToken }).unwrap().catch(() => undefined);
+    }
+    await Promise.all([clearPrivateBrowserData(), clearMutations(), clearQueryCache()]);
+    dispatch(api.util.resetApiState());
     dispatch(logoutAction());
     router.replace("/login");
   };

@@ -58,14 +58,14 @@ must be stored separately from both installations.
 
 ### Stage 2 - Security Hardening
 
-- [ ] Add separate development and production Docker configurations.
-- [ ] Keep PostgreSQL and Redis off public host ports in production.
-- [ ] Require strong production secrets and reject development defaults.
-- [ ] Add HTTPS reverse proxying, trusted hosts, security headers, and strict CORS.
-- [ ] Add login throttling, session revocation, and refresh-token rotation.
-- [ ] Harden browser token/cache handling and clear private data on logout.
-- [ ] Run containers as non-root with restricted privileges and resource limits.
-- [ ] Add dependency, image, and secret scanning.
+- [x] Add separate development and production Docker configurations.
+- [x] Keep PostgreSQL and Redis off public host ports in production.
+- [x] Require strong production secrets and reject development defaults.
+- [x] Add HTTPS reverse proxying, trusted hosts, security headers, and strict CORS.
+- [x] Add login throttling, session revocation, and refresh-token rotation.
+- [x] Harden browser token/cache handling and clear private data on logout.
+- [x] Run containers as non-root with restricted privileges and resource limits.
+- [x] Add dependency, image, and secret scanning.
 
 ### Stage 3 - RBAC and Audit
 

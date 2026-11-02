@@ -1,13 +1,18 @@
 import uuid
+from datetime import datetime, timedelta, timezone
+from hmac import compare_digest
 
 from fastapi import HTTPException
-from sqlalchemy import or_, select
+from redis.asyncio import Redis
+from redis.exceptions import RedisError
+from sqlalchemy import delete, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.auth.models import Role, RolePermission, SystemSetting, User
+from app.auth.models import RefreshSession, Role, RolePermission, SystemSetting, User
+from app.config import get_settings
 from app.core.pagination import paginate_query
-from app.core.security import hash_password, verify_password, create_access_token, create_refresh_token
+from app.core.security import hash_password, verify_password, create_access_token, create_refresh_token, hash_token
 
 
 async def authenticate_user(db: AsyncSession, phone: str, password: str) -> User | None:
@@ -18,13 +23,109 @@ async def authenticate_user(db: AsyncSession, phone: str, password: str) -> User
     return None
 
 
-def create_tokens(user: User) -> dict:
-    data = {"user_id": str(user.id), "role_id": str(user.role_id)}
+async def create_session_tokens(db: AsyncSession, user: User) -> dict:
+    settings = get_settings()
+    session = RefreshSession(
+        user_id=user.id,
+        token_hash="pending",
+        expires_at=datetime.now(timezone.utc) + timedelta(days=settings.jwt_refresh_token_expire_days),
+    )
+    db.add(session)
+    await db.flush()
+    data = {"user_id": str(user.id), "role_id": str(user.role_id), "session_id": str(session.id)}
+    refresh_token = create_refresh_token(data)
+    session.token_hash = hash_token(refresh_token)
+    await db.commit()
     return {
         "access_token": create_access_token(data),
-        "refresh_token": create_refresh_token(data),
+        "refresh_token": refresh_token,
         "token_type": "bearer",
     }
+
+
+async def rotate_session_tokens(db: AsyncSession, refresh_token: str, payload: dict) -> dict:
+    session_id = payload.get("session_id")
+    user_id = payload.get("user_id")
+    if not session_id or not user_id:
+        raise HTTPException(status_code=401, detail="Invalid refresh session")
+
+    session = await db.scalar(select(RefreshSession).where(RefreshSession.id == uuid.UUID(session_id)))
+    now = datetime.now(timezone.utc)
+    expires_at = session.expires_at if session else None
+    if expires_at and expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    if not session or session.user_id != uuid.UUID(user_id) or session.revoked_at or expires_at <= now:
+        raise HTTPException(status_code=401, detail="Refresh session expired or revoked")
+    if not compare_digest(session.token_hash, hash_token(refresh_token)):
+        session.revoked_at = now
+        await db.commit()
+        raise HTTPException(status_code=401, detail="Refresh token reuse detected")
+
+    user = await get_user(db, session.user_id)
+    if not user or not user.is_active:
+        session.revoked_at = now
+        await db.commit()
+        raise HTTPException(status_code=401, detail="User not found or inactive")
+
+    settings = get_settings()
+    session.last_used_at = now
+    session.expires_at = now + timedelta(days=settings.jwt_refresh_token_expire_days)
+    data = {"user_id": str(user.id), "role_id": str(user.role_id), "session_id": str(session.id)}
+    new_refresh_token = create_refresh_token(data)
+    session.token_hash = hash_token(new_refresh_token)
+    await db.commit()
+    return {
+        "access_token": create_access_token(data),
+        "refresh_token": new_refresh_token,
+        "token_type": "bearer",
+    }
+
+
+async def revoke_session(db: AsyncSession, session_id: uuid.UUID) -> None:
+    await db.execute(
+        update(RefreshSession)
+        .where(RefreshSession.id == session_id, RefreshSession.revoked_at.is_(None))
+        .values(revoked_at=datetime.now(timezone.utc))
+    )
+    await db.commit()
+
+
+async def revoke_user_sessions(db: AsyncSession, user_id: uuid.UUID) -> None:
+    await db.execute(
+        update(RefreshSession)
+        .where(RefreshSession.user_id == user_id, RefreshSession.revoked_at.is_(None))
+        .values(revoked_at=datetime.now(timezone.utc))
+    )
+    await db.commit()
+
+
+async def enforce_login_limit(redis: Redis, client_key: str) -> None:
+    settings = get_settings()
+    key = f"auth:login:{client_key}"
+    try:
+        attempts = await redis.get(key)
+        if attempts and int(attempts) >= settings.login_attempt_limit:
+            raise HTTPException(status_code=429, detail="Too many login attempts. Try again later.")
+    except RedisError:
+        return
+
+
+async def record_login_failure(redis: Redis, client_key: str) -> None:
+    settings = get_settings()
+    key = f"auth:login:{client_key}"
+    try:
+        attempts = await redis.incr(key)
+        if attempts == 1:
+            await redis.expire(key, settings.login_attempt_window_seconds)
+    except RedisError:
+        return
+
+
+async def clear_login_failures(redis: Redis, client_key: str) -> None:
+    try:
+        await redis.delete(f"auth:login:{client_key}")
+    except RedisError:
+        return
 
 
 async def create_user(db: AsyncSession, phone: str, password: str, full_name: str, role_id: uuid.UUID) -> User:
@@ -56,9 +157,15 @@ async def list_users(db: AsyncSession, page: int = 1, page_size: int = 20, searc
 
 
 async def update_user(db: AsyncSession, user: User, **kwargs) -> User:
+    security_changed = (
+        ("role_id" in kwargs and kwargs["role_id"] is not None and kwargs["role_id"] != user.role_id)
+        or ("is_active" in kwargs and kwargs["is_active"] is False and user.is_active)
+    )
     for key, value in kwargs.items():
         if value is not None:
             setattr(user, key, value)
+    if security_changed:
+        await db.execute(delete(RefreshSession).where(RefreshSession.user_id == user.id))
     await db.commit()
     await db.refresh(user)
     return user
@@ -66,6 +173,7 @@ async def update_user(db: AsyncSession, user: User, **kwargs) -> User:
 
 async def reset_password(db: AsyncSession, user: User, new_password: str) -> User:
     user.hashed_password = hash_password(new_password)
+    await db.execute(delete(RefreshSession).where(RefreshSession.user_id == user.id))
     await db.commit()
     await db.refresh(user)
     return user
@@ -79,6 +187,7 @@ async def delete_user(db: AsyncSession, user_id: uuid.UUID):
     user = await get_user(db, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    await db.execute(delete(RefreshSession).where(RefreshSession.user_id == user_id))
     await db.delete(user)
     await db.commit()
 

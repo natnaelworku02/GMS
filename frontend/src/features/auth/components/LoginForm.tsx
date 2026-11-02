@@ -61,7 +61,7 @@ export function LoginForm() {
           }),
         );
 
-        await storage.setTokens(tokens.access_token, tokens.refresh_token);
+        await storage.setRefreshToken(tokens.refresh_token);
       } catch {
         toast.error(t("invalidCredentials"), { position: "top-center" });
       }

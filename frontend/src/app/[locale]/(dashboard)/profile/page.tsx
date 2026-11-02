@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useAppSelector } from "@/lib/hooks";
 import { useGetMeQuery, useUpdateUserMutation, useResetPasswordMutation } from "@/features/auth/api";
 import { profileUpdateSchema, type ProfileUpdateFormData } from "@/lib/formSchemas";
+import { strongPasswordSchema } from "@/features/auth/users/schemas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -62,7 +63,7 @@ export default function ProfilePage() {
 
   const handleChangePassword = async () => {
     if (!user?.id) return;
-    if (newPassword.length < 8) {
+    if (!strongPasswordSchema.safeParse(newPassword).success) {
       toast.error(t("passwordLengthError"));
       return;
     }

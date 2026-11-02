@@ -370,7 +370,7 @@
     "newPassword": "New password",
     "resettingPassword": "Resetting...",
     "passwordResetDone": "Password reset successfully",
-    "passwordLengthError": "Password must be at least 8 characters"
+    "passwordLengthError": "Use 12+ characters with uppercase, lowercase, a number, and a special character"
   },
   "roles": {
     "title": "Roles",
@@ -520,7 +520,7 @@
     "passwordUpdated": "Password updated successfully",
     "profileUpdated": "Profile updated successfully",
     "saveChanges": "Save Changes",
-    "passwordLengthError": "Password must be at least 8 characters",
+    "passwordLengthError": "Use 12+ characters with uppercase, lowercase, a number, and a special character",
     "profileLink": "Profile"
   },
   "history": {

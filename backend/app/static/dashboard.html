@@ -412,7 +412,7 @@
   </div>
 
   <script>
-    const config = window.DASHBOARD_CONFIG || { adminPhone: "", adminPassword: "", apiBase: "/api/v1" };
+    const config = window.DASHBOARD_CONFIG || { adminPhone: "", apiBase: "/api/v1" };
     const state = {
       schema: null,
       endpoints: [],
@@ -438,8 +438,6 @@
     };
 
     els.phone.value = localStorage.getItem("gms.dashboard.phone") || config.adminPhone || "";
-    els.password.value = localStorage.getItem("gms.dashboard.password") || config.adminPassword || "";
-    els.token.value = localStorage.getItem("gms.dashboard.accessToken") || "";
     syncAuthStatus();
 
     els.loginButton.addEventListener("click", login);
@@ -451,10 +449,7 @@
     els.search.addEventListener("input", filterEndpoints);
     els.methodFilter.addEventListener("change", filterEndpoints);
     els.tagFilter.addEventListener("change", filterEndpoints);
-    els.token.addEventListener("input", () => {
-      localStorage.setItem("gms.dashboard.accessToken", els.token.value.trim());
-      syncAuthStatus();
-    });
+    els.token.addEventListener("input", syncAuthStatus);
 
     loadOpenApi();
 
@@ -689,11 +684,9 @@
       const phone = els.phone.value.trim();
       const password = els.password.value;
       localStorage.setItem("gms.dashboard.phone", phone);
-      localStorage.setItem("gms.dashboard.password", password);
       const result = await sendRequest("/api/v1/auth/login", "POST", {}, { phone, password });
       if (result.ok && result.data.access_token) {
         els.token.value = result.data.access_token;
-        localStorage.setItem("gms.dashboard.accessToken", result.data.access_token);
         syncAuthStatus();
       }
       showFloatingResult("Login", result);
@@ -702,8 +695,6 @@
     function clearAuth() {
       els.token.value = "";
       els.password.value = "";
-      localStorage.removeItem("gms.dashboard.accessToken");
-      localStorage.removeItem("gms.dashboard.password");
       syncAuthStatus();
     }
 

@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, Loader2, Eye, EyeOff } from "lucide-react";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import type { CreateUserFormData } from "@/features/auth/users/schemas";
+import { strongPasswordSchema, type CreateUserFormData } from "@/features/auth/users/schemas";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -45,7 +45,7 @@ export default function EditUserPage({ params }: Props) {
   };
 
   const handleReset = () => {
-    if (!newPassword || newPassword.length < 8) {
+    if (!strongPasswordSchema.safeParse(newPassword).success) {
       toast.error(t("passwordLengthError"));
       return;
     }

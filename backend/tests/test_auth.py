@@ -86,15 +86,79 @@ async def test_login_wrong_password(client: AsyncClient, seed_user):
 
 
 @pytest.mark.asyncio
+async def test_login_is_rate_limited_after_repeated_failures(client: AsyncClient, seed_user):
+    for _ in range(5):
+        response = await client.post("/api/v1/auth/login", json={
+            "phone": seed_user.phone,
+            "password": "wrongpassword",
+        })
+        assert response.status_code == 401
+
+    blocked = await client.post("/api/v1/auth/login", json={
+        "phone": seed_user.phone,
+        "password": "password123",
+    })
+    assert blocked.status_code == 429
+
+
+@pytest.mark.asyncio
 async def test_create_user(client: AsyncClient, auth_headers, seed_role):
     response = await client.post("/api/v1/auth/users", json={
         "phone": "+251922000000",
-        "password": "newpass123",
+        "password": "NewPass123!Secure",
         "full_name": "New User",
         "role_id": str(seed_role.id),
     }, headers=auth_headers)
     assert response.status_code == 201
     assert response.json()["phone"] == "+251922000000"
+
+
+@pytest.mark.asyncio
+async def test_rejects_weak_new_user_password(client: AsyncClient, auth_headers, seed_role):
+    response = await client.post("/api/v1/auth/users", json={
+        "phone": "+251922000001",
+        "password": "newpass123",
+        "full_name": "Weak Password User",
+        "role_id": str(seed_role.id),
+    }, headers=auth_headers)
+    assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_refresh_rotation_rejects_reuse(client: AsyncClient, seed_user):
+    login = await client.post("/api/v1/auth/login", json={
+        "phone": seed_user.phone,
+        "password": "password123",
+    })
+    original_refresh = login.json()["refresh_token"]
+
+    rotated = await client.post("/api/v1/auth/refresh", json={"refresh_token": original_refresh})
+    assert rotated.status_code == 200
+    assert rotated.json()["refresh_token"] != original_refresh
+
+    replay = await client.post("/api/v1/auth/refresh", json={"refresh_token": original_refresh})
+    assert replay.status_code == 401
+
+    revoked_rotation = await client.post(
+        "/api/v1/auth/refresh",
+        json={"refresh_token": rotated.json()["refresh_token"]},
+    )
+    assert revoked_rotation.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_logout_revokes_access_session(client: AsyncClient, seed_user):
+    login = await client.post("/api/v1/auth/login", json={
+        "phone": seed_user.phone,
+        "password": "password123",
+    })
+    tokens = login.json()
+    headers = {"Authorization": f"Bearer {tokens['access_token']}"}
+    assert (await client.get("/api/v1/auth/me", headers=headers)).status_code == 200
+
+    logout = await client.post("/api/v1/auth/logout", json={"refresh_token": tokens["refresh_token"]})
+    assert logout.status_code == 204
+    assert (await client.get("/api/v1/auth/me", headers=headers)).status_code == 401
 
 
 @pytest.mark.asyncio

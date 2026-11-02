@@ -14,29 +14,24 @@ function openDB(): Promise<IDBDatabase> {
 }
 
 export const storage = {
-  async setTokens(accessToken: string, refreshToken: string): Promise<void> {
+  async setRefreshToken(refreshToken: string): Promise<void> {
     const db = await openDB();
     return new Promise((resolve, reject) => {
       const tx = db.transaction(STORE_NAME, "readwrite");
-      tx.objectStore(STORE_NAME).put(accessToken, "accessToken");
+      tx.objectStore(STORE_NAME).delete("accessToken");
       tx.objectStore(STORE_NAME).put(refreshToken, "refreshToken");
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
     });
   },
 
-  async getTokens(): Promise<{ accessToken: string; refreshToken: string } | null> {
+  async getRefreshToken(): Promise<string | null> {
     const db = await openDB();
     return new Promise((resolve, reject) => {
       const tx = db.transaction(STORE_NAME, "readonly");
-      const accessReq = tx.objectStore(STORE_NAME).get("accessToken");
       const refreshReq = tx.objectStore(STORE_NAME).get("refreshToken");
       tx.oncomplete = () => {
-        if (accessReq.result && refreshReq.result) {
-          resolve({ accessToken: accessReq.result, refreshToken: refreshReq.result });
-        } else {
-          resolve(null);
-        }
+        resolve(refreshReq.result || null);
       };
       tx.onerror = () => reject(tx.error);
     });
@@ -52,3 +47,11 @@ export const storage = {
     });
   },
 };
+
+export async function clearPrivateBrowserData(): Promise<void> {
+  await storage.clearTokens();
+  if (typeof caches !== "undefined") {
+    const keys = await caches.keys();
+    await Promise.all(keys.map((key) => caches.delete(key)));
+  }
+}

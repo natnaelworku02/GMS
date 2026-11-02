@@ -370,7 +370,7 @@
     "newPassword": "አዲስ የይለፍ ቃል",
     "resettingPassword": "በማስጀመር ላይ...",
     "passwordResetDone": "የይለፍ ቃል በተሳካ ሁኔታ ተጀምሯል",
-    "passwordLengthError": "የይለፍ ቃል ቢያንስ 8 ቁምፊዎች መሆን አለበት"
+    "passwordLengthError": "የይለፍ ቃሉ ቢያንስ 12 ቁምፊዎች፣ ትልቅና ትንሽ ፊደል፣ ቁጥር እና ልዩ ምልክት ሊኖረው ይገባል"
   },
   "roles": {
     "title": "ሚናዎች",
@@ -520,7 +520,7 @@
     "passwordUpdated": "የይለፍ ቃል በተሳካ ሁኔታ ተዘምኗል",
     "profileUpdated": "ፕሮፋይል በተሳካ ሁኔታ ተዘምኗል",
     "saveChanges": "ለውጦችን ያስቀምጡ",
-    "passwordLengthError": "የይለፍ ቃል ቢያንስ 8 ቁምፊዎች መሆን አለበት",
+    "passwordLengthError": "የይለፍ ቃሉ ቢያንስ 12 ቁምፊዎች፣ ትልቅና ትንሽ ፊደል፣ ቁጥር እና ልዩ ምልክት ሊኖረው ይገባል",
     "profileLink": "ፕሮፋይል"
   },
   "history": {
