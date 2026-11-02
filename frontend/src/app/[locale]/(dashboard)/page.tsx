@@ -15,7 +15,6 @@ import {
   BarChart, Bar,
 } from "recharts";
 import { ArrowRight, PlusCircle, FileText, Package, Wrench, Receipt, Activity, TrendingUp, AlertTriangle } from "lucide-react";
-import { JOB_STATUS_LABELS } from "@/lib/constants";
 import type { InventoryItem } from "@/features/inventory/types";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -31,6 +30,7 @@ export default function DashboardPage() {
   const t = useTranslations("common");
   const tnav = useTranslations("nav");
   const tstart = useTranslations("startJob");
+  const td = useTranslations("dashboard");
   const { user } = useAppSelector((s) => s.auth);
   const router = useRouter();
 
@@ -50,20 +50,21 @@ export default function DashboardPage() {
             {t(greetingKey)}, {user?.full_name?.split(" ")[0]}
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            Keep the workshop moving from intake to invoice.
+            {td("description")}
           </p>
         </div>
         <StartJobCard
           title={tstart("title")}
           description={tstart("step", { step: 1 })}
           onClick={() => router.push("/start-job")}
+          actionLabel={td("openWorkflow")}
         />
       </div>
 
       <StatCards />
 
       <div className="animate-fade-in-up" style={{ animationDelay: "0.12s" }}>
-        <h2 className="mb-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Quick Actions</h2>
+        <h2 className="mb-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{td("quickActions")}</h2>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <DashboardCard
             title={tnav("jobCards")}
@@ -98,6 +99,8 @@ export default function DashboardPage() {
 }
 
 function DashboardCharts() {
+  const t = useTranslations("dashboard");
+  const tj = useTranslations("jobCards");
   const { data: jobCardsResp } = useGetJobCardsQuery({ page: 1, page_size: 100 });
   const jobCards = useMemo(() => jobCardsResp?.items ?? [], [jobCardsResp?.items]);
   const { data: performasResp } = useGetPerformasQuery({ page: 1, page_size: 100 });
@@ -109,11 +112,11 @@ function DashboardCharts() {
       counts[jc.status] = (counts[jc.status] || 0) + 1;
     }
     return Object.entries(counts).map(([name, value]) => ({
-      name: JOB_STATUS_LABELS[name] || name,
+      name: tj.has(name) ? tj(name) : name,
       value,
       color: STATUS_COLORS[name] || "#6b7280",
     }));
-  }, [jobCards]);
+  }, [jobCards, tj]);
 
   const weeklyData = useMemo(() => {
     const weeks: Record<string, number> = {};
@@ -145,7 +148,7 @@ function DashboardCharts() {
   return (
     <div className="space-y-4">
       <div className="grid gap-4 lg:grid-cols-2">
-        <ChartCard title="Job Cards by Status" delay="0.05s">
+        <ChartCard title={t("jobCardsByStatus")} delay="0.05s">
           {statusData.length > 0 ? (
             <ResponsiveContainer width="100%" height={210}>
               <PieChart>
@@ -159,11 +162,11 @@ function DashboardCharts() {
               </PieChart>
             </ResponsiveContainer>
           ) : (
-            <EmptyChart />
+            <EmptyChart label={t("noData")} />
           )}
         </ChartCard>
 
-        <ChartCard title="Job Cards Over Time" delay="0.1s">
+        <ChartCard title={t("jobCardsOverTime")} delay="0.1s">
           {weeklyData.length > 0 ? (
             <ResponsiveContainer width="100%" height={210}>
               <LineChart data={weeklyData}>
@@ -177,11 +180,11 @@ function DashboardCharts() {
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            <EmptyChart />
+            <EmptyChart label={t("noData")} />
           )}
         </ChartCard>
 
-        <ChartCard title="Revenue from Approved Performas" delay="0.15s">
+        <ChartCard title={t("approvedPerformaRevenue")} delay="0.15s">
           {revenueData.length > 0 ? (
             <ResponsiveContainer width="100%" height={210}>
               <BarChart data={revenueData}>
@@ -196,14 +199,14 @@ function DashboardCharts() {
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <EmptyChart />
+            <EmptyChart label={t("noData")} />
           )}
         </ChartCard>
 
-        <ChartCard title="Recent Activity" delay="0.2s" noPadding>
+        <ChartCard title={t("recentActivity")} delay="0.2s" noPadding>
           <div className="flex items-center gap-2 px-4 pt-3">
             <Activity size={14} className="text-muted-foreground" />
-            <h3 className="text-sm font-medium text-muted-foreground">Recent Activity</h3>
+            <h3 className="text-sm font-medium text-muted-foreground">{t("recentActivity")}</h3>
           </div>
           {recentCards.length > 0 ? (
             <ul className="divide-y divide-border/50">
@@ -214,7 +217,7 @@ function DashboardCharts() {
                       className="h-2 w-2 shrink-0 rounded-full"
                       style={{ backgroundColor: STATUS_COLORS[jc.status] || "#6b7280" }}
                     />
-                    <span className="truncate text-sm text-muted-foreground">{jc.description?.slice(0, 35) || "Job card"}</span>
+                    <span className="truncate text-sm text-muted-foreground">{jc.description?.slice(0, 35) || t("jobCard")}</span>
                   </div>
                   <span className="ml-3 shrink-0 text-xs text-muted-foreground/60">
                     {new Date(jc.created_at).toLocaleDateString()}
@@ -224,7 +227,7 @@ function DashboardCharts() {
             </ul>
           ) : (
             <div className="px-4 pb-4 pt-2">
-              <p className="text-sm text-muted-foreground">No activity yet</p>
+              <p className="text-sm text-muted-foreground">{t("noActivity")}</p>
             </div>
           )}
         </ChartCard>
@@ -249,11 +252,11 @@ function ChartCard({ title, children, delay = "0s", noPadding = false }: { title
   );
 }
 
-function EmptyChart() {
+function EmptyChart({ label }: { label: string }) {
   return (
     <div className="flex flex-col items-center justify-center py-12 text-muted-foreground/50">
       <TrendingUp size={24} className="mb-2" />
-      <p className="text-sm">No data yet</p>
+      <p className="text-sm">{label}</p>
     </div>
   );
 }
@@ -262,10 +265,12 @@ function StartJobCard({
   title,
   description,
   onClick,
+  actionLabel,
 }: {
   title: string;
   description: string;
   onClick: () => void;
+  actionLabel: string;
 }) {
   return (
     <button
@@ -285,7 +290,7 @@ function StartJobCard({
           </div>
         </div>
         <span className="inline-flex w-fit items-center gap-2 rounded-lg bg-white/15 px-3 py-2 text-sm font-semibold">
-          Open workflow
+          {actionLabel}
           <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
         </span>
       </div>
@@ -297,6 +302,7 @@ const totalStock = (item: InventoryItem) =>
   item.stock_entries.reduce((sum, se) => sum + se.quantity, 0);
 
 function StatCards() {
+  const t = useTranslations("dashboard");
   const { data: jobCardsResp, isLoading: jcLoading } = useGetJobCardsQuery({ page: 1, page_size: 100 });
   const jobCards = jobCardsResp?.items ?? [];
   const { data: inventoryResp, isLoading: invLoading } = useGetInventoryItemsQuery({ page: 1, page_size: 100 });
@@ -317,28 +323,28 @@ function StatCards() {
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       <StatCard
-        label="Open Job Cards"
+        label={t("openJobCards")}
         count={jcLoading ? "-" : openJobs}
         icon={FileText}
         gradient="from-indigo-500 to-indigo-600"
         delay="0s"
       />
       <StatCard
-        label="Low Stock Items"
+        label={t("lowStockItems")}
         count={invLoading ? "-" : lowStock}
         icon={AlertTriangle}
         gradient="from-amber-500 to-orange-500"
         delay="0.05s"
       />
       <StatCard
-        label="Active Checkouts"
+        label={t("activeCheckouts")}
         count={coLoading ? "-" : activeCheckouts}
         icon={Wrench}
         gradient="from-emerald-500 to-teal-500"
         delay="0.1s"
       />
       <StatCard
-        label="Invoices"
+        label={t("invoices")}
         count={invcLoading ? "-" : invoiceCount}
         icon={Receipt}
         gradient="from-teal-500 to-cyan-500"

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "@/i18n/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useCreateRoleMutation, useUpdatePermissionsMutation } from "@/features/auth/api";
@@ -30,7 +30,7 @@ export default function NewRolePage() {
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     formState: { errors },
   } = useForm<RoleCreateFormData>({
     resolver: zodResolver(roleCreateSchema),
@@ -48,7 +48,7 @@ export default function NewRolePage() {
   );
   const [error, setError] = useState("");
 
-  const isSuperAdmin = watch("is_superadmin");
+  const isSuperAdmin = useWatch({ control, name: "is_superadmin" });
   const isSubmitting = isCreating || isSettingPerms;
 
   const onRoleCreate = async (data: RoleCreateFormData) => {

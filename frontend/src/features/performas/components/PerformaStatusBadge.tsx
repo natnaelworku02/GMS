@@ -1,5 +1,6 @@
-import { StatusBadge } from "@/components/shared/StatusBadge";
-import { PERFORMA_STATUS_LABELS } from "@/lib/constants";
+"use client";
+
+import { useTranslations } from "next-intl";
 
 const STATUS_COLORS: Record<string, string> = {
   draft: "bg-amber-500/10 text-amber-600 border-amber-200",
@@ -9,11 +10,13 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export function PerformaStatusBadge({ status }: { status: string }) {
+  const t = useTranslations("performas");
+
   return (
     <span
       className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[status] || "bg-muted text-muted-foreground"}`}
     >
-      {PERFORMA_STATUS_LABELS[status] || status}
+      {t.has(status) ? t(status) : status}
     </span>
   );
 }

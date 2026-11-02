@@ -35,7 +35,6 @@ export default function ToolsPage() {
   const { data: toolsResp, isLoading } = useGetToolsQuery({ page, page_size: 20, search: search || undefined });
   const tools = toolsResp?.items ?? [];
   const total = toolsResp?.total ?? 0;
-  const totalPages = toolsResp?.total_pages ?? 0;
 
   const [open, setOpen] = useState(false);
   const [create, { isLoading: creating }] = useCreateToolMutation();

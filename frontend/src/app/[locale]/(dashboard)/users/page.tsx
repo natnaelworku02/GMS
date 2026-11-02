@@ -27,7 +27,6 @@ export default function UsersPage() {
   const users = usersResp?.items ?? [];
   const roles = rolesResp?.items ?? [];
   const total = usersResp?.total ?? 0;
-  const totalPages = usersResp?.total_pages ?? 0;
   const roleMap = Object.fromEntries(roles.map((r) => [r.id, r.name]));
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
   const [deleteUser, { isLoading: deleting }] = useDeleteUserMutation();
@@ -134,7 +133,7 @@ export default function UsersPage() {
     <div className="mx-auto max-w-6xl">
       <PageHeader
         title={t("title")}
-        description={`${total} user${total !== 1 ? "s" : ""}`}
+        description={`${total} ${t("count")}`}
         action={
           <Can permission="users.create">
             <Button onClick={() => router.push("/users/new")}>

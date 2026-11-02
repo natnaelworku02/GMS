@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useGetInventoryItemsQuery, useCreateInventoryItemMutation, useDeleteInventoryItemMutation } from "@/features/inventory/api";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -42,7 +42,6 @@ export default function InventoryPage() {
   });
   const items = itemsResp?.items ?? [];
   const total = itemsResp?.total ?? 0;
-  const totalPages = itemsResp?.total_pages ?? 0;
 
   const [open, setOpen] = useState(false);
   const [typeInput, setTypeInput] = useState("");
@@ -66,7 +65,7 @@ export default function InventoryPage() {
     register,
     handleSubmit,
     setValue,
-    watch,
+    control,
     reset,
     formState: { errors },
   } = useForm<InventoryItemFormData>({
@@ -74,7 +73,7 @@ export default function InventoryPage() {
     defaultValues: { applicable_vehicle_types: [], condition: "new", origin: "original", supplier_info: "", min_stock_threshold: undefined },
   });
 
-  const vehicleTypes = watch("applicable_vehicle_types") ?? [];
+  const vehicleTypes = useWatch({ control, name: "applicable_vehicle_types" }) ?? [];
 
   const addVehicleType = (vt: string) => {
     if (!vt || vehicleTypes.includes(vt)) return;
@@ -141,8 +140,8 @@ export default function InventoryPage() {
     },
     {
       key: "classification",
-      header: "Classification",
-      render: (item) => <span className="text-sm text-muted-foreground">{item.condition === "new" ? "New" : "Used"} · {item.origin === "original" ? "Original" : "Locally Made"}</span>,
+      header: t("classification"),
+      render: (item) => <span className="text-sm text-muted-foreground">{t(item.condition)} · {t(item.origin)}</span>,
     },
     {
       key: "stock",
@@ -213,7 +212,7 @@ export default function InventoryPage() {
     <div className="mx-auto max-w-6xl">
       <PageHeader
         title={t("title")}
-        description={`${total} item${total !== 1 ? "s" : ""}`}
+        description={t("count", { count: total })}
         action={
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={() => router.push("/inventory/locations")}>
@@ -270,15 +269,15 @@ export default function InventoryPage() {
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="inv-condition">Condition</Label>
+                <Label htmlFor="inv-condition">{t("condition")}</Label>
                 <select id="inv-condition" {...register("condition")} className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm">
-                  <option value="new">New</option><option value="used">Used</option>
+                  <option value="new">{t("new")}</option><option value="used">{t("used")}</option>
                 </select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="inv-origin">Origin</Label>
+                <Label htmlFor="inv-origin">{t("origin")}</Label>
                 <select id="inv-origin" {...register("origin")} className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm">
-                  <option value="original">Original</option><option value="locally_made">Locally Made</option>
+                  <option value="original">{t("original")}</option><option value="locally_made">{t("locally_made")}</option>
                 </select>
               </div>
             </div>
@@ -307,7 +306,7 @@ export default function InventoryPage() {
                   className="h-9 flex-1 rounded-md border border-input bg-background px-3 text-sm"
                 />
                 <Button type="button" variant="outline" size="sm" onClick={() => addVehicleType(typeInput)}>
-                  Add
+                  {t("addVehicleType")}
                 </Button>
               </div>
               <datalist id="inv-vehicle-types">

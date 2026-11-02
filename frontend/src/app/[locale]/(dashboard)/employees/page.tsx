@@ -35,7 +35,6 @@ export default function EmployeesPage() {
   const { data: employeesResp, isLoading } = useGetEmployeesQuery({ page, page_size: 20, search: search || undefined });
   const employees = employeesResp?.items ?? [];
   const total = employeesResp?.total ?? 0;
-  const totalPages = employeesResp?.total_pages ?? 0;
 
   const [open, setOpen] = useState(false);
   const [create, { isLoading: creating }] = useCreateEmployeeMutation();

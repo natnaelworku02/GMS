@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useCreateVehicleMutation, useGetOwnersQuery, useCreateOwnerMutation } from "@/features/jobCards/api";
 import { Combobox } from "@/components/ui/combobox";
@@ -38,7 +38,7 @@ export default function CreateVehicleModal({ open, onOpenChange }: Props) {
     register,
     handleSubmit,
     setValue,
-    watch,
+    control,
     reset,
     formState: { errors },
   } = useForm<VehicleCreateFormData>({
@@ -46,7 +46,7 @@ export default function CreateVehicleModal({ open, onOpenChange }: Props) {
     defaultValues: { engine_number: "", chassis_number: "" },
   });
 
-  const ownerId = watch("owner_id");
+  const ownerId = useWatch({ control, name: "owner_id" });
   const [showNewOwner, setShowNewOwner] = useState(false);
   const [newOwnerName, setNewOwnerName] = useState("");
   const [newOwnerPhone, setNewOwnerPhone] = useState("");

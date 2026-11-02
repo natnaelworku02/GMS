@@ -70,7 +70,29 @@
     "jobCardsDescription": "የጥገና ሥራ ካርዶችን ይፍጠሩ እና ያስተዳድሩ",
     "performasDescription": "ፐርፎርማ ኢንቮይሶችን ያመንጩ እና ይላኩ",
     "invoicesDescription": "ከተፈቀዱ ፐርፎርማዎች ኢንቮይሶችን ይመልከቱ",
-    "inventoryDescription": "መለዋወጫዎችን እና የክምችት ደረጃዎችን ይከታተሉ"
+    "inventoryDescription": "መለዋወጫዎችን እና የክምችት ደረጃዎችን ይከታተሉ",
+    "core": "ዋና ሥራዎች",
+    "resources": "መረጃ እና ንብረቶች",
+    "admin": "አስተዳደር",
+    "search": "ፈልግ...",
+    "openMenu": "የዳሰሳ ምናሌን ክፈት",
+    "closeMenu": "የዳሰሳ ምናሌን ዝጋ"
+  },
+  "dashboard": {
+    "description": "የዎርክሾፑን ሥራ ከመረከብ እስከ ኢንቮይስ ያስተዳድሩ።",
+    "openWorkflow": "የሥራ ሂደቱን ክፈት",
+    "quickActions": "ፈጣን ተግባራት",
+    "openJobCards": "ክፍት የሥራ ካርዶች",
+    "lowStockItems": "ክምችታቸው ያነሰ ዕቃዎች",
+    "activeCheckouts": "ያልተመለሱ መሳሪያዎች",
+    "invoices": "ኢንቮይሶች",
+    "jobCardsByStatus": "የሥራ ካርዶች በሁኔታ",
+    "jobCardsOverTime": "የሥራ ካርዶች በጊዜ",
+    "approvedPerformaRevenue": "ከጸደቁ ፐርፎርማዎች የተገኘ ገቢ",
+    "recentActivity": "የቅርብ ጊዜ እንቅስቃሴ",
+    "noActivity": "ገና ምንም እንቅስቃሴ የለም",
+    "noData": "ገና ምንም መረጃ የለም",
+    "jobCard": "የሥራ ካርድ"
   },
   "notifications": {
     "title": "ማሳወቂያዎች",
@@ -168,7 +190,11 @@
     "type": "አይነት",
     "labelPlateNumber": "ታርጋ #",
     "labelEngineNumber": "ሞተር #",
-    "labelChassisNumber": "ቻሲስ #"
+    "labelChassisNumber": "ቻሲስ #",
+    "count": "{count} የሥራ ካርድ{count, plural, one {} other {ች}}",
+    "pending": "በመጠባበቅ ላይ",
+    "in_progress": "በሂደት ላይ",
+    "cancelled": "ተሰርዟል"
   },
   "performas": {
     "title": "ፐርፎርማዎች",
@@ -218,7 +244,16 @@
     "addToLineItems": "ጨምር",
     "fromInventory": "ከክምችት",
     "searchInventory": "ክምችት ፈልግ...",
-    "noInventory": "ምንም ዕቃ አልተገኘም"
+    "noInventory": "ምንም ዕቃ አልተገኘም",
+    "count": "{count} ፐርፎርማ{count, plural, one {} other {ዎች}}",
+    "pageOf": "ገጽ {page} ከ {totalPages}"
+  },
+  "invoices": {
+    "title": "ኢንቮይሶች",
+    "description": "ከጸደቁ ፐርፎርማዎች የተፈጠሩ ኢንቮይሶች",
+    "empty": "ገና ምንም ኢንቮይስ የለም",
+    "emptyDescription": "ኢንቮይሶች ከጸደቁ ፐርፎርማዎች ይፈጠራሉ",
+    "pageOf": "ገጽ {page} ከ {totalPages}"
   },
   "inventory": {
     "title": "ክምችት",
@@ -241,7 +276,16 @@
     "noLocations": "ምንም ቦታዎች አልተገኙም",
     "allVehicleTypes": "ሁሉም የተሽከርካሪ አይነቶች",
     "selectLocation": "ቦታ ይምረጡ",
-    "typeOrSelect": "ይተይቡ ወይም ይምረጡ..."
+    "typeOrSelect": "ይተይቡ ወይም ይምረጡ...",
+    "count": "{count} ዕቃ{count, plural, one {} other {ዎች}}",
+    "classification": "የዕቃ ምደባ",
+    "condition": "የዕቃ ሁኔታ",
+    "origin": "አመራረት",
+    "new": "አዲስ",
+    "used": "ያገለገለ",
+    "original": "ኦሪጅናል",
+    "locally_made": "የሀገር ውስጥ ምርት",
+    "addVehicleType": "ጨምር"
   },
   "tools": {
     "title": "መሳሪያዎች",
@@ -309,6 +353,7 @@
   },
   "users": {
     "title": "ተጠቃሚዎች",
+    "count": "ተጠቃሚዎች",
     "create": "አዲስ ተጠቃሚ",
     "edit": "ተጠቃሚ አስተካክል",
     "fullName": "ሙሉ ስም",
@@ -316,6 +361,9 @@
     "role": "ሚና",
     "password": "የይለፍ ቃል",
     "isActive": "ንቁ",
+    "isInactive": "እንቅስቃሴ የሌለው",
+    "selectRole": "ሚና ይምረጡ",
+    "phonePlaceholder": "+251912345678",
     "resetPassword": "የይለፍ ቃል ዳግም አስጀምር",
     "noUsers": "ምንም ተጠቃሚዎች አልተገኙም",
     "notFound": "ተጠቃሚ አልተገኘም",
@@ -358,7 +406,20 @@
     "updatedAt": "የተሻሻለበት",
     "searchPlaceholder": "ቅንብሮችን ይፈልጉ...",
     "noSettings": "ምንም ቅንብሮች አልተገኙም",
-    "count": "{count} ቅንብር{count, plural, one {} other {ች}}"
+    "count": "{count} ቅንብር{count, plural, one {} other {ች}}",
+    "databaseBackups": "የዳታቤዝ ምትኬዎች",
+    "backupSchedule": "በየ24 ሰዓቱ በራስ-ሰር · ለ{days} ቀናት ይቀመጣል",
+    "createBackup": "አሁን ምትኬ ፍጠር",
+    "lastBackup": "የመጨረሻው የተሳካ ምትኬ፦ {date}",
+    "noBackup": "ገና የተሳካ ምትኬ የለም",
+    "restore": "መልስ",
+    "restoreDatabase": "ዳታቤዙን ከምትኬ መልስ",
+    "restoreWarning": "ይህ አሁን ያለውን ዳታቤዝ በ{filename} ይተካል። መጀመሪያ አዲስ ምትኬ ይፍጠሩ።",
+    "restoreConfirmation": "ለማረጋገጥ RESTORE DATABASE ብለው ይጻፉ",
+    "backupCreated": "ምትኬ ተፈጥሯል",
+    "backupFailed": "ምትኬ መፍጠር አልተሳካም",
+    "databaseRestored": "ዳታቤዙ ከምትኬ ተመልሷል",
+    "restoreFailed": "ዳታቤዙን ከምትኬ መመለስ አልተሳካም"
   },
   "audit": {
     "title": "የኦዲት መዝገቦች",
@@ -461,6 +522,15 @@
     "saveChanges": "ለውጦችን ያስቀምጡ",
     "passwordLengthError": "የይለፍ ቃል ቢያንስ 8 ቁምፊዎች መሆን አለበት",
     "profileLink": "ፕሮፋይል"
+  },
+  "history": {
+    "title": "የተሽከርካሪ ታሪክ",
+    "description": "ተሽከርካሪ ይፈልጉና የተመዘገቡ ጉብኝቶችን፣ የኪሎ ሜትር መረጃን፣ ምደባዎችን፣ ዕቃዎችን እና ፕሮፎርማዎችን ይመልከቱ።",
+    "searchPlaceholder": "የታርጋ፣ የሞዴል፣ የሞተር ወይም የቻሲ ቁጥር ይፈልጉ",
+    "loading": "ታሪክ በመጫን ላይ...",
+    "empty": "የሚዛመድ የተሽከርካሪ ታሪክ አልተገኘም።",
+    "engine": "ሞተር",
+    "chassis": "ቻሲ"
   },
   "offline": {
     "banner": "ከመስመር ውጭ ነዎት — ሲመለሱ ለውጦቹ ይመሳሰላሉ",

@@ -23,7 +23,6 @@ export default function RolesPage() {
   const { data: rolesResp, isLoading } = useGetRolesQuery({ page, page_size: 20, search: searchQuery || undefined });
   const roles = rolesResp?.items ?? [];
   const total = rolesResp?.total ?? 0;
-  const totalPages = rolesResp?.total_pages ?? 0;
   const [deleteTarget, setDeleteTarget] = useState<Role | null>(null);
   const [deleteRole, { isLoading: deleting }] = useDeleteRoleMutation();
 

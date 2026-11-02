@@ -34,7 +34,7 @@ export default function PerformasListPage() {
     <div className="mx-auto max-w-5xl space-y-6">
       <PageHeader
         title={tnav("performas")}
-        description={`${total} performa${total !== 1 ? "s" : ""}`}
+        description={t("count", { count: total })}
         action={
           <Button onClick={() => router.push("/performas/new")}>
             <Plus size={15} />
@@ -99,11 +99,11 @@ export default function PerformasListPage() {
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 pt-2">
           <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
-            Previous
+            {tc("previous")}
           </Button>
-          <span className="text-sm text-muted-foreground">Page {page} of {totalPages}</span>
+          <span className="text-sm text-muted-foreground">{t("pageOf", { page, totalPages })}</span>
           <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
-            Next
+            {tc("next")}
           </Button>
         </div>
       )}

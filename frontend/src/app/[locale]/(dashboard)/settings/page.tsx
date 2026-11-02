@@ -93,16 +93,16 @@ export default function SettingsPage() {
   };
 
   const handleCreateBackup = async () => {
-    try { await createBackup().unwrap(); toast.success("Backup created"); }
-    catch { toast.error("Backup failed"); }
+    try { await createBackup().unwrap(); toast.success(t("backupCreated")); }
+    catch { toast.error(t("backupFailed")); }
   };
 
   const handleRestore = async () => {
     if (!restoreFile) return;
     try {
       await restoreBackup({ filename: restoreFile, confirmation: restoreConfirmation }).unwrap();
-      toast.success("Database restored"); setRestoreFile(null); setRestoreConfirmation("");
-    } catch { toast.error("Restore failed"); }
+      toast.success(t("databaseRestored")); setRestoreFile(null); setRestoreConfirmation("");
+    } catch { toast.error(t("restoreFailed")); }
   };
 
   return (
@@ -115,13 +115,13 @@ export default function SettingsPage() {
       {isSuperAdmin && (
         <section className="mt-6 border-y py-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <div><h2 className="flex items-center gap-2 text-base font-semibold"><DatabaseBackup size={18} /> Database Backups</h2><p className="mt-1 text-sm text-muted-foreground">Automatic every 24 hours · retained for {backupStatus?.retention_days ?? 30} days</p></div>
-            <Button onClick={handleCreateBackup} disabled={creatingBackup}>{creatingBackup && <Loader2 className="h-4 w-4 animate-spin" />} Create Backup Now</Button>
+            <div><h2 className="flex items-center gap-2 text-base font-semibold"><DatabaseBackup size={18} /> {t("databaseBackups")}</h2><p className="mt-1 text-sm text-muted-foreground">{t("backupSchedule", { days: backupStatus?.retention_days ?? 30 })}</p></div>
+            <Button onClick={handleCreateBackup} disabled={creatingBackup}>{creatingBackup && <Loader2 className="h-4 w-4 animate-spin" />} {t("createBackup")}</Button>
           </div>
-          <div className="mt-4 flex items-center gap-2 text-sm"><span className={`h-2 w-2 rounded-full ${backupStatus?.healthy ? "bg-emerald-500" : "bg-amber-500"}`} /><span>{backupStatus?.latest ? `Last successful backup: ${new Date(backupStatus.latest.created_at).toLocaleString()}` : "No successful backup yet"}</span></div>
+          <div className="mt-4 flex items-center gap-2 text-sm"><span className={`h-2 w-2 rounded-full ${backupStatus?.healthy ? "bg-emerald-500" : "bg-amber-500"}`} /><span>{backupStatus?.latest ? t("lastBackup", { date: new Date(backupStatus.latest.created_at).toLocaleString() }) : t("noBackup")}</span></div>
           <div className="mt-4 divide-y">
             {(backupStatus?.backups ?? []).slice(0, 10).map((backup) => (
-              <div key={backup.filename} className="flex items-center justify-between gap-3 py-2 text-sm"><div><p className="font-mono text-xs">{backup.filename}</p><p className="text-xs text-muted-foreground">{(backup.size_bytes / 1024 / 1024).toFixed(2)} MB · {new Date(backup.created_at).toLocaleString()}</p></div><Button size="sm" variant="outline" onClick={() => setRestoreFile(backup.filename)}><RotateCcw size={14} /> Restore</Button></div>
+              <div key={backup.filename} className="flex items-center justify-between gap-3 py-2 text-sm"><div><p className="font-mono text-xs">{backup.filename}</p><p className="text-xs text-muted-foreground">{(backup.size_bytes / 1024 / 1024).toFixed(2)} MB · {new Date(backup.created_at).toLocaleString()}</p></div><Button size="sm" variant="outline" onClick={() => setRestoreFile(backup.filename)}><RotateCcw size={14} /> {t("restore")}</Button></div>
             ))}
           </div>
         </section>
@@ -160,7 +160,7 @@ export default function SettingsPage() {
       </Dialog>
 
       <Dialog open={!!restoreFile} onOpenChange={(open) => { if (!open) { setRestoreFile(null); setRestoreConfirmation(""); } }}>
-        <DialogContent><DialogHeader><DialogTitle>Restore Database</DialogTitle></DialogHeader><div className="space-y-3 py-3"><p className="text-sm text-destructive">This replaces the current database with {restoreFile}. Create a fresh backup first.</p><label className="block text-sm font-medium">Type RESTORE DATABASE to confirm</label><input value={restoreConfirmation} onChange={(event) => setRestoreConfirmation(event.target.value)} className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm" /></div><DialogFooter><Button variant="outline" onClick={() => setRestoreFile(null)}>Cancel</Button><Button variant="destructive" onClick={handleRestore} disabled={restoringBackup || restoreConfirmation !== "RESTORE DATABASE"}>{restoringBackup && <Loader2 className="h-4 w-4 animate-spin" />} Restore</Button></DialogFooter></DialogContent>
+        <DialogContent><DialogHeader><DialogTitle>{t("restoreDatabase")}</DialogTitle></DialogHeader><div className="space-y-3 py-3"><p className="text-sm text-destructive">{t("restoreWarning", { filename: restoreFile ?? "" })}</p><label className="block text-sm font-medium">{t("restoreConfirmation")}</label><input value={restoreConfirmation} onChange={(event) => setRestoreConfirmation(event.target.value)} className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm" /></div><DialogFooter><Button variant="outline" onClick={() => setRestoreFile(null)}>{tc("cancel")}</Button><Button variant="destructive" onClick={handleRestore} disabled={restoringBackup || restoreConfirmation !== "RESTORE DATABASE"}>{restoringBackup && <Loader2 className="h-4 w-4 animate-spin" />} {t("restore")}</Button></DialogFooter></DialogContent>
       </Dialog>
     </div>
   );

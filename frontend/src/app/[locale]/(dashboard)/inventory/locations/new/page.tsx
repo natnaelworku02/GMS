@@ -20,7 +20,6 @@ export default function NewInventoryLocationPage() {
   const {
     register,
     handleSubmit,
-    setError,
     formState: { errors },
   } = useForm<InventoryLocationFormData>({
     resolver: zodResolver(inventoryLocationSchema),

@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   useCreateJobCardMutation,
@@ -55,8 +55,7 @@ export default function NewJobCardPage() {
     register,
     handleSubmit,
     setValue,
-    watch,
-    setError,
+    control,
     trigger,
     formState: { errors },
   } = useForm<JobCardCreateFormData>({
@@ -73,10 +72,10 @@ export default function NewJobCardPage() {
     },
   });
 
-  const ownerId = watch("owner_id");
-  const vehicleId = watch("vehicle_id");
-  const conditions = watch("conditions");
-  const staffAssignments = watch("staff_assignments") ?? [];
+  const ownerId = useWatch({ control, name: "owner_id" });
+  const vehicleId = useWatch({ control, name: "vehicle_id" });
+  const conditions = useWatch({ control, name: "conditions" });
+  const staffAssignments = useWatch({ control, name: "staff_assignments" }) ?? [];
 
   const [showNewOwner, setShowNewOwner] = useState(false);
   const [newOwnerName, setNewOwnerName] = useState("");
@@ -120,7 +119,7 @@ export default function NewJobCardPage() {
     } catch {
       toast.error(t("createOwnerError"));
     }
-  }, [newOwnerName, newOwnerPhone, createOwner, setValue, setError]);
+  }, [newOwnerName, newOwnerPhone, createOwner, setValue, t]);
 
   const handleCreateVehicle = useCallback(async () => {
     if (!newVehicleModel.trim() || !newVehiclePlate.trim()) return;
@@ -143,7 +142,7 @@ export default function NewJobCardPage() {
     } catch {
       toast.error(t("createVehicleError"));
     }
-  }, [newVehicleModel, newVehicleType, newVehiclePlate, newVehicleEngine, newVehicleChassis, ownerId, createVehicle, setValue, setError]);
+  }, [newVehicleModel, newVehicleType, newVehiclePlate, newVehicleEngine, newVehicleChassis, ownerId, createVehicle, setValue, t]);
 
   const onSubmit = async (data: JobCardCreateFormData) => {
     try {

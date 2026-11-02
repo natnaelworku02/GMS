@@ -36,7 +36,6 @@ export default function OwnersPage() {
   const owners = ownersResp?.items ?? [];
   const vehicles = vehiclesResp?.items ?? [];
   const total = ownersResp?.total ?? 0;
-  const totalPages = ownersResp?.total_pages ?? 0;
 
   const [open, setOpen] = useState(false);
   const [create, { isLoading: creating }] = useCreateOwnerMutation();

@@ -70,7 +70,29 @@
     "jobCardsDescription": "Create and manage repair job cards",
     "performasDescription": "Generate and send performa invoices",
     "invoicesDescription": "View invoices from approved performas",
-    "inventoryDescription": "Track parts and stock levels"
+    "inventoryDescription": "Track parts and stock levels",
+    "core": "Core",
+    "resources": "Resources",
+    "admin": "Administration",
+    "search": "Search...",
+    "openMenu": "Open navigation menu",
+    "closeMenu": "Close navigation menu"
+  },
+  "dashboard": {
+    "description": "Keep the workshop moving from intake to invoice.",
+    "openWorkflow": "Open workflow",
+    "quickActions": "Quick Actions",
+    "openJobCards": "Open Job Cards",
+    "lowStockItems": "Low Stock Items",
+    "activeCheckouts": "Active Checkouts",
+    "invoices": "Invoices",
+    "jobCardsByStatus": "Job Cards by Status",
+    "jobCardsOverTime": "Job Cards Over Time",
+    "approvedPerformaRevenue": "Revenue from Approved Performas",
+    "recentActivity": "Recent Activity",
+    "noActivity": "No activity yet",
+    "noData": "No data yet",
+    "jobCard": "Job card"
   },
   "notifications": {
     "title": "Notifications",
@@ -168,7 +190,11 @@
     "type": "Type",
     "labelPlateNumber": "Plate #",
     "labelEngineNumber": "Engine #",
-    "labelChassisNumber": "Chassis #"
+    "labelChassisNumber": "Chassis #",
+    "count": "{count} job card{count, plural, one {} other {s}}",
+    "pending": "Pending",
+    "in_progress": "In Progress",
+    "cancelled": "Cancelled"
   },
   "performas": {
     "title": "Performas",
@@ -218,7 +244,16 @@
     "addToLineItems": "Add",
     "fromInventory": "From inventory",
     "searchInventory": "Search inventory...",
-    "noInventory": "No items found"
+    "noInventory": "No items found",
+    "count": "{count} performa{count, plural, one {} other {s}}",
+    "pageOf": "Page {page} of {totalPages}"
+  },
+  "invoices": {
+    "title": "Invoices",
+    "description": "Invoices generated from approved performas",
+    "empty": "No invoices yet",
+    "emptyDescription": "Invoices are created from approved performas",
+    "pageOf": "Page {page} of {totalPages}"
   },
   "inventory": {
     "title": "Inventory",
@@ -241,7 +276,16 @@
     "noLocations": "No locations found",
     "allVehicleTypes": "All vehicle types",
     "selectLocation": "Select a location",
-    "typeOrSelect": "Type or select..."
+    "typeOrSelect": "Type or select...",
+    "count": "{count} item{count, plural, one {} other {s}}",
+    "classification": "Classification",
+    "condition": "Condition",
+    "origin": "Origin",
+    "new": "New",
+    "used": "Used",
+    "original": "Original",
+    "locally_made": "Locally Made",
+    "addVehicleType": "Add"
   },
   "tools": {
     "title": "Tools",
@@ -309,6 +353,7 @@
   },
   "users": {
     "title": "Users",
+    "count": "users",
     "create": "New User",
     "edit": "Edit User",
     "fullName": "Full Name",
@@ -361,7 +406,20 @@
     "updatedAt": "Last Updated",
     "searchPlaceholder": "Search settings...",
     "noSettings": "No settings found",
-    "count": "{count} setting{count, plural, one {} other {s}}"
+    "count": "{count} setting{count, plural, one {} other {s}}",
+    "databaseBackups": "Database Backups",
+    "backupSchedule": "Automatic every 24 hours · retained for {days} days",
+    "createBackup": "Create Backup Now",
+    "lastBackup": "Last successful backup: {date}",
+    "noBackup": "No successful backup yet",
+    "restore": "Restore",
+    "restoreDatabase": "Restore Database",
+    "restoreWarning": "This replaces the current database with {filename}. Create a fresh backup first.",
+    "restoreConfirmation": "Type RESTORE DATABASE to confirm",
+    "backupCreated": "Backup created",
+    "backupFailed": "Backup failed",
+    "databaseRestored": "Database restored",
+    "restoreFailed": "Restore failed"
   },
   "audit": {
     "title": "Audit Logs",
@@ -464,6 +522,15 @@
     "saveChanges": "Save Changes",
     "passwordLengthError": "Password must be at least 8 characters",
     "profileLink": "Profile"
+  },
+  "history": {
+    "title": "Vehicle History",
+    "description": "Find a vehicle and review every recorded visit, mileage, assignment, material, and proforma.",
+    "searchPlaceholder": "Search plate, model, engine or chassis number",
+    "loading": "Loading history...",
+    "empty": "No matching vehicle history.",
+    "engine": "Engine",
+    "chassis": "Chassis"
   },
   "offline": {
     "banner": "You're offline — changes will sync when reconnected",

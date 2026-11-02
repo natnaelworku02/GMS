@@ -34,10 +34,11 @@ const dotColors: Record<string, string> = {
 type Props = {
   status: string;
   className?: string;
+  label?: string;
 };
 
-export function StatusBadge({ status, className }: Props) {
-  const label = status
+export function StatusBadge({ status, className, label }: Props) {
+  const fallbackLabel = status
     .replace(/_/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
 
@@ -57,7 +58,7 @@ export function StatusBadge({ status, className }: Props) {
           status === "in_repair" && "animate-pulse",
         )}
       />
-      {label}
+      {label ?? fallbackLabel}
     </span>
   );
 }

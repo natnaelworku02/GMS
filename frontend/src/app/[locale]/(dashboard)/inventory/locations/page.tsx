@@ -31,7 +31,6 @@ export default function InventoryLocationsPage() {
   const { data: locationsResp, isLoading } = useGetInventoryLocationsQuery({ page, page_size: 20, search: searchQuery || undefined });
   const locations = locationsResp?.items ?? [];
   const total = locationsResp?.total ?? 0;
-  const totalPages = locationsResp?.total_pages ?? 0;
 
   const [updateLocation, { isLoading: isUpdating }] = useUpdateInventoryLocationMutation();
   const [deleteTarget, setDeleteTarget] = useState<InventoryLocation | null>(null);

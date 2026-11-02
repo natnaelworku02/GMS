@@ -27,7 +27,6 @@ export default function EditJobCardPage({ params }: { params: Promise<{ id: stri
   const {
     register,
     handleSubmit,
-    setError,
     reset,
     formState: { errors },
   } = useForm<JobCardUpdateFormData>({

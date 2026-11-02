@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { useState, use } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useGetInventoryItemQuery, useGetInventoryLocationsQuery, useGetInventoryMovementsQuery, useAdjustStockMutation, useAdjustStockDeltaMutation, useUpdateInventoryItemMutation } from "@/features/inventory/api";
 import { Button } from "@/components/ui/button";
@@ -31,15 +31,10 @@ export default function InventoryItemDetailPage({ params }: { params: Promise<{ 
   const [adjustStock, { isLoading: isAdjusting }] = useAdjustStockMutation();
   const [adjustStockDelta, { isLoading: isDeltaAdjusting }] = useAdjustStockDeltaMutation();
   const [updateItem, { isLoading: isUpdatingItem }] = useUpdateInventoryItemMutation();
-  const [condition, setCondition] = useState<"new" | "used">("new");
-  const [origin, setOrigin] = useState<"original" | "locally_made">("original");
-
-  useEffect(() => {
-    if (item) {
-      setCondition(item.condition);
-      setOrigin(item.origin);
-    }
-  }, [item]);
+  const [conditionOverride, setCondition] = useState<"new" | "used" | null>(null);
+  const [originOverride, setOrigin] = useState<"original" | "locally_made" | null>(null);
+  const condition = conditionOverride ?? item?.condition ?? "new";
+  const origin = originOverride ?? item?.origin ?? "original";
 
   const [confirmStock, setConfirmStock] = useState(false);
   const [pendingData, setPendingData] = useState<StockAdjustFormData | null>(null);
@@ -48,7 +43,7 @@ export default function InventoryItemDetailPage({ params }: { params: Promise<{ 
     register,
     handleSubmit,
     setValue,
-    watch,
+    control,
     reset,
     formState: { errors },
   } = useForm<StockAdjustFormData>({
@@ -56,7 +51,7 @@ export default function InventoryItemDetailPage({ params }: { params: Promise<{ 
     defaultValues: { store_location_id: "", quantity: 0 },
   });
 
-  const selectedLocation = watch("store_location_id") ?? "";
+  const selectedLocation = useWatch({ control, name: "store_location_id" }) ?? "";
 
   const totalStock = (entries: StockEntry[]) =>
     entries.reduce((sum, se) => sum + se.quantity, 0);

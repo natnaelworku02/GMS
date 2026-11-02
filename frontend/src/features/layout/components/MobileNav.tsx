@@ -91,7 +91,7 @@ export function MobileNav({ open, onClose }: { open: boolean; onClose: () => voi
             </div>
             <span className="text-sm font-semibold tracking-tight text-white/90">GMS</span>
           </div>
-          <button onClick={onClose} className="rounded-lg p-1.5 text-white/40 hover:bg-white/[0.06] hover:text-white/80">
+          <button onClick={onClose} aria-label={t("closeMenu")} className="rounded-lg p-1.5 text-white/40 hover:bg-white/[0.06] hover:text-white/80">
             <X size={18} />
           </button>
         </div>
@@ -100,7 +100,7 @@ export function MobileNav({ open, onClose }: { open: boolean; onClose: () => voi
           {navGroups.map((group, gi) => (
             <div key={group.label} className={gi > 0 ? "mt-4" : ""}>
               <div className="mb-1.5 px-5 text-[10px] font-semibold uppercase tracking-wider text-white/20">
-                {group.label}
+                {t(group.label)}
               </div>
               <div className="space-y-0.5 px-2">
                 {group.items.map((item) => {

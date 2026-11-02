@@ -26,7 +26,6 @@ export default function EditOwnerPage({ params }: { params: Promise<{ id: string
   const {
     register,
     handleSubmit,
-    setError,
     reset,
     formState: { errors },
   } = useForm<OwnerFormData>({

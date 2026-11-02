@@ -19,7 +19,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
   const t = useTranslations("performas");
   const tc = useTranslations("common");
   const router = useRouter();
-  const { data: invoice, isLoading, error } = useGetInvoiceQuery(id);
+  const { data: invoice, isLoading } = useGetInvoiceQuery(id);
   const accessToken = useAppSelector((s) => s.auth.accessToken);
   const { data: paymentSummary } = useGetInvoicePaymentsQuery(id);
   const [createPayment, { isLoading: recordingPayment }] = useCreatePaymentMutation();

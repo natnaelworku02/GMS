@@ -15,7 +15,6 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, History, Loader2, Undo2 } from "lucide-react";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { toast } from "sonner";
-import type { ToolCheckout } from "@/features/tools/types";
 
 export default function ToolDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);

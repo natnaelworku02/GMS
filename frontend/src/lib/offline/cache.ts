@@ -35,7 +35,7 @@ export async function cacheQuery(key: string, data: unknown): Promise<void> {
   await db.put(STORE_NAME, { key, data, cachedAt: new Date().toISOString() });
 }
 
-export async function getCachedQuery<T = unknown>(key: string): Promise<CachedQuery | undefined> {
+export async function getCachedQuery(key: string): Promise<CachedQuery | undefined> {
   const db = await getDb();
   return db.get(STORE_NAME, key);
 }

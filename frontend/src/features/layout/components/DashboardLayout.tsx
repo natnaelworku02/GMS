@@ -11,9 +11,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen w-full min-w-0 overflow-x-hidden bg-background">
       <OfflineBanner />
-      <div className="flex flex-1">
+      <div className="flex min-w-0 flex-1">
         <div className="hidden lg:flex">
           <Sidebar />
         </div>

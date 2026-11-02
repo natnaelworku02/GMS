@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   useCreateJobCardMutation,
@@ -53,7 +53,7 @@ export default function StartJobPage({ searchParams }: { searchParams: Promise<{
   const { data: ownersResp } = useGetOwnersQuery({ page: 1, page_size: 100 });
   const owners = ownersResp?.items ?? [];
   const { data: vehiclesResp } = useGetVehiclesQuery({ page: 1, page_size: 100 });
-  const vehicles = vehiclesResp?.items ?? [];
+  const vehicles = useMemo(() => vehiclesResp?.items ?? [], [vehiclesResp?.items]);
   const [createOwner, { isLoading: creatingOwner }] = useCreateOwnerMutation();
   const [createVehicle, { isLoading: creatingVehicle }] = useCreateVehicleMutation();
 
@@ -65,8 +65,7 @@ export default function StartJobPage({ searchParams }: { searchParams: Promise<{
     register,
     handleSubmit,
     setValue,
-    watch,
-    setError,
+    control,
     trigger,
     formState: { errors },
   } = useForm<JobCardCreateFormData>({
@@ -83,13 +82,26 @@ export default function StartJobPage({ searchParams }: { searchParams: Promise<{
     },
   });
 
-  const ownerId = watch("owner_id");
-  const vehicleId = watch("vehicle_id");
-  const conditions = watch("conditions");
-  const staffAssignments = watch("staff_assignments") ?? [];
+  const ownerId = useWatch({ control, name: "owner_id" });
+  const vehicleId = useWatch({ control, name: "vehicle_id" });
+  const conditions = useWatch({ control, name: "conditions" });
+  const staffAssignments = useWatch({ control, name: "staff_assignments" }) ?? [];
 
-  const [lineItems, setLineItems] = useState<LineItemInput[]>([{ type: "labor", description: "", quantity: 1, unit_price: 0 }]);
-  const [clientEmail, setClientEmail] = useState("");
+  const sourceLineItems = useMemo<LineItemInput[]>(
+    () => sourcePerforma
+      ? sourcePerforma.line_items.map((item) => ({
+          type: item.type,
+          description: item.description,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+        }))
+      : [{ type: "labor", description: "", quantity: 1, unit_price: 0 }],
+    [sourcePerforma],
+  );
+  const [lineItemEdits, setLineItemEdits] = useState<LineItemInput[] | null>(null);
+  const [clientEmailEdit, setClientEmailEdit] = useState<string | null>(null);
+  const lineItems = lineItemEdits ?? sourceLineItems;
+  const clientEmail = clientEmailEdit ?? sourcePerforma?.client_email ?? "";
 
   useEffect(() => {
     if (!sourcePerforma) return;
@@ -98,10 +110,6 @@ export default function StartJobPage({ searchParams }: { searchParams: Promise<{
       setValue("owner_id", selectedVehicle.owner_id, { shouldValidate: true });
       setValue("vehicle_id", selectedVehicle.id, { shouldValidate: true });
     }
-    setLineItems(sourcePerforma.line_items.map((item) => ({
-      type: item.type, description: item.description, quantity: item.quantity, unit_price: item.unit_price,
-    })));
-    setClientEmail(sourcePerforma.client_email ?? "");
   }, [sourcePerforma, vehicles, setValue]);
 
   const [showNewOwner, setShowNewOwner] = useState(false);
@@ -146,7 +154,7 @@ export default function StartJobPage({ searchParams }: { searchParams: Promise<{
     } catch {
       toast.error(t("createOwnerError"));
     }
-  }, [newOwnerName, newOwnerPhone, createOwner, setValue, setError, t]);
+  }, [newOwnerName, newOwnerPhone, createOwner, setValue, t]);
 
   const handleCreateVehicle = useCallback(async () => {
     if (!newVehicleModel.trim() || !newVehiclePlate.trim()) return;
@@ -169,7 +177,7 @@ export default function StartJobPage({ searchParams }: { searchParams: Promise<{
     } catch {
       toast.error(t("createVehicleError"));
     }
-  }, [newVehicleModel, newVehicleType, newVehiclePlate, newVehicleEngine, newVehicleChassis, ownerId, createVehicle, setValue, setError, t]);
+  }, [newVehicleModel, newVehicleType, newVehiclePlate, newVehicleEngine, newVehicleChassis, ownerId, createVehicle, setValue, t]);
 
   const handleCreateJobCard = async (data: JobCardCreateFormData) => {
     try {
@@ -637,13 +645,13 @@ export default function StartJobPage({ searchParams }: { searchParams: Promise<{
               type="email"
               placeholder={t("clientEmailPlaceholder")}
               value={clientEmail}
-              onChange={(e) => setClientEmail(e.target.value)}
+              onChange={(e) => setClientEmailEdit(e.target.value)}
             />
           </div>
 
           <div className="rounded-xl border border-border/60 bg-card p-4 shadow-card space-y-4 md:p-6">
             <h2 className="text-base font-semibold">{t("lineItems")}</h2>
-            <PerformaLineItems items={lineItems} onChange={setLineItems} />
+            <PerformaLineItems items={lineItems} onChange={setLineItemEdits} />
             <PerformaSummary subtotal={subtotal} vatRate={vatRate} vatAmount={vatAmount} grandTotal={grandTotal} />
           </div>
 

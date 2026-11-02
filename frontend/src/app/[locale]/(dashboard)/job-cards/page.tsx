@@ -12,13 +12,14 @@ import { Can } from "@/features/auth/components/Can";
 import { Button } from "@/components/ui/button";
 import { Plus, Eye, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { JOB_STATUS_LABELS } from "@/lib/constants";
 import { getApiErrorMessage } from "@/lib/utils";
 import type { JobCard } from "@/features/jobCards/types";
 
+const JOB_STATUSES = ["pending_inspection", "waiting_for_approval", "in_repair", "waiting_for_parts", "ready_for_testing", "completed"];
+
 const STATUS_OPTIONS = (t: (key: string) => string) => [
   { value: "", label: t("allStatuses") },
-  ...Object.entries(JOB_STATUS_LABELS).map(([value, label]) => ({ value, label })),
+  ...JOB_STATUSES.map((value) => ({ value, label: t(value) })),
 ];
 
 export default function JobCardsPage() {
@@ -37,7 +38,6 @@ export default function JobCardsPage() {
   });
   const jobCards = jobCardsResp?.items ?? [];
   const total = jobCardsResp?.total ?? 0;
-  const totalPages = jobCardsResp?.total_pages ?? 0;
 
   const { data: vehiclesResp } = useGetVehiclesQuery({ page: 1, page_size: 100 });
   const vehicles = vehiclesResp?.items ?? [];
@@ -88,7 +88,7 @@ export default function JobCardsPage() {
     {
       key: "status",
       header: t("status"),
-      render: (jc) =>                   <StatusBadge status={jc.status} />,
+      render: (jc) => <StatusBadge status={jc.status} label={t(jc.status)} />,
       sortable: true,
     },
     {
@@ -136,7 +136,7 @@ export default function JobCardsPage() {
     <div className="mx-auto max-w-6xl">
       <PageHeader
         title={t("title")}
-        description={`${total} card${total !== 1 ? "s" : ""}`}
+        description={t("count", { count: total })}
         action={
           <Can permission="job_cards.create">
             <Button onClick={() => router.push("/job-cards/new")}>
@@ -177,6 +177,7 @@ export default function JobCardsPage() {
           serverPage={page}
           serverPageSize={20}
           onServerPageChange={setPage}
+          onRowClick={(jobCard) => router.push(`/job-cards/${jobCard.id}`)}
         />
       </div>
 

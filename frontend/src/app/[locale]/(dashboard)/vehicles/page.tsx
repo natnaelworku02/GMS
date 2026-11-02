@@ -17,7 +17,6 @@ import CreateVehicleModal from "@/features/jobCards/components/CreateVehicleModa
 
 export default function VehiclesPage() {
   const t = useTranslations("vehicles");
-  const tc = useTranslations("common");
   const router = useRouter();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -27,7 +26,6 @@ export default function VehiclesPage() {
   const vehicles = vehiclesResp?.items ?? [];
   const owners = ownersResp?.items ?? [];
   const total = vehiclesResp?.total ?? 0;
-  const totalPages = vehiclesResp?.total_pages ?? 0;
 
   const [deleteTarget, setDeleteTarget] = useState<Vehicle | null>(null);
   const [deleteVehicle, { isLoading: deleting }] = useDeleteVehicleMutation();

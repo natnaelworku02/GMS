@@ -212,17 +212,12 @@ export function DataTable<T = unknown>({
             const firstColumn = mobileColumns[0] || columns[0];
             const detailColumns = mobileColumns.slice(1, 5);
 
-            return (
-              <button
-                key={rowKey}
-                type="button"
-                disabled={!onRowClick}
-                onClick={() => onRowClick?.(row)}
-                className={cn(
-                  "w-full rounded-xl border border-border/60 bg-card p-4 text-left shadow-card transition-colors",
-                  onRowClick ? "hover:border-primary/30 hover:bg-primary/[0.03]" : "disabled:opacity-100",
-                )}
-              >
+            const rowClassName = cn(
+              "w-full rounded-xl border border-border/60 bg-card p-4 text-left shadow-card transition-colors",
+              onRowClick ? "cursor-pointer hover:border-primary/30 hover:bg-primary/[0.03]" : "",
+            );
+            const rowContent = (
+              <>
                 {firstColumn && (
                   <div className="text-sm font-semibold leading-snug text-foreground">
                     {firstColumn.render(row)}
@@ -236,9 +231,19 @@ export function DataTable<T = unknown>({
                         <dd className="min-w-0 text-right text-foreground/85">{col.render(row)}</dd>
                       </div>
                     ))}
-                  </dl>
+                    </dl>
                 )}
+              </>
+            );
+
+            return onRowClick ? (
+              <button key={rowKey} type="button" onClick={() => onRowClick(row)} className={rowClassName}>
+                {rowContent}
               </button>
+            ) : (
+              <div key={rowKey} className={rowClassName}>
+                {rowContent}
+              </div>
             );
           })
         )}

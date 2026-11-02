@@ -8,12 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Receipt } from "lucide-react";
 
 export default function InvoicesListPage() {
-  const t = useTranslations("nav");
+  const t = useTranslations("invoices");
+  const tc = useTranslations("common");
   const router = useRouter();
   const [page, setPage] = useState(1);
   const { data: invoicesResp } = useGetInvoicesQuery({ page, page_size: 20 });
   const invoices = invoicesResp?.items ?? [];
-  const total = invoicesResp?.total ?? 0;
   const totalPages = invoicesResp?.total_pages ?? 0;
 
   const fmt = (n: number) =>
@@ -22,15 +22,15 @@ export default function InvoicesListPage() {
   return (
     <div className="mx-auto max-w-5xl">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">{t("invoices")}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Invoices generated from approved performas</p>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{t("description")}</p>
       </div>
 
       {invoices.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border bg-card py-16 text-center">
           <Receipt className="mb-3 h-10 w-10 text-muted-foreground/40" />
-          <p className="text-sm text-muted-foreground">No invoices yet</p>
-          <p className="text-xs text-muted-foreground mt-1">Invoices are created from approved performas</p>
+          <p className="text-sm text-muted-foreground">{t("empty")}</p>
+          <p className="text-xs text-muted-foreground mt-1">{t("emptyDescription")}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -61,11 +61,11 @@ export default function InvoicesListPage() {
       {totalPages > 1 && (
         <div className="mt-4 flex items-center justify-center gap-2">
           <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
-            Previous
+            {tc("previous")}
           </Button>
-          <span className="text-sm text-muted-foreground">Page {page} of {totalPages}</span>
+          <span className="text-sm text-muted-foreground">{t("pageOf", { page, totalPages })}</span>
           <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
-            Next
+            {tc("next")}
           </Button>
         </div>
       )}

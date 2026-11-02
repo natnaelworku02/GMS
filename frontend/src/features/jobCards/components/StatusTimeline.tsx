@@ -40,8 +40,6 @@ export function StatusTimeline({ currentStatus }: Props) {
         {STEPS.map((step, i) => {
           const isCompleted = i < currentIdx;
           const isCurrent = i === currentIdx;
-          const isPending = i > currentIdx;
-
           return (
             <div key={step} className="flex flex-col items-center gap-2">
               <div

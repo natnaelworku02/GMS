@@ -27,7 +27,6 @@ export default function EditEmployeePage({ params }: { params: Promise<{ id: str
   const {
     register,
     handleSubmit,
-    setError,
     reset,
     formState: { errors },
     control,

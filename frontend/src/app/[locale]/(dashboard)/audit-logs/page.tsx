@@ -5,7 +5,6 @@ import { useTranslations } from "next-intl";
 import { useGetAuditLogsQuery } from "@/features/audit/api";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable, type Column } from "@/components/shared/DataTable";
-import { Button } from "@/components/ui/button";
 import type { AuditLog } from "@/features/audit/types";
 
 export default function AuditLogsPage() {
@@ -23,7 +22,6 @@ export default function AuditLogsPage() {
   });
   const logs = logsResp?.items ?? [];
   const total = logsResp?.total ?? 0;
-  const totalPages = logsResp?.total_pages ?? 0;
 
   const columns: Column<AuditLog>[] = [
     {
