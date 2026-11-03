@@ -12,6 +12,7 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { MODULES } from "@/lib/constants";
 import type { PermissionSet } from "@/features/auth/types";
+import { useAppSelector } from "@/lib/hooks";
 
 const roleCreateSchema = z.object({
   name: z.string().min(1, "Role name is required"),
@@ -24,6 +25,7 @@ export default function NewRolePage() {
   const t = useTranslations("roles");
   const tc = useTranslations("common");
   const router = useRouter();
+  const currentUserIsSuperAdmin = useAppSelector((state) => state.auth.isSuperAdmin);
   const [createRole, { isLoading: isCreating }] = useCreateRoleMutation();
   const [updatePermissions, { isLoading: isSettingPerms }] = useUpdatePermissionsMutation();
 
@@ -86,7 +88,7 @@ export default function NewRolePage() {
             {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
           </div>
 
-          <div className="flex items-center gap-2">
+          {currentUserIsSuperAdmin && <div className="flex items-center gap-2">
             <input
               id="is_superadmin"
               type="checkbox"
@@ -96,7 +98,7 @@ export default function NewRolePage() {
             <label htmlFor="is_superadmin" className="text-sm">
               {t("isSuperAdmin")} — bypasses all permission checks
             </label>
-          </div>
+          </div>}
         </div>
 
         {!isSuperAdmin && (

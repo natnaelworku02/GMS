@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useAppSelector } from "@/lib/hooks";
 
 type Props = {
   defaultValues?: Partial<CreateUserFormData>;
@@ -29,8 +30,9 @@ type Props = {
 export function UserForm({ defaultValues, onSubmit, isSubmitting, mode, formId }: Props) {
   const t = useTranslations("users");
   const tc = useTranslations("common");
+  const isSuperAdmin = useAppSelector((state) => state.auth.isSuperAdmin);
   const { data: rolesResp } = useGetRolesQuery({ page: 1, page_size: 100 });
-  const roles = rolesResp?.items ?? [];
+  const roles = (rolesResp?.items ?? []).filter((role) => isSuperAdmin || !role.is_superadmin);
 
   const form = useForm<CreateUserFormData>({
     resolver: zodResolver(createUserSchema),

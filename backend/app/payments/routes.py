@@ -13,7 +13,7 @@ router = APIRouter(prefix="/payments", tags=["payments"])
 
 
 @router.get("/invoice/{invoice_id}", response_model=schemas.PaymentSummary)
-async def invoice_payments(invoice_id: uuid.UUID, _user=Depends(RequirePermission("performa", "read")), db: AsyncSession = Depends(get_db)):
+async def invoice_payments(invoice_id: uuid.UUID, _user=Depends(RequirePermission("payments", "read")), db: AsyncSession = Depends(get_db)):
     summary = await service.get_invoice_summary(db, invoice_id)
     if not summary:
         raise HTTPException(status_code=404, detail="Invoice not found")
@@ -21,7 +21,7 @@ async def invoice_payments(invoice_id: uuid.UUID, _user=Depends(RequirePermissio
 
 
 @router.post("/", response_model=schemas.PaymentResponse, status_code=201)
-async def create_payment(body: schemas.PaymentCreate, current_user: User = Depends(RequirePermission("performa", "update")), db: AsyncSession = Depends(get_db)):
+async def create_payment(body: schemas.PaymentCreate, current_user: User = Depends(RequirePermission("payments", "create")), db: AsyncSession = Depends(get_db)):
     try:
         payment = await service.create_payment(
             db, body.invoice_id, body.amount, current_user.id,
@@ -36,7 +36,7 @@ async def create_payment(body: schemas.PaymentCreate, current_user: User = Depen
 
 
 @router.post("/{payment_id}/reverse", response_model=schemas.PaymentResponse)
-async def reverse_payment(payment_id: uuid.UUID, body: schemas.PaymentReverse, current_user: User = Depends(RequirePermission("performa", "update")), db: AsyncSession = Depends(get_db)):
+async def reverse_payment(payment_id: uuid.UUID, body: schemas.PaymentReverse, current_user: User = Depends(RequirePermission("payments", "update")), db: AsyncSession = Depends(get_db)):
     try:
         payment = await service.reverse_payment(db, payment_id, body.reason, current_user.id)
     except ValueError as exc:

@@ -5,7 +5,7 @@ from hmac import compare_digest
 from fastapi import HTTPException
 from redis.asyncio import Redis
 from redis.exceptions import RedisError
-from sqlalchemy import delete, or_, select, update
+from sqlalchemy import delete, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -13,6 +13,7 @@ from app.auth.models import RefreshSession, Role, RolePermission, SystemSetting,
 from app.config import get_settings
 from app.core.pagination import paginate_query
 from app.core.security import hash_password, verify_password, create_access_token, create_refresh_token, hash_token
+from app.core.permissions import PERMISSION_MODULES
 
 
 async def authenticate_user(db: AsyncSession, phone: str, password: str) -> User | None:
@@ -35,7 +36,7 @@ async def create_session_tokens(db: AsyncSession, user: User) -> dict:
     data = {"user_id": str(user.id), "role_id": str(user.role_id), "session_id": str(session.id)}
     refresh_token = create_refresh_token(data)
     session.token_hash = hash_token(refresh_token)
-    await db.commit()
+    await db.flush()
     return {
         "access_token": create_access_token(data),
         "refresh_token": refresh_token,
@@ -87,7 +88,7 @@ async def revoke_session(db: AsyncSession, session_id: uuid.UUID) -> None:
         .where(RefreshSession.id == session_id, RefreshSession.revoked_at.is_(None))
         .values(revoked_at=datetime.now(timezone.utc))
     )
-    await db.commit()
+    await db.flush()
 
 
 async def revoke_user_sessions(db: AsyncSession, user_id: uuid.UUID) -> None:
@@ -136,7 +137,7 @@ async def create_user(db: AsyncSession, phone: str, password: str, full_name: st
         role_id=role_id,
     )
     db.add(user)
-    await db.commit()
+    await db.flush()
     await db.refresh(user)
     return user
 
@@ -166,7 +167,7 @@ async def update_user(db: AsyncSession, user: User, **kwargs) -> User:
             setattr(user, key, value)
     if security_changed:
         await db.execute(delete(RefreshSession).where(RefreshSession.user_id == user.id))
-    await db.commit()
+    await db.flush()
     await db.refresh(user)
     return user
 
@@ -174,28 +175,32 @@ async def update_user(db: AsyncSession, user: User, **kwargs) -> User:
 async def reset_password(db: AsyncSession, user: User, new_password: str) -> User:
     user.hashed_password = hash_password(new_password)
     await db.execute(delete(RefreshSession).where(RefreshSession.user_id == user.id))
-    await db.commit()
+    await db.flush()
     await db.refresh(user)
     return user
 
 
 async def delete_user(db: AsyncSession, user_id: uuid.UUID):
+    from app.audit.models import AuditLog
     from app.job_cards.models import JobCard
     result = await db.execute(select(JobCard).where(JobCard.created_by == user_id).limit(1))
     if result.scalar_one_or_none():
         raise HTTPException(status_code=409, detail="Cannot delete user: user created job cards")
+    audit_result = await db.execute(select(AuditLog.id).where(AuditLog.user_id == user_id).limit(1))
+    if audit_result.scalar_one_or_none():
+        raise HTTPException(status_code=409, detail="Cannot delete an audited user; deactivate the account instead")
     user = await get_user(db, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     await db.execute(delete(RefreshSession).where(RefreshSession.user_id == user_id))
     await db.delete(user)
-    await db.commit()
+    await db.flush()
 
 
 async def create_role(db: AsyncSession, name: str, is_superadmin: bool = False) -> Role:
     role = Role(name=name, is_superadmin=is_superadmin)
     db.add(role)
-    await db.commit()
+    await db.flush()
     await db.refresh(role, ["permissions"])
     return role
 
@@ -205,6 +210,129 @@ async def get_role(db: AsyncSession, role_id: uuid.UUID) -> Role | None:
         select(Role).options(selectinload(Role.permissions)).where(Role.id == role_id)
     )
     return result.scalar_one_or_none()
+
+
+async def ensure_role_assignment_allowed(db: AsyncSession, actor: User, role_id: uuid.UUID) -> Role:
+    actor_role = await get_role(db, actor.role_id)
+    target_role = await get_role(db, role_id)
+    if not target_role:
+        raise HTTPException(status_code=404, detail="Role not found")
+    if actor_role and actor_role.is_superadmin:
+        return target_role
+    if target_role.is_superadmin:
+        raise HTTPException(status_code=403, detail="Only a super administrator can assign that role")
+
+    actor_permissions = {
+        permission.module: permission
+        for permission in (actor_role.permissions if actor_role else [])
+    }
+    for permission in target_role.permissions:
+        actor_permission = actor_permissions.get(permission.module)
+        for action in ("create", "read", "update", "delete"):
+            if getattr(permission, f"can_{action}") and not (
+                actor_permission and getattr(actor_permission, f"can_{action}")
+            ):
+                raise HTTPException(
+                    status_code=403,
+                    detail="Cannot assign a role with permissions you do not possess",
+                )
+    return target_role
+
+
+async def actor_is_superadmin(db: AsyncSession, actor: User) -> bool:
+    role = await get_role(db, actor.role_id)
+    return bool(role and role.is_superadmin)
+
+
+async def ensure_user_management_allowed(db: AsyncSession, actor: User, target: User) -> None:
+    if await actor_is_superadmin(db, actor):
+        return
+    target_role = await get_role(db, target.role_id)
+    if target_role and target_role.is_superadmin:
+        raise HTTPException(status_code=403, detail="Only a super administrator can manage that user")
+    actor_role = await get_role(db, actor.role_id)
+    actor_permissions = {
+        permission.module: permission
+        for permission in (actor_role.permissions if actor_role else [])
+    }
+    for permission in target_role.permissions if target_role else []:
+        actor_permission = actor_permissions.get(permission.module)
+        for action in ("create", "read", "update", "delete"):
+            if getattr(permission, f"can_{action}") and not (
+                actor_permission and getattr(actor_permission, f"can_{action}")
+            ):
+                raise HTTPException(
+                    status_code=403,
+                    detail="Cannot manage a user whose permissions exceed your own",
+                )
+
+
+async def ensure_role_creation_allowed(db: AsyncSession, actor: User, is_superadmin: bool) -> None:
+    if is_superadmin and not await actor_is_superadmin(db, actor):
+        raise HTTPException(status_code=403, detail="Only a super administrator can create that role")
+
+
+async def ensure_role_management_allowed(db: AsyncSession, actor: User, target_role: Role) -> None:
+    if target_role.is_superadmin and not await actor_is_superadmin(db, actor):
+        raise HTTPException(status_code=403, detail="Only a super administrator can manage that role")
+
+
+async def ensure_permission_grants_allowed(
+    db: AsyncSession,
+    actor: User,
+    target_role: Role,
+    permissions: list[dict],
+) -> None:
+    await ensure_role_management_allowed(db, actor, target_role)
+    if await actor_is_superadmin(db, actor):
+        return
+
+    actor_role = await get_role(db, actor.role_id)
+    actor_permissions = {
+        permission.module: permission
+        for permission in (actor_role.permissions if actor_role else [])
+    }
+    for permission in permissions:
+        if permission["module"] not in PERMISSION_MODULES:
+            raise HTTPException(status_code=422, detail="Unknown permission module")
+        actor_permission = actor_permissions.get(permission["module"])
+        for action in ("create", "read", "update", "delete"):
+            if permission.get(f"can_{action}") and not (
+                actor_permission and getattr(actor_permission, f"can_{action}")
+            ):
+                raise HTTPException(
+                    status_code=403,
+                    detail="Cannot grant permissions you do not possess",
+                )
+
+
+async def ensure_user_security_change_allowed(
+    db: AsyncSession,
+    user: User,
+    *,
+    new_role_id: uuid.UUID | None = None,
+    new_is_active: bool | None = None,
+    deleting: bool = False,
+) -> None:
+    current_role = await get_role(db, user.role_id)
+    if not current_role or not current_role.is_superadmin or not user.is_active:
+        return
+
+    removes_superadmin = deleting or new_is_active is False
+    if new_role_id is not None:
+        new_role = await get_role(db, new_role_id)
+        removes_superadmin = removes_superadmin or not new_role or not new_role.is_superadmin
+    if not removes_superadmin:
+        return
+
+    active_superadmins = await db.scalar(
+        select(func.count())
+        .select_from(User)
+        .join(Role, User.role_id == Role.id)
+        .where(User.is_active.is_(True), Role.is_superadmin.is_(True))
+    )
+    if (active_superadmins or 0) <= 1:
+        raise HTTPException(status_code=409, detail="The final active super administrator is protected")
 
 
 async def list_roles(db: AsyncSession, page: int = 1, page_size: int = 20, search: str | None = None):
@@ -223,7 +351,7 @@ async def delete_role(db: AsyncSession, role_id: uuid.UUID):
     if not role:
         raise HTTPException(status_code=404, detail="Role not found")
     await db.delete(role)
-    await db.commit()
+    await db.flush()
 
 
 async def set_role_permissions(db: AsyncSession, role_id: uuid.UUID, permissions: list[dict]) -> Role:
@@ -235,7 +363,7 @@ async def set_role_permissions(db: AsyncSession, role_id: uuid.UUID, permissions
     for perm_data in permissions:
         perm = RolePermission(role_id=role_id, **perm_data)
         db.add(perm)
-    await db.commit()
+    await db.flush()
     await db.refresh(role, ["permissions"])
     return role
 
@@ -264,6 +392,6 @@ async def upsert_setting(db: AsyncSession, key: str, value: str) -> SystemSettin
     else:
         setting = SystemSetting(key=key, value=value)
         db.add(setting)
-    await db.commit()
+    await db.flush()
     await db.refresh(setting)
     return setting

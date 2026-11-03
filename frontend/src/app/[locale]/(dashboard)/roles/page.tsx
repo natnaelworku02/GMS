@@ -74,7 +74,7 @@ export default function RolesPage() {
       header: "",
       render: (r) => (
         <div className="flex items-center justify-end gap-1">
-          <Can permission="users.update">
+          <Can permission="roles.update">
             <Button
               variant="ghost"
               size="icon-sm"
@@ -86,7 +86,7 @@ export default function RolesPage() {
               <Pencil size={14} />
             </Button>
           </Can>
-          <Can permission="users.delete">
+          <Can permission="roles.delete">
             <Button
               variant="ghost"
               size="icon-sm"
@@ -110,7 +110,7 @@ export default function RolesPage() {
         title={t("title")}
         description={`${total} role${total !== 1 ? "s" : ""}`}
         action={
-          <Can permission="users.create">
+          <Can permission="roles.create">
             <Button onClick={() => router.push("/roles/new")}>
               <Plus size={15} />
               {t("create")}

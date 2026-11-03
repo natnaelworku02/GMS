@@ -68,6 +68,13 @@ async def restore_backup(filename: str) -> None:
         _, stderr = await process.communicate()
         if process.returncode != 0:
             raise RuntimeError(stderr.decode().strip() or "Database restore failed")
+        migration = await asyncio.create_subprocess_exec(
+            "alembic", "upgrade", "head",
+            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
+        )
+        _, migration_stderr = await migration.communicate()
+        if migration.returncode != 0:
+            raise RuntimeError(migration_stderr.decode().strip() or "Database migration after restore failed")
 
 
 async def scheduled_backup_loop() -> None:

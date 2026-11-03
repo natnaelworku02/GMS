@@ -74,6 +74,10 @@ The production API runs as a non-root user with a read-only root filesystem,
 limited CPU/memory, and `no-new-privileges`. `/health/ready` returns HTTP 503
 unless both PostgreSQL and Redis are reachable.
 
+Database restores automatically run all pending Alembic migrations before the
+restore is reported as successful. Manual backup and restore actions are
+recorded in the append-only audit log.
+
 ### Seeded access roles
 
 Run the idempotent seed after migrations:
@@ -88,7 +92,15 @@ The seed always creates and synchronizes these roles:
 - `Inventory Manager`: inventory create, read, update, and delete only.
 - `Tools Manager`: tools create, read, update, and delete only.
 - `Job Card Officer`: job-card create/read/update, inventory read/use, tools
-  read/checkout/return, and employee read access. It cannot delete job cards.
+  read/checkout/return, employee read access, proforma management, invoice
+  create/read, and payment create/read access. It cannot delete job cards,
+  reverse payments, manage users/roles, change settings, restore backups, or
+  read audit logs.
+
+Authorization uses separate permission modules for users, roles, invoices,
+payments, backups, audit logs, and settings. A delegated administrator cannot
+grant or assign permissions beyond their own authority, manage a more powerful
+account, or remove the final active super administrator.
 
 The administrator is created from `ADMIN_PHONE` and `ADMIN_PASSWORD`.
 Operational users are optional and are created only when the corresponding

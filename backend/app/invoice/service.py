@@ -43,7 +43,7 @@ async def create_invoice_from_performa(db: AsyncSession, performa: Performa) -> 
         )
         db.add(line)
 
-    await db.commit()
+    await db.flush()
     return await get_invoice(db, invoice.id)
 
 

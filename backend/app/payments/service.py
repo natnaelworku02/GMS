@@ -31,7 +31,7 @@ async def create_payment(db: AsyncSession, invoice_id: uuid.UUID, amount: Decima
         raise ValueError("Payment exceeds the remaining invoice balance")
     payment = Payment(invoice_id=invoice_id, amount=amount, received_by=user_id, **kwargs)
     db.add(payment)
-    await db.commit()
+    await db.flush()
     await db.refresh(payment)
     return payment
 
@@ -46,6 +46,6 @@ async def reverse_payment(db: AsyncSession, payment_id: uuid.UUID, reason: str, 
     payment.reversed_at = datetime.now(timezone.utc)
     payment.reversed_by = user_id
     payment.reversal_reason = reason
-    await db.commit()
+    await db.flush()
     await db.refresh(payment)
     return payment

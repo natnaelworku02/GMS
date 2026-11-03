@@ -69,11 +69,11 @@ must be stored separately from both installations.
 
 ### Stage 3 - RBAC and Audit
 
-- [ ] Separate user, role, payment, invoice, backup, audit, and settings permissions.
-- [ ] Prevent privilege escalation and protect the final super administrator.
-- [ ] Define and seed the final least-privilege operational roles.
-- [ ] Test every API route with no token, wrong role, correct role, and superadmin.
-- [ ] Complete append-only audit coverage for security and financial operations.
+- [x] Separate user, role, payment, invoice, backup, audit, and settings permissions.
+- [x] Prevent privilege escalation and protect the final super administrator.
+- [x] Define and seed the final least-privilege operational roles.
+- [x] Test every API route with no token, wrong role, correct role, and superadmin.
+- [x] Complete append-only audit coverage for security and financial operations.
 
 ### Stage 4 - Hosted Production Deployment
 

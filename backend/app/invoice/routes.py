@@ -23,7 +23,7 @@ router = APIRouter(prefix="/invoices", tags=["invoice"])
 @router.post("/from-performa", response_model=schemas.InvoiceResponse, status_code=201)
 async def create_invoice_from_performa(
     body: schemas.InvoiceCreateFromPerforma,
-    current_user: User = Depends(RequirePermission("performa", "read")),
+    current_user: User = Depends(RequirePermission("invoices", "create")),
     db: AsyncSession = Depends(get_db),
 ):
     performa = await get_performa(db, body.performa_id)
@@ -46,7 +46,7 @@ async def list_invoices(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
     search: str | None = Query(default=None),
-    _user=Depends(RequirePermission("performa", "read")),
+    _user=Depends(RequirePermission("invoices", "read")),
     db: AsyncSession = Depends(get_db),
 ):
     return await service.list_invoices(db, page, page_size, search)
@@ -55,7 +55,7 @@ async def list_invoices(
 @router.get("/by-performa/{performa_id}", response_model=schemas.InvoiceResponse | None)
 async def get_invoice_by_performa(
     performa_id: uuid.UUID,
-    _user=Depends(RequirePermission("performa", "read")),
+    _user=Depends(RequirePermission("invoices", "read")),
     db: AsyncSession = Depends(get_db),
 ):
     from app.invoice.models import Invoice
@@ -70,7 +70,7 @@ async def get_invoice_by_performa(
 @router.get("/{invoice_id}", response_model=schemas.InvoiceResponse)
 async def get_invoice(
     invoice_id: uuid.UUID,
-    _user=Depends(RequirePermission("performa", "read")),
+    _user=Depends(RequirePermission("invoices", "read")),
     db: AsyncSession = Depends(get_db),
 ):
     invoice = await service.get_invoice(db, invoice_id)
@@ -82,7 +82,7 @@ async def get_invoice(
 @router.get("/{invoice_id}/pdf")
 async def download_invoice_pdf(
     invoice_id: uuid.UUID,
-    _user=Depends(RequirePermission("performa", "read")),
+    _user=Depends(RequirePermission("invoices", "read")),
     db: AsyncSession = Depends(get_db),
 ):
     invoice = await service.get_invoice(db, invoice_id)

@@ -20,8 +20,11 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
   const tc = useTranslations("common");
   const router = useRouter();
   const { data: invoice, isLoading } = useGetInvoiceQuery(id);
-  const accessToken = useAppSelector((s) => s.auth.accessToken);
-  const { data: paymentSummary } = useGetInvoicePaymentsQuery(id);
+  const { accessToken, permissions, isSuperAdmin } = useAppSelector((s) => s.auth);
+  const canReadPayments = isSuperAdmin || !!permissions["payments.read"];
+  const canCreatePayments = isSuperAdmin || !!permissions["payments.create"];
+  const canReversePayments = isSuperAdmin || !!permissions["payments.update"];
+  const { data: paymentSummary } = useGetInvoicePaymentsQuery(id, { skip: !canReadPayments });
   const [createPayment, { isLoading: recordingPayment }] = useCreatePaymentMutation();
   const [reversePayment, { isLoading: reversingPayment }] = useReversePaymentMutation();
   const [amount, setAmount] = useState("");
@@ -141,13 +144,13 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
         />
       </div>
 
-      <div className="mb-6 rounded-xl border bg-card p-6 shadow-sm space-y-5">
+      {canReadPayments && <div className="mb-6 rounded-xl border bg-card p-6 shadow-sm space-y-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div><h2 className="flex items-center gap-2 text-sm font-semibold"><CreditCard size={16} /> Payment History</h2><p className="mt-1 text-xs text-muted-foreground">Partial payments remain visible; incorrect payments are reversed, not deleted.</p></div>
           <div className="text-right text-sm"><p>Paid: <strong>ETB {Number(paymentSummary?.paid_amount ?? 0).toLocaleString()}</strong></p><p className="text-muted-foreground">Balance: ETB {Number(paymentSummary?.balance ?? invoice.grand_total).toLocaleString()}</p></div>
         </div>
 
-        {(paymentSummary?.balance ?? invoice.grand_total) > 0 && (
+        {canCreatePayments && (paymentSummary?.balance ?? invoice.grand_total) > 0 && (
           <div className="grid gap-3 border-y py-4 sm:grid-cols-2">
             <div><Label htmlFor="payment-amount">Amount</Label><Input id="payment-amount" type="number" min="0.01" step="0.01" max={paymentSummary?.balance ?? invoice.grand_total} value={amount} onChange={(event) => setAmount(event.target.value)} /></div>
             <div><Label htmlFor="payment-method">Method</Label><select id="payment-method" value={method} onChange={(event) => setMethod(event.target.value)} className="mt-1 h-10 w-full rounded-lg border border-input bg-background px-3 text-sm"><option value="cash">Cash</option><option value="bank_transfer">Bank Transfer</option><option value="card">Card</option><option value="mobile_money">Mobile Money</option><option value="cheque">Cheque</option></select></div>
@@ -160,13 +163,13 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
         <div className="divide-y">
           {!paymentSummary?.payments.length ? <p className="py-4 text-sm text-muted-foreground">No payments recorded.</p> : paymentSummary.payments.map((payment) => (
             <div key={payment.id} className="py-3">
-              <div className="flex items-start justify-between gap-3"><div><p className="text-sm font-medium">ETB {Number(payment.amount).toLocaleString()} · {payment.payment_method.replaceAll("_", " ")}</p><p className="text-xs text-muted-foreground">{new Date(payment.created_at).toLocaleString()}{payment.reference ? ` · ${payment.reference}` : ""}</p>{payment.notes && <p className="mt-1 text-xs text-muted-foreground">{payment.notes}</p>}</div><div className="text-right">{payment.status === "reversed" ? <span className="text-xs font-medium text-destructive">Reversed</span> : <Button size="sm" variant="ghost" onClick={() => setReversingId(payment.id)}><Undo2 size={14} /> Reverse</Button>}</div></div>
+              <div className="flex items-start justify-between gap-3"><div><p className="text-sm font-medium">ETB {Number(payment.amount).toLocaleString()} · {payment.payment_method.replaceAll("_", " ")}</p><p className="text-xs text-muted-foreground">{new Date(payment.created_at).toLocaleString()}{payment.reference ? ` · ${payment.reference}` : ""}</p>{payment.notes && <p className="mt-1 text-xs text-muted-foreground">{payment.notes}</p>}</div><div className="text-right">{payment.status === "reversed" ? <span className="text-xs font-medium text-destructive">Reversed</span> : canReversePayments ? <Button size="sm" variant="ghost" onClick={() => setReversingId(payment.id)}><Undo2 size={14} /> Reverse</Button> : null}</div></div>
               {payment.status === "reversed" && <p className="mt-2 text-xs text-destructive">Reason: {payment.reversal_reason}</p>}
               {reversingId === payment.id && <div className="mt-3 flex gap-2"><Input value={reversalReason} onChange={(event) => setReversalReason(event.target.value)} placeholder="Reason for reversal" /><Button variant="destructive" onClick={handleReverse} disabled={reversingPayment || !reversalReason.trim()}>Confirm</Button><Button variant="outline" onClick={() => { setReversingId(null); setReversalReason(""); }}>Cancel</Button></div>}
             </div>
           ))}
         </div>
-      </div>
+      </div>}
     </div>
   );
 }

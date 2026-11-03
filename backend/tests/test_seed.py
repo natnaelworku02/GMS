@@ -30,7 +30,7 @@ async def test_seed_creates_idempotent_roles_and_users(db_session):
 
     assert role_count == len(ROLE_DEFINITIONS)
     assert user_count == 4
-    assert permission_count == 6
+    assert permission_count == 9
 
     inventory_role = await db_session.scalar(select(Role).where(Role.name == "Inventory Manager"))
     inventory_permission = await db_session.scalar(
@@ -53,11 +53,15 @@ async def test_seed_creates_idempotent_roles_and_users(db_session):
             )
         ).all()
     }
-    assert set(officer_permissions) == {"job_cards", "inventory", "tools", "hr"}
+    assert set(officer_permissions) == {
+        "job_cards", "inventory", "tools", "hr", "performa", "invoices", "payments",
+    }
     assert officer_permissions["job_cards"].can_delete is False
     assert officer_permissions["inventory"].can_create is False
     assert officer_permissions["tools"].can_update is True
     assert officer_permissions["hr"].can_read is True
+    assert officer_permissions["invoices"].can_create is True
+    assert officer_permissions["payments"].can_update is False
 
     admin = await db_session.scalar(select(User).where(User.phone == settings.admin_phone))
     assert verify_password(settings.admin_password, admin.hashed_password)

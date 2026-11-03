@@ -18,7 +18,7 @@ async def list_audit_logs(
     search: str | None = Query(default=None),
     entity_type: str | None = Query(default=None),
     entity_id: str | None = Query(default=None),
-    _user=Depends(RequirePermission("settings", "read")),
+    _user=Depends(RequirePermission("audit", "read")),
     db: AsyncSession = Depends(get_db),
 ):
     query = select(AuditLog).order_by(AuditLog.created_at.desc())

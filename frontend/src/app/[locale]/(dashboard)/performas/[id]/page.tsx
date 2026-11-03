@@ -33,8 +33,12 @@ export default function PerformaDetailPage({ params }: { params: Promise<{ id: s
   const [updateStatus, { isLoading: updating }] = useUpdatePerformaStatusMutation();
   const [revise, { isLoading: revising }] = useRevisePerformaMutation();
   const [createInvoice, { isLoading: creatingInvoice }] = useCreateInvoiceFromPerformaMutation();
-  const { data: existingInvoice } = useGetInvoiceByPerformaQuery(id, { skip: performa?.status !== "approved" || !performa?.job_card_id });
-  const accessToken = useAppSelector((s) => s.auth.accessToken);
+  const { accessToken, permissions, isSuperAdmin } = useAppSelector((s) => s.auth);
+  const canReadInvoices = isSuperAdmin || !!permissions["invoices.read"];
+  const canCreateInvoices = isSuperAdmin || !!permissions["invoices.create"];
+  const { data: existingInvoice } = useGetInvoiceByPerformaQuery(id, {
+    skip: !canReadInvoices || performa?.status !== "approved" || !performa?.job_card_id,
+  });
 
   const [clientEmail, setClientEmail] = useState("");
 
@@ -246,12 +250,12 @@ export default function PerformaDetailPage({ params }: { params: Promise<{ id: s
                 <Truck className="mr-1 h-4 w-4" /> View Job Card
               </Button>
             )}
-            {existingInvoice ? (
+            {canReadInvoices && existingInvoice ? (
               <Button variant="default" onClick={() => router.push(`/invoices/${existingInvoice.id}`)}>
                 <FileText className="mr-1 h-4 w-4" />
                 View Invoice ({existingInvoice.invoice_number})
               </Button>
-            ) : performa.job_card_id ? (
+            ) : canCreateInvoices && performa.job_card_id ? (
               <Button onClick={handleConvertToInvoice} disabled={creatingInvoice}>
                 {creatingInvoice && <Loader2 className="h-4 w-4 animate-spin" />}
                 <FileText className="mr-1 h-4 w-4" />

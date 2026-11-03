@@ -31,7 +31,8 @@ export default function DashboardPage() {
   const tnav = useTranslations("nav");
   const tstart = useTranslations("startJob");
   const td = useTranslations("dashboard");
-  const { user } = useAppSelector((s) => s.auth);
+  const { user, permissions, isSuperAdmin } = useAppSelector((s) => s.auth);
+  const allowed = (permission: string) => isSuperAdmin || !!permissions[permission];
   const router = useRouter();
 
   const greetingKey = useMemo(() => {
@@ -53,12 +54,12 @@ export default function DashboardPage() {
             {td("description")}
           </p>
         </div>
-        <StartJobCard
+        {allowed("job_cards.create") && <StartJobCard
           title={tstart("title")}
           description={tstart("step", { step: 1 })}
           onClick={() => router.push("/start-job")}
           actionLabel={td("openWorkflow")}
-        />
+        />}
       </div>
 
       <StatCards />
@@ -66,30 +67,30 @@ export default function DashboardPage() {
       <div className="animate-fade-in-up" style={{ animationDelay: "0.12s" }}>
         <h2 className="mb-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{td("quickActions")}</h2>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <DashboardCard
+          {allowed("job_cards.read") && <DashboardCard
             title={tnav("jobCards")}
             description={tnav("jobCardsDescription")}
             href="/job-cards"
             icon={FileText}
-          />
-          <DashboardCard
+          />}
+          {allowed("performa.read") && <DashboardCard
             title={tnav("performas")}
             description={tnav("performasDescription")}
             href="/performas"
             icon={Receipt}
-          />
-          <DashboardCard
+          />}
+          {allowed("invoices.read") && <DashboardCard
             title={tnav("invoices")}
             description={tnav("invoicesDescription")}
             href="/invoices"
             icon={Receipt}
-          />
-          <DashboardCard
+          />}
+          {allowed("inventory.read") && <DashboardCard
             title={tnav("inventory")}
             description={tnav("inventoryDescription")}
             href="/inventory"
             icon={Package}
-          />
+          />}
         </div>
       </div>
 
@@ -101,9 +102,18 @@ export default function DashboardPage() {
 function DashboardCharts() {
   const t = useTranslations("dashboard");
   const tj = useTranslations("jobCards");
-  const { data: jobCardsResp } = useGetJobCardsQuery({ page: 1, page_size: 100 });
+  const { permissions, isSuperAdmin } = useAppSelector((state) => state.auth);
+  const canReadJobs = isSuperAdmin || !!permissions["job_cards.read"];
+  const canReadPerformas = isSuperAdmin || !!permissions["performa.read"];
+  const { data: jobCardsResp } = useGetJobCardsQuery(
+    { page: 1, page_size: 100 },
+    { skip: !canReadJobs },
+  );
   const jobCards = useMemo(() => jobCardsResp?.items ?? [], [jobCardsResp?.items]);
-  const { data: performasResp } = useGetPerformasQuery({ page: 1, page_size: 100 });
+  const { data: performasResp } = useGetPerformasQuery(
+    { page: 1, page_size: 100 },
+    { skip: !canReadPerformas },
+  );
   const performas = useMemo(() => performasResp?.items ?? [], [performasResp?.items]);
 
   const statusData = useMemo(() => {
@@ -303,15 +313,31 @@ const totalStock = (item: InventoryItem) =>
 
 function StatCards() {
   const t = useTranslations("dashboard");
-  const { data: jobCardsResp, isLoading: jcLoading } = useGetJobCardsQuery({ page: 1, page_size: 100 });
+  const { permissions, isSuperAdmin } = useAppSelector((state) => state.auth);
+  const allowed = (permission: string) => isSuperAdmin || !!permissions[permission];
+  const canReadJobs = allowed("job_cards.read");
+  const canReadInventory = allowed("inventory.read");
+  const canReadTools = allowed("tools.read");
+  const canReadInvoices = allowed("invoices.read");
+  const { data: jobCardsResp, isLoading: jcLoading } = useGetJobCardsQuery(
+    { page: 1, page_size: 100 },
+    { skip: !canReadJobs },
+  );
   const jobCards = jobCardsResp?.items ?? [];
-  const { data: inventoryResp, isLoading: invLoading } = useGetInventoryItemsQuery({ page: 1, page_size: 100 });
+  const { data: inventoryResp, isLoading: invLoading } = useGetInventoryItemsQuery(
+    { page: 1, page_size: 100 },
+    { skip: !canReadInventory },
+  );
   const inventory = inventoryResp?.items ?? [];
   const { data: checkoutsResp, isLoading: coLoading } = useGetToolCheckoutsQuery(
     { page: 1, page_size: 100, unreturned_only: true },
+    { skip: !canReadTools },
   );
   const checkouts = checkoutsResp?.items ?? [];
-  const { data: invoicesResp, isLoading: invcLoading } = useGetInvoicesQuery({ page: 1, page_size: 1 });
+  const { data: invoicesResp, isLoading: invcLoading } = useGetInvoicesQuery(
+    { page: 1, page_size: 1 },
+    { skip: !canReadInvoices },
+  );
   const invoiceCount = invoicesResp?.total ?? 0;
 
   const openJobs = jobCards.filter((jc) => jc.status !== "completed").length;
@@ -324,28 +350,28 @@ function StatCards() {
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       <StatCard
         label={t("openJobCards")}
-        count={jcLoading ? "-" : openJobs}
+        count={!canReadJobs ? "—" : jcLoading ? "-" : openJobs}
         icon={FileText}
         gradient="from-indigo-500 to-indigo-600"
         delay="0s"
       />
       <StatCard
         label={t("lowStockItems")}
-        count={invLoading ? "-" : lowStock}
+        count={!canReadInventory ? "—" : invLoading ? "-" : lowStock}
         icon={AlertTriangle}
         gradient="from-amber-500 to-orange-500"
         delay="0.05s"
       />
       <StatCard
         label={t("activeCheckouts")}
-        count={coLoading ? "-" : activeCheckouts}
+        count={!canReadTools ? "—" : coLoading ? "-" : activeCheckouts}
         icon={Wrench}
         gradient="from-emerald-500 to-teal-500"
         delay="0.1s"
       />
       <StatCard
         label={t("invoices")}
-        count={invcLoading ? "-" : invoiceCount}
+        count={!canReadInvoices ? "—" : invcLoading ? "-" : invoiceCount}
         icon={Receipt}
         gradient="from-teal-500 to-cyan-500"
         delay="0.15s"

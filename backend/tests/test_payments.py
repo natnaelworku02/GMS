@@ -3,7 +3,9 @@ from decimal import Decimal
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
+from sqlalchemy import select
 
+from app.audit.models import AuditLog
 from app.auth.models import Role, User
 from app.core.security import create_access_token, hash_password
 from app.invoice.models import Invoice
@@ -37,7 +39,7 @@ async def payment_setup(db_session):
 
 
 @pytest.mark.asyncio
-async def test_partial_payment_balance_and_reversal(client: AsyncClient, payment_setup):
+async def test_partial_payment_balance_and_reversal(client: AsyncClient, payment_setup, db_session):
     headers = payment_setup["headers"]
     invoice_id = payment_setup["invoice_id"]
     created = await client.post("/api/v1/payments/", json={
@@ -62,3 +64,6 @@ async def test_partial_payment_balance_and_reversal(client: AsyncClient, payment
     summary = await client.get(f"/api/v1/payments/invoice/{invoice_id}", headers=headers)
     assert Decimal(summary.json()["paid_amount"]) == Decimal("0")
     assert Decimal(summary.json()["balance"]) == Decimal("1150")
+
+    audit_actions = set((await db_session.scalars(select(AuditLog.action))).all())
+    assert {"payment.create", "payment.reverse"}.issubset(audit_actions)

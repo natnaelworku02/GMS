@@ -75,8 +75,16 @@ async def create_user(
     current_user: User = Depends(RequirePermission("users", "create")),
     db: AsyncSession = Depends(get_db),
 ):
+    await service.ensure_role_assignment_allowed(db, current_user, body.role_id)
     user = await service.create_user(db, body.phone, body.password, body.full_name, body.role_id)
-    await create_audit_log(db, current_user.id, "user.create", "user", user.id)
+    await create_audit_log(
+        db,
+        current_user.id,
+        "user.create",
+        "user",
+        user.id,
+        {"role_id": str(body.role_id), "phone": body.phone},
+    )
     await db.commit()
     return user
 
@@ -115,8 +123,26 @@ async def update_user(
     user = await service.get_user(db, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    updated = await service.update_user(db, user, **body.model_dump(exclude_unset=True))
-    await create_audit_log(db, current_user.id, "user.update", "user", user.id)
+    changes = body.model_dump(exclude_unset=True)
+    await service.ensure_user_management_allowed(db, current_user, user)
+    if body.role_id is not None:
+        await service.ensure_role_assignment_allowed(db, current_user, body.role_id)
+    await service.ensure_user_security_change_allowed(
+        db,
+        user,
+        new_role_id=body.role_id,
+        new_is_active=body.is_active,
+    )
+    previous = {"role_id": str(user.role_id), "is_active": user.is_active}
+    updated = await service.update_user(db, user, **changes)
+    await create_audit_log(
+        db,
+        current_user.id,
+        "user.update",
+        "user",
+        user.id,
+        {"changed_fields": sorted(changes), "previous": previous},
+    )
     await db.commit()
     return updated
 
@@ -127,6 +153,13 @@ async def delete_user(
     current_user: User = Depends(RequirePermission("users", "delete")),
     db: AsyncSession = Depends(get_db),
 ):
+    if current_user.id == user_id:
+        raise HTTPException(status_code=409, detail="You cannot delete your own account")
+    user = await service.get_user(db, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    await service.ensure_user_management_allowed(db, current_user, user)
+    await service.ensure_user_security_change_allowed(db, user, deleting=True)
     await service.delete_user(db, user_id)
     await create_audit_log(db, current_user.id, "user.delete", "user", user_id)
     await db.commit()
@@ -142,6 +175,7 @@ async def reset_password(
     user = await service.get_user(db, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    await service.ensure_user_management_allowed(db, current_user, user)
     await service.reset_password(db, user, body.new_password)
     await create_audit_log(db, current_user.id, "user.password_reset", "user", user.id)
     await db.commit()
@@ -153,11 +187,19 @@ async def reset_password(
 @roles_router.post("/", response_model=schemas.RoleResponse, status_code=201)
 async def create_role(
     body: schemas.RoleCreate,
-    current_user: User = Depends(RequirePermission("users", "create")),
+    current_user: User = Depends(RequirePermission("roles", "create")),
     db: AsyncSession = Depends(get_db),
 ):
+    await service.ensure_role_creation_allowed(db, current_user, body.is_superadmin)
     role = await service.create_role(db, body.name, body.is_superadmin)
-    await create_audit_log(db, current_user.id, "role.create", "role", role.id)
+    await create_audit_log(
+        db,
+        current_user.id,
+        "role.create",
+        "role",
+        role.id,
+        {"name": body.name, "is_superadmin": body.is_superadmin},
+    )
     await db.commit()
     return role
 
@@ -167,7 +209,7 @@ async def list_roles(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
     search: str | None = Query(default=None),
-    _user=Depends(RequirePermission("users", "read")),
+    _user=Depends(RequirePermission("roles", "read")),
     db: AsyncSession = Depends(get_db),
 ):
     return await service.list_roles(db, page, page_size, search)
@@ -176,7 +218,7 @@ async def list_roles(
 @roles_router.get("/{role_id}", response_model=schemas.RoleResponse)
 async def get_role(
     role_id: uuid.UUID,
-    _user=Depends(RequirePermission("users", "read")),
+    _user=Depends(RequirePermission("roles", "read")),
     db: AsyncSession = Depends(get_db),
 ):
     role = await service.get_role(db, role_id)
@@ -188,9 +230,13 @@ async def get_role(
 @roles_router.delete("/{role_id}", status_code=204)
 async def delete_role(
     role_id: uuid.UUID,
-    current_user: User = Depends(RequirePermission("users", "delete")),
+    current_user: User = Depends(RequirePermission("roles", "delete")),
     db: AsyncSession = Depends(get_db),
 ):
+    role = await service.get_role(db, role_id)
+    if not role:
+        raise HTTPException(status_code=404, detail="Role not found")
+    await service.ensure_role_management_allowed(db, current_user, role)
     await service.delete_role(db, role_id)
     await create_audit_log(db, current_user.id, "role.delete", "role", role_id)
     await db.commit()
@@ -200,13 +246,23 @@ async def delete_role(
 async def set_permissions(
     role_id: uuid.UUID,
     body: list[schemas.PermissionSet],
-    current_user: User = Depends(RequirePermission("users", "update")),
+    current_user: User = Depends(RequirePermission("roles", "update")),
     db: AsyncSession = Depends(get_db),
 ):
-    role = await service.set_role_permissions(db, role_id, [p.model_dump() for p in body])
+    role = await service.get_role(db, role_id)
     if not role:
         raise HTTPException(status_code=404, detail="Role not found")
-    await create_audit_log(db, current_user.id, "role.permissions_update", "role", role_id)
+    permission_data = [p.model_dump() for p in body]
+    await service.ensure_permission_grants_allowed(db, current_user, role, permission_data)
+    role = await service.set_role_permissions(db, role_id, permission_data)
+    await create_audit_log(
+        db,
+        current_user.id,
+        "role.permissions_update",
+        "role",
+        role_id,
+        {"permissions": permission_data},
+    )
     await db.commit()
     return role
 
@@ -229,7 +285,16 @@ async def update_setting(
     current_user: User = Depends(RequirePermission("settings", "update")),
     db: AsyncSession = Depends(get_db),
 ):
+    previous = await service.get_setting(db, key)
+    previous_value = previous.value if previous else None
     setting = await service.upsert_setting(db, key, body.value)
-    await create_audit_log(db, current_user.id, "setting.update", "setting", setting.id)
+    await create_audit_log(
+        db,
+        current_user.id,
+        "setting.update",
+        "setting",
+        setting.id,
+        {"key": key, "previous_value": previous_value, "new_value": body.value},
+    )
     await db.commit()
     return setting

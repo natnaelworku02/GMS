@@ -18,8 +18,11 @@ export default function SettingsPage() {
   const t = useTranslations("settings");
   const tc = useTranslations("common");
   const [searchQuery, setSearchQuery] = useState("");
-  const isSuperAdmin = useAppSelector((state) => state.auth.isSuperAdmin);
-  const { data: backupStatus } = useGetBackupsQuery(undefined, { skip: !isSuperAdmin });
+  const { isSuperAdmin, permissions } = useAppSelector((state) => state.auth);
+  const canReadBackups = isSuperAdmin || !!permissions["backups.read"];
+  const canCreateBackups = isSuperAdmin || !!permissions["backups.create"];
+  const canRestoreBackups = isSuperAdmin || !!permissions["backups.update"];
+  const { data: backupStatus } = useGetBackupsQuery(undefined, { skip: !canReadBackups });
   const [createBackup, { isLoading: creatingBackup }] = useCreateBackupMutation();
   const [restoreBackup, { isLoading: restoringBackup }] = useRestoreBackupMutation();
   const [restoreFile, setRestoreFile] = useState<string | null>(null);
@@ -112,16 +115,16 @@ export default function SettingsPage() {
         description={t("count", { count: settings.length })}
       />
 
-      {isSuperAdmin && (
+      {canReadBackups && (
         <section className="mt-6 border-y py-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div><h2 className="flex items-center gap-2 text-base font-semibold"><DatabaseBackup size={18} /> {t("databaseBackups")}</h2><p className="mt-1 text-sm text-muted-foreground">{t("backupSchedule", { days: backupStatus?.retention_days ?? 30 })}</p></div>
-            <Button onClick={handleCreateBackup} disabled={creatingBackup}>{creatingBackup && <Loader2 className="h-4 w-4 animate-spin" />} {t("createBackup")}</Button>
+            {canCreateBackups && <Button onClick={handleCreateBackup} disabled={creatingBackup}>{creatingBackup && <Loader2 className="h-4 w-4 animate-spin" />} {t("createBackup")}</Button>}
           </div>
           <div className="mt-4 flex items-center gap-2 text-sm"><span className={`h-2 w-2 rounded-full ${backupStatus?.healthy ? "bg-emerald-500" : "bg-amber-500"}`} /><span>{backupStatus?.latest ? t("lastBackup", { date: new Date(backupStatus.latest.created_at).toLocaleString() }) : t("noBackup")}</span></div>
           <div className="mt-4 divide-y">
             {(backupStatus?.backups ?? []).slice(0, 10).map((backup) => (
-              <div key={backup.filename} className="flex items-center justify-between gap-3 py-2 text-sm"><div><p className="font-mono text-xs">{backup.filename}</p><p className="text-xs text-muted-foreground">{(backup.size_bytes / 1024 / 1024).toFixed(2)} MB · {new Date(backup.created_at).toLocaleString()}</p></div><Button size="sm" variant="outline" onClick={() => setRestoreFile(backup.filename)}><RotateCcw size={14} /> {t("restore")}</Button></div>
+              <div key={backup.filename} className="flex items-center justify-between gap-3 py-2 text-sm"><div><p className="font-mono text-xs">{backup.filename}</p><p className="text-xs text-muted-foreground">{(backup.size_bytes / 1024 / 1024).toFixed(2)} MB · {new Date(backup.created_at).toLocaleString()}</p></div>{canRestoreBackups && <Button size="sm" variant="outline" onClick={() => setRestoreFile(backup.filename)}><RotateCcw size={14} /> {t("restore")}</Button>}</div>
             ))}
           </div>
         </section>

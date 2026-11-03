@@ -3,6 +3,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field, field_validator
 
+from app.core.permissions import PERMISSION_MODULES
+
 
 def validate_strong_password(value: str) -> str:
     if len(value) < 12:
@@ -81,6 +83,13 @@ class PermissionSet(BaseModel):
     can_read: bool = False
     can_update: bool = False
     can_delete: bool = False
+
+    @field_validator("module")
+    @classmethod
+    def validate_module(cls, value: str) -> str:
+        if value not in PERMISSION_MODULES:
+            raise ValueError("Unknown permission module")
+        return value
 
 
 class RoleResponse(BaseModel):

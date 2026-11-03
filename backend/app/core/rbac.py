@@ -5,10 +5,13 @@ from app.core.deps import get_current_user
 from app.db import get_db
 from app.auth.models import User
 from app.auth.service import check_permission
+from app.core.permissions import PERMISSION_ACTIONS, PERMISSION_MODULES
 
 
 class RequirePermission:
     def __init__(self, module: str, action: str):
+        if module not in PERMISSION_MODULES or action not in PERMISSION_ACTIONS:
+            raise ValueError(f"Unknown permission: {module}.{action}")
         self.module = module
         self.action = action
 

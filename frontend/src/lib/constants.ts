@@ -174,8 +174,13 @@ export const MODULES = [
   { key: "performa", labelKey: "nav.performas" },
   { key: "inventory", labelKey: "nav.inventory" },
   { key: "tools", labelKey: "nav.tools" },
-  { key: "employees", labelKey: "nav.employees" },
+  { key: "hr", labelKey: "nav.employees" },
   { key: "users", labelKey: "nav.users" },
+  { key: "roles", labelKey: "nav.roles" },
+  { key: "invoices", labelKey: "nav.invoices" },
+  { key: "payments", labelKey: "nav.invoices" },
+  { key: "backups", labelKey: "nav.settings" },
+  { key: "audit", labelKey: "nav.auditLogs" },
   { key: "settings", labelKey: "nav.settings" },
 ] as const;
 

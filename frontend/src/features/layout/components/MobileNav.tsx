@@ -3,10 +3,9 @@
 import { useTranslations } from "next-intl";
 import { usePathname } from "@/i18n/navigation";
 import { Can } from "@/features/auth/components/Can";
-import { useAppSelector, useAppDispatch } from "@/lib/hooks";
-import { logout as logoutAction } from "@/features/auth/authSlice";
+import { useAppSelector } from "@/lib/hooks";
+import { useEndSession } from "@/features/auth/useEndSession";
 import { useRouter } from "@/i18n/navigation";
-import { storage } from "@/lib/storage";
 import { X, LogOut } from "lucide-react";
 import {
   LayoutDashboard,
@@ -32,7 +31,7 @@ const navGroups = [
       { href: "/start-job", labelKey: "startJob", icon: PlusCircle, permission: "job_cards.create" },
       { href: "/job-cards", labelKey: "jobCards", icon: FileText, permission: "job_cards.read" },
       { href: "/performas", labelKey: "performas", icon: Receipt, permission: "performa.read" },
-      { href: "/invoices", labelKey: "invoices", icon: Receipt, permission: "performa.read" },
+      { href: "/invoices", labelKey: "invoices", icon: Receipt, permission: "invoices.read" },
     ],
   },
   {
@@ -50,8 +49,8 @@ const navGroups = [
     label: "admin",
     items: [
       { href: "/users", labelKey: "users", icon: Users, permission: "users.read" },
-      { href: "/roles", labelKey: "roles", icon: ShieldCheck, permission: "users.read" },
-      { href: "/audit-logs", labelKey: "auditLogs", icon: History, permission: "settings.read" },
+      { href: "/roles", labelKey: "roles", icon: ShieldCheck, permission: "roles.read" },
+      { href: "/audit-logs", labelKey: "auditLogs", icon: History, permission: "audit.read" },
       { href: "/settings", labelKey: "settings", icon: Settings, permission: "settings.read" },
     ],
   },
@@ -62,7 +61,7 @@ export function MobileNav({ open, onClose }: { open: boolean; onClose: () => voi
   const tc = useTranslations("common");
   const pathname = usePathname();
   const { user } = useAppSelector((s) => s.auth);
-  const dispatch = useAppDispatch();
+  const endSession = useEndSession();
   const router = useRouter();
 
   const initials = user?.full_name
@@ -73,8 +72,7 @@ export function MobileNav({ open, onClose }: { open: boolean; onClose: () => voi
     .slice(0, 2);
 
   const handleLogout = async () => {
-    await storage.clearTokens();
-    dispatch(logoutAction());
+    await endSession();
     router.replace("/login");
   };
 

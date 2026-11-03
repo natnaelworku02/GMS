@@ -34,6 +34,9 @@ ROLE_DEFINITIONS = {
             "inventory": (False, True, True, False),
             "tools": (False, True, True, False),
             "hr": (False, True, False, False),
+            "performa": (True, True, True, False),
+            "invoices": (True, True, False, False),
+            "payments": (True, True, False, False),
         },
     ),
 }

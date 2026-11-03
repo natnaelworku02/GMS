@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import JSON, DateTime, ForeignKey, String, Uuid
+from sqlalchemy import JSON, DateTime, ForeignKey, String, Uuid, event
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db import Base
@@ -21,3 +21,9 @@ class AuditLog(Base):
     entity_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False)
     details: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+
+
+@event.listens_for(AuditLog, "before_update")
+@event.listens_for(AuditLog, "before_delete")
+def prevent_audit_log_mutation(_mapper, _connection, _target) -> None:
+    raise ValueError("Audit logs are append-only")
