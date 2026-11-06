@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { X, Plus, Package } from "lucide-react";
 import {
   Popover,
@@ -29,6 +29,7 @@ interface Props {
 
 export function PerformaLineItems({ items, onChange, readOnly, inventoryItems }: Props) {
   const t = useTranslations("performas");
+  const locale = useLocale();
 
   const repaired = items.filter((i) => i.type === "labor");
   const replaced = items.filter((i) => i.type === "part");
@@ -55,22 +56,23 @@ export function PerformaLineItems({ items, onChange, readOnly, inventoryItems }:
   };
 
   const fmt = (n: number) =>
-    new Intl.NumberFormat("en-US", { style: "currency", currency: "ETB", minimumFractionDigits: 2 }).format(n);
+    new Intl.NumberFormat(locale === "am" ? "am-ET" : "en-ET", { style: "currency", currency: "ETB", minimumFractionDigits: 2 }).format(n);
 
   const renderRow = (item: LineItemInput, idx: number, isReadOnly: boolean) => {
     if (isReadOnly) {
       return (
-        <div key={idx} className="flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-sm">
-          <div className="flex-1">
+        <div key={idx} className="grid gap-3 rounded-xl border border-border/60 bg-card px-4 py-3 text-sm sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+          <div className="min-w-0">
             <span className="rounded-md bg-indigo-500/10 px-1.5 py-0.5 text-xs font-medium text-indigo-500">
               {item.type === "labor" ? t("labor") : t("part")}
             </span>
-            <span className="ml-2">{item.description}</span>
+            <span className="ml-2 break-words font-medium">{item.description}</span>
           </div>
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            {item.quantity > 1 && <span>&times;{item.quantity}</span>}
-            <span>{fmt(item.unit_price)}</span>
-            <span className="font-medium text-foreground">
+          <div className="grid grid-cols-3 items-end gap-3 text-xs text-muted-foreground sm:flex sm:items-center sm:gap-4">
+            <span><span className="block text-[10px] uppercase tracking-wide sm:hidden">{t("quantity")}</span>&times;{item.type === "labor" ? 1 : item.quantity}</span>
+            <span><span className="block text-[10px] uppercase tracking-wide sm:hidden">{t("unitPrice")}</span>{fmt(item.unit_price)}</span>
+            <span className="text-right font-semibold text-foreground">
+              <span className="block text-[10px] uppercase tracking-wide text-muted-foreground sm:hidden">{t("totalPrice")}</span>
               {fmt(item.type === "labor" ? item.unit_price : item.quantity * item.unit_price)}
             </span>
           </div>
@@ -79,9 +81,9 @@ export function PerformaLineItems({ items, onChange, readOnly, inventoryItems }:
     }
 
     return (
-      <div key={idx} className="flex items-start gap-2 rounded-lg border p-3">
+      <div key={idx} className="flex items-start gap-2 rounded-xl border border-border/60 p-3">
         <div className="flex-1 space-y-2">
-          <div className="flex gap-2">
+          <div className="grid gap-2 sm:grid-cols-[130px_minmax(0,1fr)]">
             <select
               value={item.type}
               onChange={(e) => update(idx, "type", e.target.value)}
@@ -107,7 +109,7 @@ export function PerformaLineItems({ items, onChange, readOnly, inventoryItems }:
               )}
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-3">
               {item.type !== "labor" && (
                 <div>
                   <Label className="text-xs text-muted-foreground">{t("quantity")}</Label>
@@ -138,7 +140,7 @@ export function PerformaLineItems({ items, onChange, readOnly, inventoryItems }:
             </div>
           </div>
         </div>
-        <button type="button" onClick={() => remove(idx)} className="mt-1 rounded p-1 hover:bg-muted">
+        <button type="button" onClick={() => remove(idx)} aria-label={t("removeLineItem")} className="mt-1 rounded p-1 hover:bg-muted">
           <X size={16} className="text-muted-foreground" />
         </button>
       </div>
@@ -180,8 +182,9 @@ export function PerformaLineItems({ items, onChange, readOnly, inventoryItems }:
 
 function InventoryPicker({ items, onSelect }: { items: InventoryItem[]; onSelect: (item: InventoryItem) => void }) {
   const t = useTranslations("performas");
+  const locale = useLocale();
   const fmt = (n: number) =>
-    new Intl.NumberFormat("en-US", { style: "currency", currency: "ETB", minimumFractionDigits: 2 }).format(n);
+    new Intl.NumberFormat(locale === "am" ? "am-ET" : "en-ET", { style: "currency", currency: "ETB", minimumFractionDigits: 2 }).format(n);
 
   return (
     <Popover>

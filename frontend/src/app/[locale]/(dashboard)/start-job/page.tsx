@@ -18,7 +18,7 @@ import { PerformaLineItems } from "@/features/performas/components/PerformaLineI
 import { PerformaSummary } from "@/features/performas/components/PerformaSummary";
 import { useCreatePerformaMutation, useGetPerformaQuery, useLinkPerformaJobCardMutation } from "@/features/performas/api";
 import { jobCardCreateSchema, type JobCardCreateFormData } from "@/lib/formSchemas";
-import { PART_SECTIONS } from "@/lib/constants";
+import { CONDITION_STATES, PART_NAMES, PART_SECTIONS } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
@@ -65,6 +65,7 @@ export default function StartJobPage({ searchParams }: { searchParams: Promise<{
     register,
     handleSubmit,
     setValue,
+    clearErrors,
     control,
     trigger,
     formState: { errors },
@@ -86,6 +87,13 @@ export default function StartJobPage({ searchParams }: { searchParams: Promise<{
   const vehicleId = useWatch({ control, name: "vehicle_id" });
   const conditions = useWatch({ control, name: "conditions" });
   const staffAssignments = useWatch({ control, name: "staff_assignments" }) ?? [];
+  const mileageKm = useWatch({ control, name: "mileage_km" });
+  const description = useWatch({ control, name: "description" });
+  const insuranceProvider = useWatch({ control, name: "insurance_provider" });
+  const remarks = useWatch({ control, name: "remarks" });
+  const requestedMaterials = useWatch({ control, name: "requested_materials" });
+  const privatePaint = useWatch({ control, name: "private_paint" });
+  const privateMechanic = useWatch({ control, name: "private_mechanic" });
 
   const sourceLineItems = useMemo<LineItemInput[]>(
     () => sourcePerforma
@@ -147,14 +155,15 @@ export default function StartJobPage({ searchParams }: { searchParams: Promise<{
         phone: newOwnerPhone.trim(),
       }).unwrap();
       setValue("owner_id", owner.id, { shouldValidate: true });
-      setValue("vehicle_id", "", { shouldValidate: true });
+      setValue("vehicle_id", "", { shouldValidate: false });
+      clearErrors("vehicle_id");
       setShowNewOwner(false);
       setNewOwnerName("");
       setNewOwnerPhone("");
     } catch {
       toast.error(t("createOwnerError"));
     }
-  }, [newOwnerName, newOwnerPhone, createOwner, setValue, t]);
+  }, [newOwnerName, newOwnerPhone, createOwner, setValue, clearErrors, t]);
 
   const handleCreateVehicle = useCallback(async () => {
     if (!newVehicleModel.trim() || !newVehiclePlate.trim()) return;
@@ -180,6 +189,7 @@ export default function StartJobPage({ searchParams }: { searchParams: Promise<{
   }, [newVehicleModel, newVehicleType, newVehiclePlate, newVehicleEngine, newVehicleChassis, ownerId, createVehicle, setValue, t]);
 
   const handleCreateJobCard = async (data: JobCardCreateFormData) => {
+    if (createdJobCardId || isCreatingJobCard) return;
     try {
       const jc = await createJobCard({
         vehicle_id: data.vehicle_id,
@@ -282,7 +292,7 @@ export default function StartJobPage({ searchParams }: { searchParams: Promise<{
               <span className="rounded-md bg-background px-3 py-2 text-sm font-semibold shadow-sm">
                 {step + 1} / {totalSteps - 1}
               </span>
-              <span className="pr-2 text-xs font-medium text-muted-foreground">{totalDamaged} issues</span>
+              <span className="pr-2 text-xs font-medium text-muted-foreground">{t("issueCount", { count: totalDamaged })}</span>
             </div>
           )}
         </div>
@@ -373,7 +383,8 @@ export default function StartJobPage({ searchParams }: { searchParams: Promise<{
                 value={ownerId}
                 onSelect={(val) => {
                   setValue("owner_id", val, { shouldValidate: true });
-                  setValue("vehicle_id", "", { shouldValidate: true });
+                  setValue("vehicle_id", "", { shouldValidate: false });
+                  clearErrors("vehicle_id");
                 }}
                 placeholder={tc("search")}
                 searchPlaceholder={t("searchPlaceholder")}
@@ -483,7 +494,8 @@ export default function StartJobPage({ searchParams }: { searchParams: Promise<{
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-1.5">
                 <Label htmlFor="mileage">{t("mileage")}</Label>
-                <Input id="mileage" type="number" {...register("mileage_km", { valueAsNumber: true })} />
+                <Input id="mileage" type="number" min={0} inputMode="numeric" required {...register("mileage_km", { valueAsNumber: true })} />
+                <p className="text-xs text-muted-foreground">{t("mileageHelp")}</p>
                 {errors.mileage_km && <p className="text-sm text-destructive">{errors.mileage_km.message}</p>}
               </div>
               <div className="space-y-1.5">
@@ -562,7 +574,7 @@ export default function StartJobPage({ searchParams }: { searchParams: Promise<{
 
             {Object.keys(errors).length > 0 && (
               <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-4 space-y-2">
-                <p className="flex items-center gap-2 text-sm font-semibold text-destructive"><AlertCircle size={16} /> Please fix the following errors:</p>
+                <p className="flex items-center gap-2 text-sm font-semibold text-destructive"><AlertCircle size={16} /> {t("fixErrors")}</p>
                 <ul className="list-disc list-inside text-xs text-destructive/80 space-y-0.5">
                   {Object.entries(errors).map(([key, err]) => (
                     <li key={key}>{(err as { message?: string })?.message || key}</li>
@@ -595,10 +607,52 @@ export default function StartJobPage({ searchParams }: { searchParams: Promise<{
               ) : null;
             })()}
 
+            <div className="rounded-xl border border-border/60 bg-muted/30 p-4">
+              <p className="text-xs font-medium text-muted-foreground">{t("jobInformation")}</p>
+              <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
+                <div>
+                  <dt className="text-xs text-muted-foreground">{t("mileage")}</dt>
+                  <dd className="font-medium">{Number(mileageKm ?? 0).toLocaleString()} km</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-muted-foreground">{t("insuranceProvider")}</dt>
+                  <dd className="font-medium">{insuranceProvider?.trim() || t("notProvided")}</dd>
+                </div>
+                <div className="sm:col-span-2">
+                  <dt className="text-xs text-muted-foreground">{t("description")}</dt>
+                  <dd className="whitespace-pre-wrap font-medium">{description?.trim() || t("notProvided")}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-muted-foreground">{t("remarks")}</dt>
+                  <dd className="whitespace-pre-wrap">{remarks?.trim() || t("notProvided")}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-muted-foreground">{t("requestedMaterials")}</dt>
+                  <dd className="whitespace-pre-wrap">{requestedMaterials?.trim() || t("notProvided")}</dd>
+                </div>
+                <div className="sm:col-span-2 flex flex-wrap gap-2">
+                  <span className="rounded-md bg-background px-2 py-1 text-xs">{t("privatePaint")}: {privatePaint ? tc("yes") : tc("no")}</span>
+                  <span className="rounded-md bg-background px-2 py-1 text-xs">{t("privateMechanic")}: {privateMechanic ? tc("yes") : tc("no")}</span>
+                </div>
+              </dl>
+            </div>
+
             {totalDamaged > 0 ? (
               <div className="rounded-xl border border-border/60 bg-muted/30 p-4 space-y-1">
                 <p className="text-xs font-medium text-muted-foreground">{t("damageSummary")}</p>
-                <p className="text-sm">{t("partsWithIssues", { count: totalDamaged })}</p>
+                <p className="text-sm font-medium">{t("partsWithIssues", { count: totalDamaged })}</p>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  {conditions.filter((condition) => condition.condition_state !== "available").map((condition) => {
+                    const part = PART_NAMES.find((item) => item.value === condition.part_name);
+                    const stateLabel = CONDITION_STATES.find((item) => item.value === condition.condition_state)?.label ?? condition.condition_state;
+                    return (
+                      <div key={condition.part_name} className="flex items-center justify-between gap-3 rounded-lg bg-background px-3 py-2 text-xs">
+                        <span className="font-medium">{part?.label ?? condition.part_name}</span>
+                        <span className="text-rose-600">{stateLabel}</span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             ) : (
               <div className="rounded-xl border border-border/60 bg-muted/30 p-4 space-y-1">
@@ -657,9 +711,8 @@ export default function StartJobPage({ searchParams }: { searchParams: Promise<{
 
           <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background/95 shadow-float backdrop-blur supports-[backdrop-filter]:bg-background/80">
             <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
-              <Button type="button" variant="outline" size="sm" onClick={() => setStep(totalSteps - 2)}>
-                <ChevronLeft size={15} />
-                {t("previous")}
+              <Button type="button" variant="outline" size="sm" disabled={!createdJobCardId} onClick={() => router.push(`/job-cards/${createdJobCardId}`)}>
+                {t("finishWithoutPerforma")}
               </Button>
               <Button
                 type="button"
@@ -692,12 +745,12 @@ export default function StartJobPage({ searchParams }: { searchParams: Promise<{
             </span>
             <div className="justify-self-end">
               {!isReviewStep ? (
-                <Button type="button" size="sm" onClick={handleNext} disabled={!canGoNext()}>
+                <Button key="next-step" type="button" size="sm" onClick={handleNext} disabled={!canGoNext()}>
                   {t("next")}
                   <ChevronRight size={15} />
                 </Button>
               ) : (
-                <Button type="submit" form="job-card-form" size="sm" disabled={isCreatingJobCard}>
+                <Button key="create-job-card" type="submit" form="job-card-form" size="sm" disabled={isCreatingJobCard || !!createdJobCardId}>
                   {isCreatingJobCard && <Loader2 className="h-4 w-4 animate-spin" />}
                   {isCreatingJobCard ? t("creatingJobCard") : t("createJobCard")}
                 </Button>

@@ -5,6 +5,7 @@ import { PART_SECTIONS, CONDITION_STATES, CONDITION_COLORS } from "@/lib/constan
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Check, CheckCircle2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import type { VehicleConditionInput } from "../types";
 
 interface Props {
@@ -19,8 +20,10 @@ interface Props {
 }
 
 export function ConditionWizard({ conditions, onChange, readOnly, showStepIndicator = true, step: externalStep, onStepChange, onShowSummary, showSummary: externalShowSummary }: Props) {
+  const t = useTranslations("startJob");
   const [internalStep, setInternalStep] = useState(0);
   const [internalShowSummary, setInternalShowSummary] = useState(false);
+  const [showAllReadOnly, setShowAllReadOnly] = useState(false);
   const step = externalStep ?? internalStep;
   const showSummary = externalShowSummary ?? internalShowSummary;
   const setStep = onStepChange ?? setInternalStep;
@@ -69,14 +72,38 @@ export function ConditionWizard({ conditions, onChange, readOnly, showStepIndica
   if (readOnly) {
     return (
       <div className="space-y-4">
+        <div className="flex flex-col gap-3 rounded-xl border border-border/60 bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold">
+              {t("inspectionIssueCount", { count: totalDamaged })}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {showAllReadOnly ? t("showingFullInspection") : t("showingIssuesOnly")}
+            </p>
+          </div>
+          <Button type="button" variant="outline" size="sm" onClick={() => setShowAllReadOnly((current) => !current)}>
+            {showAllReadOnly ? t("showIssuesOnly") : t("showFullInspection")}
+          </Button>
+        </div>
+
+        {!showAllReadOnly && totalDamaged === 0 && (
+          <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-6 text-center text-sm text-emerald-700 dark:text-emerald-300">
+            {t("allAvailableAtReception")}
+          </div>
+        )}
+
         {PART_SECTIONS.map((section) => {
+          const visibleParts = showAllReadOnly
+            ? section.parts
+            : section.parts.filter((part) => getState(part.value) !== "available");
+          if (visibleParts.length === 0) return null;
           return (
             <div key={section.sectionKey} className="rounded-xl border bg-card shadow-sm">
               <div className="border-b border-border px-4 py-2.5">
                 <h3 className="text-sm font-semibold">{section.sectionLabel}</h3>
               </div>
               <div className="divide-y divide-border px-4">
-                {section.parts.map((part) => {
+                {visibleParts.map((part) => {
                   const state = getState(part.value);
                   return (
                     <div key={part.value} className="flex items-center justify-between py-2 text-sm">
@@ -216,43 +243,33 @@ export function ConditionWizard({ conditions, onChange, readOnly, showStepIndica
         </Button>
       </div>
 
-      {/* Parts list */}
-      <div className="grid gap-3 lg:grid-cols-2">
+      {/* Compact inspection rows keep long sections fast to scan on every screen size. */}
+      <div className="grid gap-2 lg:grid-cols-2">
         {currentSection.parts.map((part) => {
           const state = getState(part.value);
           return (
-            <div
+            <label
               key={part.value}
-              className="rounded-xl border border-border/70 bg-card p-3 shadow-card"
+              className="flex min-h-12 items-center gap-3 rounded-lg border border-border/70 bg-card px-3 py-2 shadow-card"
             >
-              <div className="flex items-center justify-between gap-3">
-                <span className="min-w-0 text-sm font-semibold leading-snug">{part.label}</span>
-                <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", CONDITION_COLORS[state])} />
-              </div>
-              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                {CONDITION_STATES.map((cs) => {
-                  const selected = state === cs.value;
-                  return (
-                    <button
-                      key={cs.value}
-                      type="button"
-                      onClick={() => setState(part.value, cs.value)}
-                      className={cn(
-                        "flex min-h-10 items-center justify-center gap-1.5 rounded-lg border px-2 text-xs font-semibold transition-all",
-                        selected
-                          ? cs.value === "available"
-                            ? "border-emerald-500 bg-emerald-500 text-white shadow-sm shadow-emerald-500/20"
-                            : "border-primary bg-primary text-primary-foreground shadow-sm shadow-primary/20"
-                          : "border-border bg-muted/35 text-muted-foreground hover:bg-muted hover:text-foreground",
-                      )}
-                    >
-                      {selected && <Check size={12} />}
-                      <span className="truncate">{cs.label === "Not Available" ? "N/A" : cs.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+              <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", CONDITION_COLORS[state])} />
+              <span className="min-w-0 flex-1 text-sm font-semibold leading-snug">{part.label}</span>
+              <select
+                aria-label={`${part.label} condition`}
+                value={state}
+                onChange={(event) => setState(part.value, event.target.value)}
+                className={cn(
+                  "h-9 w-36 shrink-0 rounded-md border border-input bg-background px-2 text-xs font-semibold outline-none focus:ring-2 focus:ring-ring sm:w-40",
+                  state === "available" ? "text-emerald-700 dark:text-emerald-300" : "text-rose-600",
+                )}
+              >
+                {CONDITION_STATES.map((conditionState) => (
+                  <option key={conditionState.value} value={conditionState.value}>
+                    {conditionState.label}
+                  </option>
+                ))}
+              </select>
+            </label>
           );
         })}
       </div>

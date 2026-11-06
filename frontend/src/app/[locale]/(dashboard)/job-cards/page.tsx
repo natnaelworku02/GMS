@@ -52,10 +52,10 @@ export default function JobCardsPage() {
     if (!deleteTarget) return;
     try {
       await deleteJobCard(deleteTarget.id).unwrap();
-      toast.success("Job card deleted");
+      toast.success(t("deleted"));
       setDeleteTarget(null);
     } catch (error) {
-      const msg = getApiErrorMessage(error, "Failed to delete job card");
+      const msg = getApiErrorMessage(error, t("deleteError"));
       toast.error(msg);
     }
   };
@@ -113,22 +113,27 @@ export default function JobCardsPage() {
               e.stopPropagation();
               router.push(`/job-cards/${jc.id}`);
             }}
+            aria-label={t("viewJobCard")}
           >
             <Eye size={14} />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={(e: React.MouseEvent) => {
-              e.stopPropagation();
-              setDeleteTarget(jc);
-            }}
-          >
-            <Trash2 size={14} className="text-destructive" />
-          </Button>
+          <Can permission="job_cards.delete">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={(e: React.MouseEvent) => {
+                e.stopPropagation();
+                setDeleteTarget(jc);
+              }}
+              aria-label={t("deleteJobCard")}
+            >
+              <Trash2 size={14} className="text-destructive" />
+            </Button>
+          </Can>
         </div>
       ),
       className: "w-20 text-right",
+      hideOnMobile: true,
     },
   ];
 
@@ -184,9 +189,9 @@ export default function JobCardsPage() {
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={(v) => { if (!v) setDeleteTarget(null); }}
-        title="Delete Job Card"
-        description="Are you sure you want to delete this job card? This action cannot be undone."
-        confirmLabel={deleting ? "Deleting..." : "Delete"}
+        title={t("deleteJobCard")}
+        description={t("deleteConfirmation")}
+        confirmLabel={deleting ? t("deleting") : tc("delete")}
         onConfirm={handleDelete}
         variant="destructive"
         disableConfirm={deleting}

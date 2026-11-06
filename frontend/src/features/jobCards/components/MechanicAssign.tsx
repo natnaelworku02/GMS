@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsUpDown, X } from "lucide-react";
 import { useGetEmployeesQuery } from "../api";
 import type { StaffAssignment } from "../types";
 import { cn } from "@/lib/utils";
@@ -37,12 +37,15 @@ export function MechanicAssign({ value, onChange }: Props) {
         const choices = employees.filter((employee) => employee.work_category === category.value);
         const selected = value.filter((item) => item.work_category === category.value);
         return (
-          <div key={category.value} className="space-y-2">
-            <label className="text-sm font-medium">{category.label}</label>
+          <div key={category.value} className="space-y-2 rounded-xl border border-border/60 bg-muted/20 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <label className="text-sm font-semibold">{category.label}</label>
+              <span className="text-xs text-muted-foreground">{selected.length} selected</span>
+            </div>
             <Popover>
               <PopoverTrigger className="flex min-h-10 w-full items-center justify-between rounded-lg border border-input bg-background px-3 py-2 text-left text-sm">
                 <span className={cn(!selected.length && "text-muted-foreground")}>
-                  {selected.length ? `${selected.length} selected` : `Select ${category.label.toLowerCase()}`}
+                  {selected.length ? `Add or remove ${category.label.toLowerCase()}` : `Select ${category.label.toLowerCase()}`}
                 </span>
                 <ChevronsUpDown className="h-4 w-4 opacity-50" />
               </PopoverTrigger>
@@ -64,6 +67,28 @@ export function MechanicAssign({ value, onChange }: Props) {
                 </Command>
               </PopoverContent>
             </Popover>
+            {selected.length > 0 && (
+              <div className="flex flex-wrap gap-2 pt-1">
+                {selected.map((assignment) => {
+                  const employee = employees.find((item) => item.id === assignment.employee_id);
+                  return (
+                    <button
+                      key={assignment.employee_id}
+                      type="button"
+                      onClick={() => toggle(assignment.employee_id, category.value)}
+                      className="inline-flex min-h-8 items-center gap-1.5 rounded-full border bg-background px-3 text-xs font-medium hover:border-destructive/40 hover:text-destructive"
+                      aria-label={`Remove ${employee?.name ?? "employee"}`}
+                    >
+                      {employee?.name ?? assignment.employee_id}
+                      <X size={12} />
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            {choices.length === 0 && (
+              <p className="text-xs text-muted-foreground">No active employees are available in this category.</p>
+            )}
           </div>
         );
       })}

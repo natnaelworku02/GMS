@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { use, useState, useCallback } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
@@ -19,30 +19,10 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Loader2, AlertCircle, Plus } from "lucide-react";
 import { toast } from "sonner";
 import type { LineItemInput } from "@/features/performas/types";
-
-const CONDITION_LABELS: Record<string, string> = {
-  available: "Available",
-  damaged: "Damaged",
-  not_available: "Not Available",
-  scratch: "Scratched",
-  broken: "Broken",
-  crack: "Cracked",
-  dent: "Dented",
-  bend: "Bent",
-};
-
-const PART_NAME_LABELS: Record<string, string> = {
-  trunk: "Trunk",
-  lh_body: "Left Body",
-  rh_body: "Right Body",
-  interior: "Interior",
-  front_body: "Front Body",
-  peripheral: "Peripheral",
-};
+import { CONDITION_STATES, PART_NAMES } from "@/lib/constants";
 
 export default function NewPerformaPage({ searchParams }: { searchParams: Promise<{ job_card_id?: string }> }) {
-  const [params, setParams] = useState<{ job_card_id?: string }>({});
-  useEffect(() => { searchParams.then(setParams); }, [searchParams]);
+  const params = use(searchParams);
 
   const t = useTranslations("performas");
   const tc = useTranslations("common");
@@ -85,7 +65,7 @@ export default function NewPerformaPage({ searchParams }: { searchParams: Promis
   const damagedConditions = (jobCard?.conditions ?? []).filter((c) => c.condition_state !== "available");
 
   const addConditionAsLineItem = (partName: string) => {
-    const label = PART_NAME_LABELS[partName] || partName;
+    const label = PART_NAMES.find((part) => part.value === partName)?.label || partName;
     const newItem: LineItemInput = { type: "labor", description: `Repair ${label}`, quantity: 1, unit_price: 0 };
     const updated = [...lineItems, newItem];
     setLineItems(updated);
@@ -99,7 +79,7 @@ export default function NewPerformaPage({ searchParams }: { searchParams: Promis
 
   const onSubmit = async (data: PerformaCreateFormData) => {
     if (!effectiveVehicleId) {
-      toast.error("Select a vehicle");
+      toast.error(t("selectVehicleRequired"));
       return;
     }
     if (!lineItems.some((li) => li.description.trim())) {
@@ -137,16 +117,19 @@ export default function NewPerformaPage({ searchParams }: { searchParams: Promis
         <ArrowLeft size={15} />
         {tc("back")} {t("title")}
       </Button>
-      <h1 className="mb-6 text-2xl font-semibold tracking-tight">{t("create")}</h1>
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold tracking-tight">{t("create")}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{t("createDescription")}</p>
+      </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 items-start">
         {/* ===== Left Column ===== */}
         <div className="space-y-6 min-w-0">
           {/* Vehicle and optional job card selection */}
-          <div className="rounded-xl border bg-card p-6 shadow-sm space-y-4">
-            <h2 className="text-sm font-semibold">Vehicle and Job</h2>
+          <div className="rounded-2xl border border-border/60 bg-card p-4 shadow-card sm:p-6 space-y-4">
+            <div><h2 className="text-sm font-semibold">{t("vehicleAndJob")}</h2><p className="mt-1 text-xs text-muted-foreground">{t("vehicleAndJobHelp")}</p></div>
             <div className="space-y-2">
-              <Label>Vehicle</Label>
+              <Label>{t("vehicle")}</Label>
               <Combobox
                 options={vehicleOptions}
                 value={effectiveVehicleId}
@@ -158,14 +141,14 @@ export default function NewPerformaPage({ searchParams }: { searchParams: Promis
                     setValue("job_card_id", "");
                   }
                 }}
-                placeholder="Select a vehicle..."
-                searchPlaceholder="Search vehicle..."
+                placeholder={t("selectVehicle")}
+                searchPlaceholder={t("searchVehicle")}
                 emptyText={tc("noResults")}
               />
               {errors.vehicle_id && <p className="text-sm text-destructive">{errors.vehicle_id.message}</p>}
             </div>
             <div className="space-y-2">
-              <Label>{t("jobCardId")} (optional)</Label>
+              <Label>{t("jobCardId")} <span className="font-normal text-muted-foreground">({tc("optional")})</span></Label>
               <Combobox
                 options={jobCardOptions.filter((option) => !effectiveVehicleId || jobCards.find((card) => card.id === option.value)?.vehicle_id === effectiveVehicleId)}
                 value={jobCardId}
@@ -223,10 +206,10 @@ export default function NewPerformaPage({ searchParams }: { searchParams: Promis
                     <div key={cond.id || cond.part_name} className="flex items-center justify-between px-4 py-1.5 text-sm">
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-amber-800">
-                          {PART_NAME_LABELS[cond.part_name] || cond.part_name}
+                          {PART_NAMES.find((part) => part.value === cond.part_name)?.label || cond.part_name}
                         </span>
                         <span className="rounded-full bg-amber-200/60 px-2 py-0.5 text-xs text-amber-700">
-                          {CONDITION_LABELS[cond.condition_state] || cond.condition_state}
+                          {CONDITION_STATES.find((state) => state.value === cond.condition_state)?.label || cond.condition_state}
                         </span>
                       </div>
                       <Button
@@ -247,7 +230,7 @@ export default function NewPerformaPage({ searchParams }: { searchParams: Promis
           )}
 
           {/* Client Email */}
-          <div className="rounded-xl border bg-card p-6 shadow-sm space-y-4">
+          <div className="rounded-2xl border border-border/60 bg-card p-4 shadow-card sm:p-6 space-y-4">
             <h2 className="text-sm font-semibold">{t("detail")}</h2>
             <div className="space-y-2">
               <Label htmlFor="email">{t("clientEmail")}</Label>
@@ -256,7 +239,7 @@ export default function NewPerformaPage({ searchParams }: { searchParams: Promis
           </div>
 
           {/* Line Items */}
-          <div className="rounded-xl border bg-card p-6 shadow-sm space-y-4">
+          <div className="rounded-2xl border border-border/60 bg-card p-4 shadow-card sm:p-6 space-y-4">
             <h2 className="text-sm font-semibold">{t("lineItems")}</h2>
               <PerformaLineItems
                 items={lineItems}
@@ -288,10 +271,10 @@ export default function NewPerformaPage({ searchParams }: { searchParams: Promis
                   <div key={cond.id || cond.part_name} className="flex items-center justify-between px-4 py-2 text-sm">
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="font-medium text-amber-800 truncate">
-                        {PART_NAME_LABELS[cond.part_name] || cond.part_name}
+                        {PART_NAMES.find((part) => part.value === cond.part_name)?.label || cond.part_name}
                       </span>
                       <span className="shrink-0 rounded-full bg-amber-200/60 px-2 py-0.5 text-xs text-amber-700">
-                        {CONDITION_LABELS[cond.condition_state] || cond.condition_state}
+                        {CONDITION_STATES.find((state) => state.value === cond.condition_state)?.label || cond.condition_state}
                       </span>
                     </div>
                     <Button

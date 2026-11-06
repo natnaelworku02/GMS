@@ -24,6 +24,7 @@ export default function PerformaDetailPage({ params }: { params: Promise<{ id: s
   const { id } = use(params);
 
   const t = useTranslations("performas");
+  const tj = useTranslations("jobCards");
   const tc = useTranslations("common");
   const router = useRouter();
   const { data: performa, isLoading } = useGetPerformaQuery(id);
@@ -85,7 +86,7 @@ export default function PerformaDetailPage({ params }: { params: Promise<{ id: s
   const handleConvertToInvoice = async () => {
     try {
       const invoice = await createInvoice({ performa_id: id }).unwrap();
-      toast.success("Invoice created");
+      toast.success(t("invoiceCreated"));
       router.push(`/invoices/${invoice.id}`);
     } catch {
       toast.error(tc("error"));
@@ -133,8 +134,8 @@ export default function PerformaDetailPage({ params }: { params: Promise<{ id: s
   }));
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <div className="mb-6 flex items-center justify-between">
+    <div className="mx-auto max-w-4xl pb-10">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <Button variant="ghost" onClick={() => router.push("/performas")}>
           <ArrowLeft size={15} />
           {tc("back")}
@@ -142,7 +143,8 @@ export default function PerformaDetailPage({ params }: { params: Promise<{ id: s
         <PerformaStatusBadge status={performa.status} />
       </div>
 
-      <div className="mb-6 rounded-xl border bg-card p-6 shadow-sm">
+      <div className="mb-6 overflow-hidden rounded-2xl border border-border/60 bg-card shadow-card">
+        <div className="bg-gradient-to-r from-primary/5 to-transparent p-5 sm:p-6">
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">
@@ -153,7 +155,7 @@ export default function PerformaDetailPage({ params }: { params: Promise<{ id: s
             </p>
           </div>
         </div>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <div className="mt-5 grid gap-4 rounded-xl border border-border/50 bg-background/70 p-4 sm:grid-cols-2">
           <div>
             <p className="text-xs text-muted-foreground">{t("clientEmail")}</p>
             <p className="text-sm font-medium">{performa.client_email || "—"}</p>
@@ -169,22 +171,23 @@ export default function PerformaDetailPage({ params }: { params: Promise<{ id: s
             </div>
           )}
         </div>
+        </div>
       </div>
 
-      <div className="mb-6 rounded-xl border bg-card p-6 shadow-sm">
-        <h2 className="text-sm font-semibold">Vehicle</h2>
+      <div className="mb-6 rounded-2xl border border-border/60 bg-card p-4 shadow-card sm:p-6">
+        <h2 className="text-sm font-semibold">{t("vehicle")}</h2>
         <div className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
-          <p><span className="text-muted-foreground">Owner:</span> {owner?.name ?? "—"} {owner?.phone ? `· ${owner.phone}` : ""}</p>
-          <p><span className="text-muted-foreground">Model:</span> {vehicle?.model ?? "—"}</p>
-          <p><span className="text-muted-foreground">Type:</span> {vehicle?.type ?? "—"}</p>
-          <p><span className="text-muted-foreground">Plate:</span> {vehicle?.plate_number ?? "—"}</p>
-          <p><span className="text-muted-foreground">Engine:</span> {vehicle?.engine_number ?? "—"}</p>
-          <p><span className="text-muted-foreground">Chassis:</span> {vehicle?.chassis_number ?? "—"}</p>
+          <p><span className="text-muted-foreground">{tj("owner")}:</span> {owner?.name ?? "—"} {owner?.phone ? `· ${owner.phone}` : ""}</p>
+          <p><span className="text-muted-foreground">{tj("model")}:</span> {vehicle?.model ?? "—"}</p>
+          <p><span className="text-muted-foreground">{tj("type")}:</span> {vehicle?.type ?? "—"}</p>
+          <p><span className="text-muted-foreground">{tj("plateNumber")}:</span> {vehicle?.plate_number ?? "—"}</p>
+          <p><span className="text-muted-foreground">{tj("engineNumber")}:</span> {vehicle?.engine_number ?? "—"}</p>
+          <p><span className="text-muted-foreground">{tj("chassisNumber")}:</span> {vehicle?.chassis_number ?? "—"}</p>
         </div>
       </div>
 
       {/* Line Items */}
-      <div className="mb-6 rounded-xl border bg-card p-6 shadow-sm space-y-4">
+      <div className="mb-6 rounded-2xl border border-border/60 bg-card p-4 shadow-card sm:p-6 space-y-4">
         <h2 className="text-sm font-semibold">{t("lineItems")}</h2>
         <PerformaLineItems items={lineItemInputs} onChange={() => {}} readOnly />
         <PerformaSummary
@@ -196,12 +199,12 @@ export default function PerformaDetailPage({ params }: { params: Promise<{ id: s
       </div>
 
         {/* Actions */}
-        <div className="rounded-xl border bg-card p-6 shadow-sm space-y-4">
+        <div className="rounded-2xl border border-border/60 bg-card p-4 shadow-card sm:p-6 space-y-4">
           <h2 className="text-sm font-semibold">{tc("actions")}</h2>
 
           {/* Download PDF */}
           <div>
-            <Button variant="outline" onClick={handleDownloadPdf}>
+            <Button className="w-full sm:w-auto" variant="outline" onClick={handleDownloadPdf}>
               <Download className="mr-1 h-4 w-4" />
               {t("downloadPdf") || "Download PDF"}
             </Button>
@@ -209,14 +212,14 @@ export default function PerformaDetailPage({ params }: { params: Promise<{ id: s
 
           {/* Send */}
         {performa.status === "draft" && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <Input
               type="email"
               placeholder={t("clientEmail")}
               value={clientEmail}
               onChange={(e) => setClientEmail(e.target.value)}
             />
-            <Button onClick={handleSend} disabled={sending || !clientEmail.trim()}>
+            <Button className="sm:shrink-0" onClick={handleSend} disabled={sending || !clientEmail.trim()}>
               {sending && <Loader2 className="h-4 w-4 animate-spin" />}
               <Send className="mr-1 h-4 w-4" />
               {t("send")}
@@ -226,7 +229,7 @@ export default function PerformaDetailPage({ params }: { params: Promise<{ id: s
 
         {/* Approve / Reject */}
         {performa.status === "sent" && (
-          <div className="flex gap-2">
+          <div className="grid gap-2 sm:grid-cols-2">
             <Button onClick={handleApprove} disabled={updating}>
               <ThumbsUp className="mr-1 h-4 w-4" />
               {t("approve")}
@@ -243,17 +246,17 @@ export default function PerformaDetailPage({ params }: { params: Promise<{ id: s
           <div className="flex flex-wrap gap-2">
             {!performa.job_card_id ? (
               <Button onClick={() => router.push(`/start-job?performa_id=${performa.id}`)}>
-                <Truck className="mr-1 h-4 w-4" /> Start Job
+                <Truck className="mr-1 h-4 w-4" /> {t("startJob")}
               </Button>
             ) : (
               <Button variant="outline" onClick={() => router.push(`/job-cards/${performa.job_card_id}`)}>
-                <Truck className="mr-1 h-4 w-4" /> View Job Card
+                <Truck className="mr-1 h-4 w-4" /> {t("viewJobCard")}
               </Button>
             )}
             {canReadInvoices && existingInvoice ? (
               <Button variant="default" onClick={() => router.push(`/invoices/${existingInvoice.id}`)}>
                 <FileText className="mr-1 h-4 w-4" />
-                View Invoice ({existingInvoice.invoice_number})
+                {t("viewInvoice")} ({existingInvoice.invoice_number})
               </Button>
             ) : canCreateInvoices && performa.job_card_id ? (
               <Button onClick={handleConvertToInvoice} disabled={creatingInvoice}>

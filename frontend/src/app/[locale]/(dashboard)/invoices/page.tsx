@@ -1,74 +1,82 @@
 "use client";
 
 import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
 import { useGetInvoicesQuery } from "@/features/invoices/api";
-import { Button } from "@/components/ui/button";
-import { Receipt } from "lucide-react";
+import type { Invoice } from "@/features/invoices/types";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { DataTable, type Column } from "@/components/shared/DataTable";
 
 export default function InvoicesListPage() {
   const t = useTranslations("invoices");
   const tc = useTranslations("common");
+  const locale = useLocale();
   const router = useRouter();
   const [page, setPage] = useState(1);
-  const { data: invoicesResp } = useGetInvoicesQuery({ page, page_size: 20 });
+  const [search, setSearch] = useState("");
+  const { data: invoicesResp, isLoading, isError } = useGetInvoicesQuery({
+    page,
+    page_size: 20,
+    search: search || undefined,
+  });
   const invoices = invoicesResp?.items ?? [];
-  const totalPages = invoicesResp?.total_pages ?? 0;
+  const total = invoicesResp?.total ?? 0;
 
-  const fmt = (n: number) =>
-    new Intl.NumberFormat("en-US", { style: "currency", currency: "ETB", minimumFractionDigits: 2 }).format(n);
+  const fmt = (amount: number) =>
+    new Intl.NumberFormat(locale === "am" ? "am-ET" : "en-ET", {
+      style: "currency",
+      currency: "ETB",
+      minimumFractionDigits: 2,
+    }).format(amount);
+
+  const columns: Column<Invoice>[] = [
+    {
+      key: "invoice_number",
+      header: t("invoiceNumber"),
+      render: (invoice) => (
+        <span className="inline-flex rounded-md bg-indigo-500/10 px-2 py-1 font-mono text-xs font-semibold text-indigo-600 dark:text-indigo-300">
+          {invoice.invoice_number}
+        </span>
+      ),
+    },
+    {
+      key: "client_email",
+      header: t("clientEmail"),
+      render: (invoice) => <span className="break-all text-sm text-muted-foreground">{invoice.client_email || tc("notAvailable")}</span>,
+    },
+    {
+      key: "grand_total",
+      header: t("total"),
+      render: (invoice) => <span className="font-semibold tabular-nums">{fmt(invoice.grand_total)}</span>,
+      sortable: true,
+    },
+    {
+      key: "created_at",
+      header: t("createdAt"),
+      render: (invoice) => <span className="text-sm text-muted-foreground">{new Date(invoice.created_at).toLocaleDateString(locale)}</span>,
+      sortable: true,
+    },
+  ];
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{t("description")}</p>
-      </div>
-
-      {invoices.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border bg-card py-16 text-center">
-          <Receipt className="mb-3 h-10 w-10 text-muted-foreground/40" />
-          <p className="text-sm text-muted-foreground">{t("empty")}</p>
-          <p className="text-xs text-muted-foreground mt-1">{t("emptyDescription")}</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {invoices.map((inv) => (
-            <div
-              key={inv.id}
-              className="flex cursor-pointer items-center justify-between rounded-xl border bg-card p-4 shadow-sm transition-colors hover:bg-accent/50"
-              onClick={() => router.push(`/invoices/${inv.id}`)}
-            >
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="rounded-md bg-indigo-500/10 px-2 py-0.5 text-xs font-semibold text-indigo-600">
-                    {inv.invoice_number}
-                  </span>
-                  <span className="truncate text-sm">{inv.client_email || "—"}</span>
-                </div>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  {new Date(inv.created_at).toLocaleDateString()}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="font-semibold">{fmt(inv.grand_total)}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-      {totalPages > 1 && (
-        <div className="mt-4 flex items-center justify-center gap-2">
-          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
-            {tc("previous")}
-          </Button>
-          <span className="text-sm text-muted-foreground">{t("pageOf", { page, totalPages })}</span>
-          <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
-            {tc("next")}
-          </Button>
-        </div>
-      )}
+    <div className="mx-auto max-w-6xl space-y-4">
+      <PageHeader title={t("title")} description={t("count", { count: total })} />
+      <DataTable
+        columns={columns}
+        data={invoices}
+        isLoading={isLoading}
+        isError={isError}
+        emptyMessage={t("empty")}
+        searchPlaceholder={t("searchPlaceholder")}
+        searchValue={search}
+        onSearch={(value) => { setSearch(value); setPage(1); }}
+        serverTotal={total}
+        serverPage={page}
+        serverPageSize={20}
+        onServerPageChange={setPage}
+        onRowClick={(invoice) => router.push(`/invoices/${invoice.id}`)}
+      />
     </div>
   );
 }

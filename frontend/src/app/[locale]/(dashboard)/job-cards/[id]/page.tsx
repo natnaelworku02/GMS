@@ -2,7 +2,7 @@
 
 import { useRef, useState, use } from "react";
 import { useRouter } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useGetJobCardQuery, useGetJobCardHistoryQuery, useUpdateJobCardStatusMutation, useGetOwnerQuery, useGetVehicleQuery, useGetEmployeesQuery } from "@/features/jobCards/api";
 import { useGetToolCheckoutsQuery, useGetToolsQuery, useCheckoutToolMutation, useReturnToolMutation } from "@/features/tools/api";
 import { useGetPerformasQuery } from "@/features/performas/api";
@@ -13,6 +13,7 @@ import { useGetUsersQuery } from "@/features/auth/api";
 import { StatusTimeline } from "@/features/jobCards/components/StatusTimeline";
 import { ConditionWizard } from "@/features/jobCards/components/ConditionWizard";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { Can } from "@/features/auth/components/Can";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import {
@@ -33,7 +34,7 @@ import {
 } from "@/components/ui/select";
 import { ArrowLeft, Pencil, Loader2, Clock, User, Wrench, Receipt, Plus, Undo2, Package } from "lucide-react";
 import { toast } from "sonner";
-import { JOB_STATUS_LABELS, JOB_STATUS_TRANSITIONS } from "@/lib/constants";
+import { JOB_STATUS_TRANSITIONS } from "@/lib/constants";
 import type { VehicleConditionInput } from "@/features/jobCards/types";
 import { WORK_CATEGORIES } from "@/features/jobCards/components/MechanicAssign";
 
@@ -42,6 +43,7 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
 
   const t = useTranslations("jobCards");
   const tc = useTranslations("common");
+  const locale = useLocale();
   const router = useRouter();
   const { data: jobCard, isLoading } = useGetJobCardQuery(id);
   const { data: history } = useGetJobCardHistoryQuery(id);
@@ -119,13 +121,13 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
     if (!invItemId || !invLocationId || invQty < 1) return;
     try {
       await applyInventory({ job_card_id: id, body: { item_id: invItemId, store_location_id: invLocationId, quantity: invQty } }).unwrap();
-      toast.success("Inventory used");
+      toast.success(t("inventoryUsedSuccess"));
       setInvDialogOpen(false);
       setInvItemId("");
       setInvLocationId("");
       setInvQty(1);
     } catch {
-      toast.error("Failed to use inventory");
+      toast.error(t("inventoryUsedError"));
     }
   };
 
@@ -143,22 +145,22 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
         job_card_id: id,
         quantity: checkoutQty,
       }).unwrap();
-      toast.success("Tool checked out");
+      toast.success(t("toolCheckoutSuccess"));
       setCheckoutDialogOpen(false);
       setCheckoutToolId("");
       setCheckoutEmployeeId("");
       setCheckoutQty(1);
     } catch {
-      toast.error("Failed to checkout tool");
+      toast.error(t("toolCheckoutError"));
     }
   };
 
   const handleReturnTool = async (checkoutId: string) => {
     try {
       await returnTool(checkoutId).unwrap();
-      toast.success("Tool returned");
+      toast.success(t("toolReturnSuccess"));
     } catch {
-      toast.error("Failed to return tool");
+      toast.error(t("toolReturnError"));
     }
   };
 
@@ -182,18 +184,21 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       {/* Top bar */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Button variant="ghost" onClick={() => router.push("/job-cards")}>
           <ArrowLeft size={15} />
           {t("backToList")}
         </Button>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => router.push(`/job-cards/${id}/edit`)}>
-            <Pencil size={14} />
-            {tc("edit")}
-          </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Can permission="job_cards.update">
+            <Button variant="outline" size="sm" onClick={() => router.push(`/job-cards/${id}/edit`)}>
+              <Pencil size={14} />
+              {tc("edit")}
+            </Button>
+          </Can>
           {validTransitions.length > 0 && (
-            <div className="flex gap-2">
+            <Can permission="job_cards.update">
+            <div className="flex flex-wrap gap-2">
               {validTransitions.map((nextStatus) => (
                 <Button
                   key={nextStatus}
@@ -203,10 +208,11 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
                   title={blockedByTools ? t("returnToolsFirst") : ""}
                 >
                   {isTransitioning && <Loader2 className="h-4 w-4 animate-spin" />}
-                  {JOB_STATUS_LABELS[nextStatus]}
+                  {t(nextStatus)}
                 </Button>
               ))}
             </div>
+            </Can>
           )}
         </div>
       </div>
@@ -217,7 +223,7 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h1 className="text-2xl font-bold tracking-tight">
-                {vehicle?.model || "Vehicle"}
+                {vehicle?.model || t("vehicle")}
               </h1>
               <p className="mt-1 text-sm text-muted-foreground font-mono">
                 {vehicle?.plate_number}
@@ -284,7 +290,7 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
           </div>
         </DetailCard>
 
-        <DetailCard title="Assigned Staff" delay="0.25s">
+        <DetailCard title={t("assignedStaff")} delay="0.25s">
           {jobCard.staff_assignments.length > 0 ? (
             <div className="space-y-2">
               {jobCard.staff_assignments.map((assignment) => {
@@ -301,7 +307,7 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
               })}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">No staff assigned</p>
+            <p className="text-sm text-muted-foreground">{t("noStaffAssigned")}</p>
           )}
         </DetailCard>
       </div>
@@ -314,12 +320,12 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
         action={
           <Button size="sm" variant="outline" onClick={() => setCheckoutDialogOpen(true)}>
             <Plus size={14} />
-            Checkout
+            {t("checkout")}
           </Button>
         }
       >
         {allCheckouts.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No tools checked out</p>
+          <p className="text-sm text-muted-foreground">{t("noToolsCheckedOut")}</p>
         ) : (
           <div className="divide-y divide-border/40">
             {allCheckouts.map((co) => (
@@ -327,18 +333,18 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
                 <div className="flex flex-col gap-0.5">
                   <span className="font-medium">{toolName(co.tool_id)}</span>
                   <span className="text-xs text-muted-foreground">
-                    {employeeName(co.employee_id)} &middot; Qty: {co.quantity} &middot; {new Date(co.checked_out_at).toLocaleDateString()}
+                    {employeeName(co.employee_id)} &middot; {t("quantityShort")}: {co.quantity} &middot; {new Date(co.checked_out_at).toLocaleDateString(locale)}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   {co.checked_in_at ? (
                     <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
-                      Returned {new Date(co.checked_in_at).toLocaleDateString()}
+                      {t("returned")} {new Date(co.checked_in_at).toLocaleDateString(locale)}
                     </span>
                   ) : (
                     <Button variant="outline" size="sm" onClick={() => handleReturnTool(co.id)} disabled={isReturning}>
                       {isReturning ? <Loader2 className="h-3 w-3 animate-spin" /> : <Undo2 size={14} />}
-                      Return
+                      {t("returnTool")}
                     </Button>
                   )}
                 </div>
@@ -355,18 +361,18 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
 
       {/* Inventory Usage */}
       <DetailCard
-        title="Inventory Used"
+        title={t("inventoryUsed")}
         icon={Package}
         delay="0.35s"
         action={
           <Button size="sm" variant="outline" onClick={() => setInvDialogOpen(true)}>
             <Plus size={14} />
-            Use Item
+            {t("useItem")}
           </Button>
         }
       >
         {(!jobCard.inventory_usage || jobCard.inventory_usage.length === 0) ? (
-          <p className="text-sm text-muted-foreground">No inventory used</p>
+          <p className="text-sm text-muted-foreground">{t("noInventoryUsed")}</p>
         ) : (
           <div className="divide-y divide-border/40">
             {jobCard.inventory_usage.map((u) => (
@@ -409,7 +415,7 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
                   <PerformaStatusBadge status={p.status} />
                 </div>
                 <span className="font-mono text-xs text-muted-foreground">
-                  {new Intl.NumberFormat("en-US", { style: "currency", currency: "ETB" }).format(p.grand_total)}
+                  {new Intl.NumberFormat(locale === "am" ? "am-ET" : "en-ET", { style: "currency", currency: "ETB" }).format(p.grand_total)}
                 </span>
               </div>
             ))}
@@ -434,16 +440,16 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
         )}
       </DetailCard>
 
-      <DetailCard title="Activity History" icon={Clock} delay="0.48s">
+      <DetailCard title={t("activityHistory")} icon={Clock} delay="0.48s">
         {!history?.events.length && !history?.inventory_movements.length ? (
-          <p className="text-sm text-muted-foreground">No recorded activity yet.</p>
+          <p className="text-sm text-muted-foreground">{t("noActivity")}</p>
         ) : (
           <div className="border-l pl-4">
             {[...(history?.events ?? []).map((event) => ({
               id: event.id, date: event.created_at, title: event.action.replaceAll("_", " ").replaceAll(".", " · "),
               detail: event.details ? Object.entries(event.details).map(([key, value]) => `${key}: ${String(value)}`).join(" · ") : "",
             })), ...(history?.inventory_movements ?? []).map((movement) => ({
-              id: movement.id, date: movement.created_at, title: "Inventory used",
+              id: movement.id, date: movement.created_at, title: t("inventoryUsed"),
               detail: `${movement.quantity_before} → ${movement.quantity_after} (${movement.quantity_change})`,
             }))].sort((a, b) => b.date.localeCompare(a.date)).map((event) => (
               <div key={event.id} className="relative border-b py-3 last:border-0">
@@ -466,14 +472,14 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
       <Dialog open={invDialogOpen} onOpenChange={setInvDialogOpen}>
         <DialogContent ref={invDialogRef}>
           <DialogHeader>
-            <DialogTitle>Use Inventory</DialogTitle>
+            <DialogTitle>{t("useInventory")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label>Item</Label>
+              <Label>{t("inventoryItem")}</Label>
               <Select value={invItemId} onValueChange={(v) => setInvItemId(v || "")}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select item...">
+                  <SelectValue placeholder={t("selectInventoryItem")}>
                     {invItemId ? itemName(invItemId) : null}
                   </SelectValue>
                 </SelectTrigger>
@@ -483,15 +489,15 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
                   ))}
                 </SelectContent>
                 {inventoryItems.length === 0 && (
-                  <p className="text-xs text-muted-foreground">No inventory items are available.</p>
+                  <p className="text-xs text-muted-foreground">{t("noInventoryItems")}</p>
                 )}
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Location</Label>
+              <Label>{t("location")}</Label>
               <Select value={invLocationId} onValueChange={(v) => setInvLocationId(v || "")}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select location...">
+                  <SelectValue placeholder={t("selectLocation")}>
                     {invLocationId ? locationName(invLocationId) : null}
                   </SelectValue>
                 </SelectTrigger>
@@ -501,12 +507,12 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
                   ))}
                 </SelectContent>
                 {invLocations.length === 0 && (
-                  <p className="text-xs text-muted-foreground">Create an inventory location before using stock.</p>
+                  <p className="text-xs text-muted-foreground">{t("createLocationFirst")}</p>
                 )}
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Quantity</Label>
+              <Label>{t("quantity")}</Label>
               <Input type="number" min={1} value={invQty} onChange={(e) => setInvQty(Number(e.target.value))} />
             </div>
           </div>
@@ -514,7 +520,7 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
             <Button variant="outline" onClick={() => setInvDialogOpen(false)}>{tc("cancel")}</Button>
             <Button onClick={handleUseInventory} disabled={isUsingInventory || !invItemId || !invLocationId || invQty < 1}>
               {isUsingInventory && <Loader2 className="h-4 w-4 animate-spin" />}
-              Use
+              {t("use")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -524,14 +530,14 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
       <Dialog open={checkoutDialogOpen} onOpenChange={setCheckoutDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Checkout Tool</DialogTitle>
+            <DialogTitle>{t("checkoutTool")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label>Tool</Label>
+              <Label>{t("tool")}</Label>
               <Select value={checkoutToolId} onValueChange={(v) => setCheckoutToolId(v || "")}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select tool..." />
+                  <SelectValue placeholder={t("selectTool")} />
                 </SelectTrigger>
                 <SelectContent>
                   {tools.filter((t) => t.available_quantity > 0).map((tool) => (
@@ -543,10 +549,10 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Employee</Label>
+              <Label>{t("employee")}</Label>
               <Select value={checkoutEmployeeId} onValueChange={(v) => setCheckoutEmployeeId(v || "")}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select employee..." />
+                  <SelectValue placeholder={t("selectEmployee")} />
                 </SelectTrigger>
                 <SelectContent>
                   {employees.map((emp) => (
@@ -556,7 +562,7 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Quantity</Label>
+              <Label>{t("quantity")}</Label>
               <Input type="number" min={1} value={checkoutQty} onChange={(e) => setCheckoutQty(Number(e.target.value))} />
             </div>
           </div>
@@ -564,7 +570,7 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
             <Button variant="outline" onClick={() => setCheckoutDialogOpen(false)}>{tc("cancel")}</Button>
             <Button onClick={handleCheckout} disabled={isCheckingOut || !checkoutToolId || !checkoutEmployeeId}>
               {isCheckingOut && <Loader2 className="h-4 w-4 animate-spin" />}
-              Checkout
+              {t("checkout")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -574,7 +580,7 @@ export default function JobCardDetailPage({ params }: { params: Promise<{ id: st
       <ConfirmDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        title={`${t("confirmStatusChange")} "${confirmStatus ? JOB_STATUS_LABELS[confirmStatus] : ""}"?`}
+        title={`${t("confirmStatusChange")} "${confirmStatus ? t(confirmStatus) : ""}"?`}
         description={tc("cannotUndo")}
         confirmLabel={tc("confirm")}
         onConfirm={handleStatusChange}
